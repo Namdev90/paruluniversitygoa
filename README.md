@@ -9,7 +9,7 @@ Android QR check-in and live event administration for Navrang 2026.
 1. Install the APK on Android 7.0 or newer. Update Android System WebView / Chrome to version 86 or newer if requested.
 2. Install over version 0.1.0 to preserve its data. **Do not uninstall or clear app data during live entry.** The private original signing key is retained outside this repository.
 3. Admin: sign in with username **namdev** and the password supplied privately by the organizer. It is stored as a salted hash on the server and is not in the app or this repository.
-4. Import the organizer workbook in **Data & files → Update shared database**. No student records have been uploaded to the hosted project; that transfer awaits explicit owner approval.
+4. The supplied organizer workbook is loaded in the private hosted database: 997 registrations, 926 eligible and 71 blocked at initial import. For later updates, use **Data & files → Update shared database**.
 5. Open Admin → Checkers, enter each volunteer's name and create a checker code. The code is shown once. Share it privately with that checker.
 6. Checkers sign in with the assigned code. Google sign-in is implemented but needs the owner's provider setup described below. Each accepted entry records the authenticated checker, device and server time.
 7. Tap **Start scanning**, or swipe down on the scanner panel. The native camera stays active behind the result card. Each new QR submits automatically; no confirmation button. A held QR is suppressed until it leaves view.
@@ -75,7 +75,7 @@ The hosted integration suite and DOM/API integration are separate commands (npm 
 
 ## Verification limits
 
-The rule/protocol unit suite, real-file import, hosted concurrency/idempotency/authorization tests, DOM/IndexedDB offline recovery, Java QR/latch/PKCE/platform logic, SQLite-schema fault tests and APK signature/permissions were checked in this workspace. The dedicated hosted service was tested with synthetic registrations. Their audit rows are retained with reversible test flags and excluded from live entry counts; test checker accounts are suspended. Real student records have not been uploaded.
+The rule/protocol unit suite, real-file import, hosted concurrency/idempotency/authorization tests, DOM/IndexedDB offline recovery, Java QR/latch/PKCE/platform logic, SQLite-schema fault tests and APK signature/permissions were checked in this workspace. The dedicated hosted service was tested with synthetic registrations. Their audit rows are retained with reversible test flags and excluded from live entry counts; test checker accounts are suspended. After explicit owner approval, the supplied workbook was imported privately and all canonical fields were verified against the source: 997 registrations, 926 eligible, 71 blocked and zero real admissions at import. Contact and card details were excluded.
 
 Rendered browser QA was blocked by the supported preview environment's mount-permission failure. DOM tests verify behavior, not visual layout. Physical Android camera/Keystore/lifecycle and an actual Google OAuth login have not been executed here. Google sign-in needs owner configuration and all event phones need a trial before live use.
 

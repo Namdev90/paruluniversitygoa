@@ -1,7 +1,7 @@
 # Event readiness and follow-up plan
 
 ## Before live entry
-The hosted list is currently empty. Uploading the supplied private workbook to the new Supabase destination was blocked by automatic approval review; the owner can authorize that transfer or use the admin import interface.
+The supplied workbook is now loaded privately following explicit owner approval: 997 registrations, 926 eligible and 71 blocked at initial import. All canonical record fields were verified against the source. Later registrations still require a newer organizer export or a verified admin update.
 1. Complete Google OAuth provider setup if Google login is required; otherwise create named checker codes in Admin → Checkers.
 2. Install the same signed 0.2 APK on all 6–8 Android phones and sign in before reaching the venue.
 3. On test-only registrations, try QR scanning, a different QR while a result is visible, a duplicate on a second phone, airplane-mode queuing and force-close/reopen recovery. Do not admit real tickets during rehearsal.
