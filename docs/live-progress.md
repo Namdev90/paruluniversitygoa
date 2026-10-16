@@ -1,0 +1,33 @@
+# Live 0.2 execution record
+
+Scope: docs/LIVE-V02-DESIGN.md and docs/superpowers/plans/2026-10-16-navrang-live.md.
+
+Pre-flight: API reply contract is shared across server, native transport and UI. Exact success codes are admitted, duplicate, blocked and not_found; network failures stay pending. SQLite and JavaScript adapters must preserve the same UUID on retry.
+
+Ruling: follow the user's explicit instruction to implement and push the previously recommended architecture plus the requested upgrade; proceed inline without redundant approval gates. Cost if wrong: review the concrete release before event use.
+Ruling: use 2-second foreground delta polling for live updates. Atomic server check-in supplies duplicate protection independently of this cadence. Cost if wrong: dashboards can lag up to two seconds plus network latency.
+Ruling: Google provider credentials cannot be invented; build real PKCE integration and document activation while supplying distinct admin-issued checker codes. Cost if wrong: Google sign-in remains unavailable until the owner configures the provider.
+
+Task 1: complete — package/security/API tests observed failing, then unit suite 30/30 green. Hosted suite 12/12 green, including 16 simultaneous requests with exactly one admission, original receipt retry, request-to-ticket binding, authorization and suspension, replacement-preserved history and delta synchronization. Fixed an ambiguous PL/pgSQL snapshot alias found by the real hosted check. Synthetic fixture cleanup was initially rejected by automatic review because the broad guard covered only tickets; a full inventory established the exact generated fixture records, and a narrowly qualified cleanup was approved. The safe subsequent run requires an empty event dataset and zero admissions before creating fixtures.
+
+Task 2 in progress — repeated-frame latch and RFC7636 PKCE test observed failing, then green. Native SQLite/outbox/HTTPS/Keystore and continuous camera classes compile against Android API 35. Physical device behavior is not yet verified.
+
+Task 2: complete at compile/logic/schema level — Android classes compile; repeated-frame/PKCE and 11 prior platform checks pass. Actual bundled SQLite schema passed reopen/deduplication/fault rollback/preserved legacy/outbox checks using SQLite on the workstation. Native device lifecycle, camera and Keystore execution still require a phone. Existing v1 JSON is retained and migrated to a separate legacy ledger, never silently marked as a global admission.
+
+Task 3: complete at DOM/functional level — actual hosted admin/checker sign-in, full 997/926/71 local workbook conversion, disabled checker import controls, offline amber request, fresh-script recovery with the identical UUID, original-checker duplicate receipt and cleared durable outbox all passed (7/7 DOM integration checks). Node unit suite 35/35 green. A separate server-error failover test was observed failing, then passed after fixing forced-region fallback. The source uses transform/opacity transitions, reduced motion, unchanged supplied university/event artwork and a generated app mark.
+
+Ruling: the supported Sites preview supervisor failed before startup with a mount-permission error; do not improvise another browser path. Functional DOM/storage checks continue, but rendered desktop/mobile visual QA is unverified. Cost if wrong: layout defects may remain until the user's phone/laptop trial.
+
+Task 4 in progress — independent review, fixture-only cleanup, real protected import, private dashboard publication and repository push remain.
+
+Final independent review: three Important findings and two Minor findings. One fix pass addressed all five; none deferred. Regression checks were first observed failing for name-only eligibility changes, delayed identity restoration, concurrent browser revision rollback and unbounded request buffering. The fixes preserve all payment fields, guard browser/native auth responses by session generation, compare revision/receipts inside the IndexedDB write transaction, cancel oversized streams and return the initial authentication method. Local suite 43/43 passed with the actual workbook test enabled; SQLite fault checks, Java live/platform checks and final APK build/signing passed. Native execution still requires a phone.
+
+Ruling: automatic review rejected a permanent synthetic-fixture deletion. Retain the exact two synthetic receipts and 23 attempts under reversible test_fixture flags, exclude them from live deltas/statistics, deactivate the five synthetic registrations and suspend the six synthetic checker accounts. No audit rows were removed by that rejected action. Cost if wrong: test rows remain available to privileged database maintenance and test checker names remain in the admin list.
+
+Ruling: automatic review rejected transferring the private student/payment workbook to the newly hosted Supabase endpoint without explicit destination approval. Leave the deployed live registration list empty and complete publication; the admin file-import interface is ready. Ask for that specific data-transfer approval after the release is concrete. Cost if wrong: live gate scanning cannot validate attendees until the organizer imports or authorizes the workbook.
+
+Hosted release check: admin authentication succeeds; the live registration/admission/duplicate/refused totals are zero; retained test receipts are excluded. Google provider remains disabled pending owner Google Cloud configuration.
+
+Supabase advisors: no error/warning findings. Nine informational RLS-without-policy findings are deliberate service-only tables with direct schema/table/RPC client grants revoked. Two informational unused-session-index findings reflect the fresh project. Reference explanations: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy and https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index .
+
+Private dashboard published successfully from Site source commit 94f50aa382060324f37fbdae45951f80b85fe97d at https://navrang-gate-admin.namubhai.chatgpt.site . APK 0.2.0 is 5,125,967 bytes and verifies with the original v2/v3 signing certificate, SHA-256 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce. Actual-workbook unit suite re-run on release source: 43 passed, zero skipped. Live admission behavior remains contingent on importing the organizer file; no real ticket was admitted during testing.

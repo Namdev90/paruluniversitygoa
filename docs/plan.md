@@ -1,3 +1,5 @@
+> Historical 0.1.0 document. The current shared-system specification is docs/LIVE-V02-DESIGN.md.
+
 # Navrang Offline Implementation Plan
 
 > **For agentic workers:** Use superpowers:executing-plans for inline execution and one fresh whole-project review.

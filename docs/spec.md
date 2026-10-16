@@ -1,3 +1,5 @@
+> Historical 0.1.0 document. The current shared-system specification is docs/LIVE-V02-DESIGN.md.
+
 # Navrang Offline prototype
 
 The user's 16 October 2026 instruction replaces the earlier server design: build a temporary, fully offline Android app now. No server, hotspot, account service, online checks or decoration pass is required. Each checker installs the APK, enters a name, imports the supplied-format Excel export, scans or types a ticket transaction ID and confirms an entry. One entry per ticket per device; no re-entry. Independent phones cannot share duplicate detection, and the app must say so visibly.

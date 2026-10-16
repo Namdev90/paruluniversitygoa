@@ -1,0 +1,173 @@
+-- Service-only API. No client is granted table or RPC access.
+create schema if not exists navrang_private;
+revoke all on schema navrang_private from public, anon, authenticated;
+grant usage on schema navrang_private to service_role;
+create table navrang_private.event (
+ id text primary key check(id='O9KL3'), data_revision bigint not null default 0,
+ source text not null default '', updated_at timestamptz not null default now()
+);
+insert into navrang_private.event(id) values('O9KL3');
+create table navrang_private.admin_credentials (
+ username text primary key, salt text not null, hash text not null
+);
+create table navrang_private.checkers (
+ id uuid primary key default gen_random_uuid(), google_id uuid unique,
+ name text not null check(length(name) between 1 and 128), email text not null default '',
+ method text not null check(method in ('google','code')), code_hash text unique,
+ active boolean not null default false, created_at timestamptz not null default now()
+);
+create table navrang_private.sessions (
+ hash text primary key, role text not null check(role in ('admin','checker')),
+ checker_id uuid references navrang_private.checkers(id), expires_at timestamptz not null,
+ created_at timestamptz not null default now()
+);
+create index sessions_expiry on navrang_private.sessions(expires_at);
+create index sessions_checker on navrang_private.sessions(checker_id);
+create table navrang_private.tickets (
+ id text primary key check(id ~ '^[A-Z0-9]{8}$'), name text not null,
+ amount numeric, quantity numeric, refund numeric, description text not null,
+ eligible boolean not null, reason text not null, active boolean not null default true,
+ updated_at timestamptz not null default now()
+);
+create table navrang_private.admissions (
+ event_id text not null references navrang_private.event(id), ticket_id text not null,
+ seq bigint generated always as identity unique, checker_id uuid references navrang_private.checkers(id),
+ at timestamptz not null default clock_timestamp(), receipt jsonb not null,
+ test_fixture boolean not null default false,
+ primary key(event_id,ticket_id)
+);
+create index admissions_checker on navrang_private.admissions(checker_id);
+create table navrang_private.attempts (
+ actor text not null, request_id uuid not null, ticket_id text not null, device_id text not null,
+ at timestamptz not null default now(), response jsonb not null,
+ test_fixture boolean not null default false,
+ primary key(actor,request_id)
+);
+create table navrang_private.imports (
+ revision bigint primary key, source text not null, at timestamptz not null default now(),
+ total integer not null, eligible integer not null, actor text not null
+);
+create table navrang_private.login_limits (
+ key text primary key, starts_at timestamptz not null, attempts integer not null
+);
+alter table navrang_private.event enable row level security;
+alter table navrang_private.admin_credentials enable row level security;
+alter table navrang_private.checkers enable row level security;
+alter table navrang_private.sessions enable row level security;
+alter table navrang_private.tickets enable row level security;
+alter table navrang_private.admissions enable row level security;
+alter table navrang_private.attempts enable row level security;
+alter table navrang_private.imports enable row level security;
+alter table navrang_private.login_limits enable row level security;
+grant select,insert,update,delete on all tables in schema navrang_private to service_role;
+grant usage,select on all sequences in schema navrang_private to service_role;
+
+create or replace function public.navrang_gate(p_action text,p jsonb default '{}'::jsonb,p_token text default '')
+returns jsonb language plpgsql security invoker set search_path = '' as $$
+declare
+ s navrang_private.sessions%rowtype; c navrang_private.checkers%rowtype;
+ e navrang_private.event%rowtype; t navrang_private.tickets%rowtype;
+ prior navrang_private.attempts%rowtype; a navrang_private.admissions%rowtype;
+ result jsonb; entries jsonb; records jsonb; stats jsonb; staff jsonb;
+ actor_key text; actor_name text; n integer; rev bigint; cursor_seq bigint; last_seq bigint;
+begin
+ if p_action='config' then
+  return jsonb_build_object('eventId','O9KL3','eventName','Navrang 2026','pollMs',2000);
+ elsif p_action='budget' then
+  insert into navrang_private.login_limits(key,starts_at,attempts) values(p->>'key',now(),1)
+  on conflict(key) do update set
+   attempts=case when navrang_private.login_limits.starts_at < now()-interval '5 minutes' then 1 else navrang_private.login_limits.attempts+1 end,
+   starts_at=case when navrang_private.login_limits.starts_at < now()-interval '5 minutes' then now() else navrang_private.login_limits.starts_at end
+  returning attempts into n;
+  return jsonb_build_object('allowed',n<=coalesce((p->>'limit')::integer,10));
+ elsif p_action='credentials' then
+  select jsonb_build_object('salt',salt,'hash',hash) into result from navrang_private.admin_credentials where username=p->>'username';
+  return coalesce(result,'{}'::jsonb);
+ elsif p_action='checker-credentials' then
+  select jsonb_build_object('id',id,'name',name,'active',active,'method',method) into result from navrang_private.checkers where code_hash=p->>'hash';
+  return coalesce(result,'{}'::jsonb);
+ elsif p_action='google-register' then
+  insert into navrang_private.checkers(google_id,name,email,method) values((p->>'id')::uuid,left(p->>'name',128),left(p->>'email',256),'google')
+  on conflict(google_id) do update set email=excluded.email
+  returning * into c;
+  return jsonb_build_object('id',c.id,'name',c.name,'active',c.active,'method',c.method);
+ elsif p_action='session-create' then
+  if p->>'role'='checker' then
+   select * into c from navrang_private.checkers where id=(p->>'checkerId')::uuid;
+   if not found then return jsonb_build_object('error','Checker not found.','status',403);end if;
+  end if;
+  insert into navrang_private.sessions(hash,role,checker_id,expires_at) values(p->>'hash',p->>'role',c.id,now()+interval '12 hours');
+  return jsonb_build_object('role',p->>'role','name',case when p->>'role'='admin' then 'namdev' else c.name end,'checkerId',c.id,'method',c.method,'active',case when p->>'role'='admin' then true else c.active end,'expiresAt',now()+interval '12 hours');
+ end if;
+ select * into s from navrang_private.sessions where hash=p_token and expires_at>now();
+ if not found then return jsonb_build_object('error','Sign in again. Your session expired.','status',401);end if;
+ if s.role='checker' then select * into c from navrang_private.checkers where id=s.checker_id;end if;
+ actor_key=coalesce(c.id::text,'admin'); actor_name=case when s.role='admin' then 'namdev' else c.name end;
+ if p_action='logout' then delete from navrang_private.sessions where hash=p_token;return jsonb_build_object('signedOut',true);end if;
+ if p_action='me' then return jsonb_build_object('role',s.role,'name',actor_name,'checkerId',c.id,'method',c.method,'active',s.role='admin' or coalesce(c.active,false),'expiresAt',s.expires_at);end if;
+ if s.role='checker' and not coalesce(c.active,false) then return jsonb_build_object('error','Your checker account needs admin approval or has been suspended.','status',403);end if;
+ if p_action in ('import','upsert','staff-create','staff-update','admin-password') and s.role<>'admin' then return jsonb_build_object('error','Administrator access required.','status',403);end if;
+
+ if p_action='staff-create' then
+  insert into navrang_private.checkers(name,method,code_hash,active) values(left(trim(p->>'name'),128),'code',p->>'hash',true) returning * into c;
+  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'name',c.name,'active',c.active,'method',c.method));
+ elsif p_action='staff-update' then
+  update navrang_private.checkers set active=(p->>'active')::boolean where id=(p->>'id')::uuid returning * into c;
+  if not found then return jsonb_build_object('error','Checker not found.','status',404);end if;
+  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'name',c.name,'active',c.active,'method',c.method));
+ elsif p_action='admin-password' then
+  update navrang_private.admin_credentials set salt=p->>'salt',hash=p->>'hash' where username='namdev';
+  delete from navrang_private.sessions where role='admin' and hash<>p_token;
+  return jsonb_build_object('changed',true);
+ elsif p_action in ('import','upsert') then
+  select * into e from navrang_private.event where id='O9KL3' for update;
+  if p_action='import' then update navrang_private.tickets set active=false where active;end if;
+  insert into navrang_private.tickets(id,name,amount,quantity,refund,description,eligible,reason,active,updated_at)
+   select x.id,x.name,x.amount,x.quantity,x.refund,x.description,x.eligible,x.reason,true,now()
+   from jsonb_to_recordset(p->'records') as x(id text,name text,amount numeric,quantity numeric,refund numeric,description text,eligible boolean,reason text)
+  on conflict(id) do update set name=excluded.name,amount=excluded.amount,quantity=excluded.quantity,refund=excluded.refund,description=excluded.description,eligible=excluded.eligible,reason=excluded.reason,active=true,updated_at=now();
+  update navrang_private.event set data_revision=data_revision+1,source=left(coalesce(p->>'source','Manual update'),200),updated_at=now() where id='O9KL3' returning data_revision into rev;
+  insert into navrang_private.imports(revision,source,total,eligible,actor)
+   select rev,left(coalesce(p->>'source','Manual update'),200),count(*),count(*) filter(where eligible),actor_name from navrang_private.tickets where active;
+  return jsonb_build_object('dataRevision',rev,'saved',jsonb_array_length(p->'records'));
+ elsif p_action='checkin' then
+  select * into e from navrang_private.event where id='O9KL3' for update;
+  select * into prior from navrang_private.attempts where actor=actor_key and request_id=(p->>'requestId')::uuid;
+  if found then
+   if prior.ticket_id<>p->>'ticketId' or prior.device_id<>p->>'deviceId' then return jsonb_build_object('error','This request ID was already used for another scan.','status',409);end if;
+   return prior.response;
+  end if;
+  select * into a from navrang_private.admissions where event_id='O9KL3' and ticket_id=p->>'ticketId';
+  if found then result=a.receipt||jsonb_build_object('code','duplicate');
+  else
+   select * into t from navrang_private.tickets where id=p->>'ticketId' and active;
+   if not found then result=jsonb_build_object('code','not_found','id',p->>'ticketId','message','Not in the current registration list. Visit the help desk.');
+   elsif not t.eligible then result=jsonb_build_object('code','blocked','id',t.id,'record',to_jsonb(t)-'updated_at','message',t.reason);
+   else
+    insert into navrang_private.admissions(event_id,ticket_id,checker_id,receipt) values('O9KL3',t.id,s.checker_id,'{}') returning * into a;
+    result=jsonb_build_object('code','admitted','id',t.id,'record',to_jsonb(t)-'updated_at','entry',jsonb_build_object('ticketId',t.id,'name',t.name,'checker',actor_name,'checkerId',s.checker_id,'deviceId',p->>'deviceId','at',a.at,'seq',a.seq,'source',e.source));
+    update navrang_private.admissions set receipt=result where event_id='O9KL3' and ticket_id=t.id;
+   end if;
+  end if;
+  insert into navrang_private.attempts(actor,request_id,ticket_id,device_id,response) values(actor_key,(p->>'requestId')::uuid,p->>'ticketId',p->>'deviceId',result);
+  return result;
+ elsif p_action='sync' then
+  select * into e from navrang_private.event where id='O9KL3';
+  if coalesce((p->>'dataRevision')::bigint,-1)<>e.data_revision then
+   select coalesce(jsonb_agg(to_jsonb(ts)-'active'-'updated_at' order by ts.id),'[]') into records from navrang_private.tickets ts where ts.active;
+  end if;
+  select coalesce(jsonb_agg(z.receipt->'entry' order by z.seq),'[]'),coalesce(max(z.seq),coalesce((p->>'afterSeq')::bigint,0)) into entries,cursor_seq
+   from (select ad.seq,ad.receipt from navrang_private.admissions ad where not ad.test_fixture and ad.seq>coalesce((p->>'afterSeq')::bigint,0) order by ad.seq limit 500) z;
+  select coalesce(max(seq),0) into last_seq from navrang_private.admissions where not test_fixture;
+  select jsonb_build_object('total',count(*),'eligible',count(*) filter(where ti.eligible),'blocked',count(*) filter(where not ti.eligible),'remaining',count(*) filter(where ti.eligible and not exists(select 1 from navrang_private.admissions ad where not ad.test_fixture and ad.ticket_id=ti.id))) into stats from navrang_private.tickets ti where ti.active;
+  stats=stats||jsonb_build_object('admitted',(select count(*) from navrang_private.admissions where not test_fixture),'lastMinute',(select count(*) from navrang_private.admissions where not test_fixture and at>now()-interval '1 minute'),'lastFiveMinutes',(select count(*) from navrang_private.admissions where not test_fixture and at>now()-interval '5 minutes'),'duplicateAttempts',(select count(*) from navrang_private.attempts where not test_fixture and response->>'code'='duplicate'),'blockedAttempts',(select count(*) from navrang_private.attempts where not test_fixture and response->>'code' in ('blocked','not_found')));
+  if s.role='admin' then
+   select coalesce(jsonb_agg(jsonb_build_object('id',ck.id,'name',ck.name,'email',ck.email,'method',ck.method,'active',ck.active,'entries',(select count(*) from navrang_private.admissions ad where not ad.test_fixture and ad.checker_id=ck.id)) order by ck.created_at),'[]') into staff from navrang_private.checkers ck;
+  end if;
+  return jsonb_build_object('dataRevision',e.data_revision,'source',e.source,'updatedAt',e.updated_at,'records',records,'entries',entries,'cursor',cursor_seq,'hasMore',cursor_seq<last_seq,'stats',stats,'checkers',staff);
+ end if;
+ return jsonb_build_object('error','Unknown operation.','status',400);
+end;
+$$;
+revoke all on function public.navrang_gate(text,jsonb,text) from public,anon,authenticated;
+grant execute on function public.navrang_gate(text,jsonb,text) to service_role;

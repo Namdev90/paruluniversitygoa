@@ -1,3 +1,5 @@
+> Historical 0.1.0 document. The current shared-system specification is docs/LIVE-V02-DESIGN.md.
+
 # Prototype implementation record
 
 User's file-only prototype instruction supersedes the previous server proposal and explicitly requests implementation now. Implemented inline with one independent final review.

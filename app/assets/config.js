@@ -1,0 +1,2 @@
+// Public connection information. Privileged credentials are never bundled.
+globalThis.NavrangConfig={"api":"https://mzesveurjzxjybkejqmx.supabase.co/functions/v1/navrang-gate","project":"https://mzesveurjzxjybkejqmx.supabase.co","publishableKey":"sb_publishable_OZmo_lkHHNdp4xzWRUrjJg_63yvwxcR","oauthRedirect":"navranggate://auth-callback","pollMs":2000};
