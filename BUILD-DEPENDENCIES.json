@@ -1,0 +1,19 @@
+[
+  {
+    "package": "platforms;android-35",
+    "url": "https://dl.google.com/android/repository/platform-35_r02.zip",
+    "size": 64273788,
+    "sha1": "0bb560a90a7a2cbd0dd8348224d518b638fe7949"
+  },
+  {
+    "package": "build-tools;35.0.0",
+    "url": "https://dl.google.com/android/repository/build-tools_r35_linux.zip",
+    "size": 61958799,
+    "sha1": "2cfaa0bbb2336e9ec18ed3ecea84fa2e2af607bc"
+  },
+  {
+    "package": "ZXing core 3.5.3",
+    "url": "https://repo.maven.apache.org/maven2/com/google/zxing/core/3.5.3/core-3.5.3.jar",
+    "sha1": "ca1349214a356cd7958651b2d5a0e1f3811a9c4b"
+  }
+]

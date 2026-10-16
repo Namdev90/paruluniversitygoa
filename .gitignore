@@ -1,0 +1,15 @@
+.build/
+node_modules/
+dist/
+.sdd/
+.research/
+signing/
+test-data/
+*.xlsx
+*.csv
+*.p12
+*.jks
+*.keystore
+.env
+.env.*
+Navrang-Backup*.json
