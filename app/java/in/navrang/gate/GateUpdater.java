@@ -45,10 +45,77 @@ public final class GateUpdater {
  }
  private static android.content.pm.Signature[] signatures(PackageInfo p){return Build.VERSION.SDK_INT>=28&&p.signingInfo!=null?p.signingInfo.getApkContentsSigners():p.signatures;}
  private static void verify(Context c,File apk,JSONObject r)throws Exception{validate(r);if(!UpdatePolicy.hash(apk).equals(r.getString("sha256")))throw new IOException("Update checksum mismatch.");int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;PackageManager pm=c.getPackageManager();PackageInfo remote=pm.getPackageArchiveInfo(apk.getPath(),flags),installed=pm.getPackageInfo(c.getPackageName(),flags);if(remote==null||!c.getPackageName().equals(remote.packageName)||remote.versionCode!=r.getInt("versionCode")||remote.versionCode<=installed.versionCode)throw new IOException("Unexpected app update.");android.content.pm.Signature[] a=signatures(remote),b=signatures(installed);if(a==null||b==null||a.length!=1||b.length!=1||!Arrays.equals(a[0].toByteArray(),b[0].toByteArray()))throw new IOException("Update signing certificate differs.");}
- public static void install(Activity activity){final Context c=activity.getApplicationContext();installerActivity=new java.lang.ref.WeakReference<>(activity);if(scanActive){message="Close the scanner before installing.";publish(c);return;}try{if(confirmation!=null){Intent next=new Intent(confirmation);confirmation=null;activity.startActivity(next);return;}if(!status(c).optBoolean("ready"))throw new IOException();if(Build.VERSION.SDK_INT>=26&&!c.getPackageManager().canRequestPackageInstalls()){new AlertDialog.Builder(activity).setTitle("Allow Navrang Gate updates").setMessage("Allow this app to install its signed updates, then return and tap Install update.").setNegativeButton("Later",null).setPositiveButton("Open Android settings",(d,w)->activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,android.net.Uri.parse("package:"+c.getPackageName())))).show();return;}
-   message="Verifying update…";publish(c);work.execute(()->{PackageInstaller.Session session=null;try{JSONObject r=release(c);verify(c,file(c),r);PackageInstaller pi=c.getPackageManager().getPackageInstaller();PackageInstaller.SessionParams p=new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);p.setAppPackageName(c.getPackageName());p.setSize(file(c).length());if(Build.VERSION.SDK_INT>=31)p.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED);int id=pi.createSession(p);session=pi.openSession(id);try(InputStream in=new FileInputStream(file(c));OutputStream out=session.openWrite("Navrang.apk",0,file(c).length())){byte[] b=new byte[32768];int n;while((n=in.read(b))!=-1)out.write(b,0,n);session.fsync(out);}Intent callback=new Intent(c,UpdateReceiver.class);int flags=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);PendingIntent result=PendingIntent.getBroadcast(c,id,callback,flags);session.commit(result.getIntentSender());message="Confirm the update in Android to finish.";}catch(Exception e){message="Could not install this update. Retry from your account.";if(session!=null)try{session.abandon();}catch(Exception ignored){}}finally{if(session!=null)session.close();publish(c);}});
-  }catch(Exception e){message="No verified update is ready yet.";publish(c);}}
- public static void installationResult(Context c,Intent intent){int state=intent.getIntExtra(PackageInstaller.EXTRA_STATUS,PackageInstaller.STATUS_FAILURE);if(state==PackageInstaller.STATUS_PENDING_USER_ACTION){confirmation=intent.getParcelableExtra(Intent.EXTRA_INTENT);message="Tap Install update to open Android confirmation.";final Activity foreground=installerActivity.get();if(foreground!=null&&!foreground.isFinishing()&&!foreground.isDestroyed()&&foreground.hasWindowFocus()&&confirmation!=null){final Intent action=new Intent(confirmation);ui.post(()->{try{foreground.startActivity(action);confirmation=null;}catch(Exception e){notifyReady(c,true);}});}else notifyReady(c,true);}else if(state==PackageInstaller.STATUS_SUCCESS){confirmation=null;message="Update installed. Reopen Navrang Gate.";}else{confirmation=null;message="Installation was not completed. Confirmed entries remain safely on the server.";}publish(c);}
+ // Recheck at each install boundary; the pending outbox exists only for this process.
+ private static boolean installationBlocked(Context c){
+  if(scanActive){message="Close the scanner before installing.";return true;}
+  try{if(GateRuntime.get(c).db.pendingCount()!=0){message="Wait for unconfirmed entries before installing. Keep this app open and connected.";return true;}}
+  catch(Exception e){message="Could not check unconfirmed entries. Keep this app open and retry before installing.";return true;}
+  return false;
+ }
+ private static boolean launchConfirmation(Context c,Activity activity)throws Exception{
+  GateDb db=GateRuntime.get(c).db;
+  synchronized(db){
+   if(installationBlocked(c)||activity.isFinishing()||activity.isDestroyed()||!activity.hasWindowFocus()||confirmation==null)return false;
+   Intent next=confirmation;activity.startActivity(new Intent(next));message="Confirm the update in Android to finish.";return true;
+  }
+ }
+ public static void install(Activity activity){
+  final Context c=activity.getApplicationContext();installerActivity=new java.lang.ref.WeakReference<>(activity);
+  if(installationBlocked(c)){publish(c);return;}
+  try{
+   if(confirmation!=null){launchConfirmation(c,activity);publish(c);return;}
+   if(!status(c).optBoolean("ready"))throw new IOException();
+   if(Build.VERSION.SDK_INT>=26&&!c.getPackageManager().canRequestPackageInstalls()){
+    new AlertDialog.Builder(activity).setTitle("Allow Navrang Gate updates").setMessage("Allow this app to install its signed updates, then return and tap Install update.").setNegativeButton("Later",null).setPositiveButton("Open Android settings",(d,w)->activity.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,android.net.Uri.parse("package:"+c.getPackageName())))).show();return;
+   }
+   message="Verifying update…";publish(c);
+   work.execute(()->{
+    PackageInstaller.Session session=null;GateDb installDb=null;int id=-1;
+    try{
+     JSONObject r=release(c);verify(c,file(c),r);PackageInstaller pi=c.getPackageManager().getPackageInstaller();
+     PackageInstaller.SessionParams p=new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);p.setAppPackageName(c.getPackageName());p.setSize(file(c).length());if(Build.VERSION.SDK_INT>=31)p.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED);
+     id=pi.createSession(p);session=pi.openSession(id);
+     try(InputStream in=new FileInputStream(file(c));OutputStream out=session.openWrite("Navrang.apk",0,file(c).length())){byte[] b=new byte[32768];int n;while((n=in.read(b))!=-1)out.write(b,0,n);session.fsync(out);}
+     Intent callback=new Intent(c,UpdateReceiver.class);int flags=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);PendingIntent result=PendingIntent.getBroadcast(c,id,callback,flags);
+     GateDb db=GateRuntime.get(c).db;installDb=db;
+     synchronized(db){
+      // queue() uses this same lock, so a request cannot appear between this check and commit.
+      if(installationBlocked(c)){session.abandon();return;}
+      // Keep admissions fenced after releasing this lock: Android may replace the process later.
+      if(!db.pauseForUpdate(id)){message="Finish or cancel the current Android app update before starting another.";session.abandon();return;}
+      session.commit(result.getIntentSender());
+     }
+     message="Confirm the update in Android to finish.";
+    }catch(Exception e){
+     message="Could not install this update. Retry from your account.";boolean abandoned=session==null;
+     if(session!=null)try{session.abandon();abandoned=true;}catch(Exception ignored){}
+     if(abandoned&&installDb!=null)installDb.resumeAfterUpdate(id);
+    }
+    finally{if(session!=null)session.close();publish(c);}
+   });
+  }catch(Exception e){message="No verified update is ready yet.";publish(c);}
+ }
+ public static void installationResult(Context c,Intent intent){
+  int state=intent.getIntExtra(PackageInstaller.EXTRA_STATUS,Integer.MIN_VALUE),id=intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID,-1);
+  if(state!=PackageInstaller.STATUS_PENDING_USER_ACTION&&state<0)return;
+  try{
+   GateDb db=GateRuntime.get(c).db;
+   synchronized(db){
+    // A delayed result from an older session cannot release a newer admission fence.
+    if(!db.isUpdateSession(id))return;
+    if(state!=PackageInstaller.STATUS_PENDING_USER_ACTION)db.resumeAfterUpdate(id);
+   }
+  }catch(Exception e){message="Could not check the Android app update. Finish or cancel it before scanning.";publish(c);return;}
+  if(state==PackageInstaller.STATUS_PENDING_USER_ACTION){
+   confirmation=intent.getParcelableExtra(Intent.EXTRA_INTENT);message="Tap Install update to open Android confirmation.";
+   final Activity foreground=installerActivity.get();
+   if(foreground!=null&&!foreground.isFinishing()&&!foreground.isDestroyed()&&foreground.hasWindowFocus()&&confirmation!=null){
+    ui.post(()->{try{if(!launchConfirmation(c,foreground))notifyReady(c,true);}catch(Exception e){notifyReady(c,true);}finally{publish(c);}});
+   }else notifyReady(c,true);
+  }else if(state==PackageInstaller.STATUS_SUCCESS){confirmation=null;message="Update installed. Reopen Navrang Gate.";}
+  else{confirmation=null;message="Installation was not completed. Confirmed entries remain safely on the server.";}
+  publish(c);
+ }
  private static void notifyReady(Context c){notifyReady(c,false);}
- private static void notifyReady(Context c,boolean confirm){try{NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);if(!nm.areNotificationsEnabled())return;JSONObject r=release(c);if(!confirm&&prefs(c).getInt("notified",0)==r.optInt("versionCode"))return;if(Build.VERSION.SDK_INT>=26)nm.createNotificationChannel(new NotificationChannel(CHANNEL,"Navrang app updates",NotificationManager.IMPORTANCE_DEFAULT));Intent open=confirmation!=null?new Intent(confirmation):new Intent(c,MainActivity.class);open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);PendingIntent tap=PendingIntent.getActivity(c,0,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);Notification.Builder b=Build.VERSION.SDK_INT>=26?new Notification.Builder(c,CHANNEL):new Notification.Builder(c);b.setSmallIcon(android.R.drawable.stat_sys_download_done).setContentTitle("Navrang Gate "+r.optString("versionName")+" is ready").setContentText("Tap to install the verified update when your station is idle.").setContentIntent(tap).setAutoCancel(true);nm.notify(NOTICE,b.build());prefs(c).edit().putInt("notified",r.optInt("versionCode")).apply();}catch(Exception ignored){}}
+ private static void notifyReady(Context c,boolean confirm){try{NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);if(!nm.areNotificationsEnabled())return;JSONObject r=release(c);if(!confirm&&prefs(c).getInt("notified",0)==r.optInt("versionCode"))return;if(Build.VERSION.SDK_INT>=26)nm.createNotificationChannel(new NotificationChannel(CHANNEL,"Navrang app updates",NotificationManager.IMPORTANCE_DEFAULT));Intent open=new Intent(c,MainActivity.class);open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);PendingIntent tap=PendingIntent.getActivity(c,0,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);Notification.Builder b=Build.VERSION.SDK_INT>=26?new Notification.Builder(c,CHANNEL):new Notification.Builder(c);b.setSmallIcon(android.R.drawable.stat_sys_download_done).setContentTitle("Navrang Gate "+r.optString("versionName")+" is ready").setContentText("Tap to install the verified update when your station is idle.").setContentIntent(tap).setAutoCancel(true);nm.notify(NOTICE,b.build());prefs(c).edit().putInt("notified",r.optInt("versionCode")).apply();}catch(Exception ignored){}}
 }

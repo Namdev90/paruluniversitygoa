@@ -1,9 +1,9 @@
 (function(){
  'use strict';
  const C=GateClient,L=NavrangLive,$=id=>document.getElementById(id);
- let view='home',adminTab='registrations',page=0,entryPage=0,recentPage=0,crewPage=0,selected=null,syncBusy=false,resultTimer=null,pendingTimer=null,held=false,lastResult=null,queuedResults=[],introEnded=false,staffSelected=null;
+ let view='home',adminTab='registrations',page=0,entryPage=0,recentPage=0,crewPage=0,selected=null,syncBusy=false,resultTimer=null,queueTimer=null,held=false,lastResult=null,queuedResults=[],introEnded=false,staffSelected=null;
  if(location.hash==='#desk')C.destination?.('desk');
- const pendingBegins=new Map(),pendingAcknowledged=new Set();
+ const pendingResults=new Map(),pendingAcknowledged=new Set();
  let model=emptyModel(),uiGeneration=0,pollRun=0,previousRole=C.profile()?.role||'';function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
  const titles={home:'Navrang Gate',entries:'Entry log',account:'Your station',admin:'Admin console',login:'Navrang Gate',desk:'Help Desk',station:'Choose your station'};
  const initials=name=>(name||'NG').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
@@ -56,21 +56,47 @@
  function paginate(list,current,label,prev,next,size=pageSize()){const pages=Math.max(1,Math.ceil(list.length/size)),p=Math.min(Math.max(0,current),pages-1);$(label).textContent=(p+1)+' / '+pages;$(prev).disabled=p===0;$(next).disabled=p+1>=pages;return{page:p,rows:list.slice(p*size,p*size+size)}}
  function fillEntries(target,entries){const body=$(target);body.replaceChildren();for(const e of entries){const tr=node('tr');for(const value of [e.name,e.ticketId,e.checker,when(e.at)]){const cell=node('td');cell.append(node('span',value,'cell-text'));tr.append(cell)}body.append(tr)}}
  async function renderLocal(){const generation=uiGeneration;try{const s=await C.local('snapshot');if(generation!==uiGeneration||!C.profile())return;const admin=isAdmin();$('home-total').textContent=admin?s.stats.total??s.localCount:s.stats.ownScans??'—';$('home-entered').textContent=admin?s.stats.admitted??'—':s.stats.totalEntries??'—';$('home-remaining').textContent=admin?s.stats.remaining??'—':'—';$('desk-own-scans').textContent=s.stats.ownScans??'—';$('desk-total-entries').textContent=s.stats.totalEntries??'—';$('cache-count').textContent=admin?s.localCount:0;$('pending-count').textContent=s.pending;$('sync-time').textContent=s.lastSync?'Synced '+when(s.lastSync)+' IST':'Awaiting shared update';const entries=admin?s.entries||[]:[],rows=paginate(entries,recentPage,'recent-page','recent-prev','recent-next');recentPage=rows.page;fillEntries('recent-entries',rows.rows);$('entries-empty').hidden=!!entries.length}catch(e){if(generation===uiGeneration)notice(e.message)}}
- function releaseResult(){if(held&&lastResult?.code==='pending')pendingAcknowledged.add(lastResult.id||'*');clearTimeout(resultTimer);clearTimeout(pendingTimer);held=false;lastResult=null;close('result-popup');renderAuth();const next=queuedResults.shift(),generation=uiGeneration;if(next)setTimeout(()=>{if(generation===uiGeneration)result(next)},200)}
+ function clearPending(id){clearTimeout(pendingResults.get(id)?.timer);pendingResults.delete(id);queuedResults=queuedResults.filter(r=>r.code!=='pending'||r.id!==id)}
+ function handoffQueuedResult(){
+  if(held||queueTimer!==null||!queuedResults.length)return;
+  const generation=uiGeneration;
+  queueTimer=setTimeout(()=>{queueTimer=null;if(generation===uiGeneration&&!held){const next=queuedResults.shift();if(next)result(next)}},200);
+ }
+ function releaseResult(){
+  if(held&&lastResult?.code==='pending'&&lastResult.id){pendingAcknowledged.add(lastResult.id);clearPending(lastResult.id)}
+  clearTimeout(resultTimer);held=false;lastResult=null;close('result-popup');renderAuth();handoffQueuedResult();
+ }
  function holdResult(){if(!lastResult)return;if(lastResult.code==='pending')feedback('pending');held=true;show('result-popup',true);$('help-desk').hidden=false;$('close-result').textContent='Send to help desk · acknowledge';renderAuth()}
  function result(r){
   if(!canScan())return;
-  const pendingKey=r.id||'*';if(r.code==='pending'&&pendingAcknowledged.has(pendingKey))return;if(r.code==='pending'){if(!pendingBegins.has(pendingKey))pendingBegins.set(pendingKey,Date.now())}else{pendingBegins.delete(pendingKey);pendingAcknowledged.delete(pendingKey)}
-  if(held){if(r.id&&r.id===lastResult?.id&&lastResult?.code==='pending'){held=false;close('result-popup')}else{if(r.code!=='pending')queuedResults.push(r);return}}
-  clearTimeout(resultTimer);clearTimeout(pendingTimer);lastResult=r;const good=r.code==='admitted',dup=r.code==='duplicate',pending=r.code==='pending',popup=$('result-popup');
+  const pending=r.code==='pending';
+  if(pending&&r.id){
+   if(pendingAcknowledged.has(r.id))return;
+   let warning=pendingResults.get(r.id);
+   if(warning)warning.result=r;
+   else{
+    warning={result:r,expired:false,timer:null};pendingResults.set(r.id,warning);
+    // A ticket owns its deadline, even while a different result is displayed.
+    warning.timer=setTimeout(()=>{warning.timer=null;warning.expired=true;if(pendingResults.get(r.id)===warning)result(warning.result)},2500);
+   }
+  }else if(r.id){clearPending(r.id);pendingAcknowledged.delete(r.id)}
+  const overdue=pending&&r.id&&pendingResults.get(r.id).expired;
+  if(held){
+   if(!pending&&r.id&&r.id===lastResult?.id&&lastResult?.code==='pending'){held=false;close('result-popup')}
+   else{
+    if(!pending||overdue&&r.id!==lastResult?.id){const index=pending?queuedResults.findIndex(q=>q.code==='pending'&&q.id===r.id):-1;if(index<0)queuedResults.push(r);else queuedResults[index]=r}
+    return;
+   }
+  }
+  clearTimeout(resultTimer);lastResult=r;const good=r.code==='admitted',dup=r.code==='duplicate',popup=$('result-popup');
   popup.dataset.state=good?'confirmed':pending?'pending':dup?'duplicate':'issue';$('result-symbol').textContent=good?'✓':pending?'…':dup?'↺':'!';popup.classList.toggle('pending',pending);popup.classList.toggle('error',!good&&!pending);$('help-desk').hidden=true;
   $('result-kicker').textContent=good?'SERVER RECEIPT SAVED':pending?'AWAITING SERVER':'HELP DESK REQUIRED';
   $('result-title').textContent=good?'✓ Entry confirmed':dup?'Already entered':pending?'Awaiting confirmation':'Entry not allowed';
   const e=r.entry,record=r.record;$('result-name').textContent=e?.name||record?.name||r.id||'Ticket issue';
   $('result-details').textContent=e?[(r.id||e.ticketId)+(record?' · '+money(record.amount):''),e.checker+' · '+when(e.at)+' IST',good?'Entry saved. Ready for the next QR.':'One entry only. No re-entry.'].join('\n'):r.message||'The ticket could not be verified.';
   $('close-result').textContent=pending?'Close · still not confirmed':'Next student';show('result-popup',false);if(!pending)feedback(good?'success':dup?'duplicate':['invalid','not_found'].includes(r.code)?'invalid':'issue');
-  if(!good&&!pending)holdResult();else if(good)resultTimer=setTimeout(releaseResult,1500);else pendingTimer=setTimeout(()=>{if(lastResult===r)holdResult()},Math.max(0,2500-(Date.now()-pendingBegins.get(pendingKey))));
-  renderLocal();if(isAdmin())renderAdmin();
+  if(!good&&!pending||overdue)holdResult();else if(good)resultTimer=setTimeout(releaseResult,1500);
+  renderAuth();renderLocal();if(isAdmin())renderAdmin();handoffQueuedResult();
  }
  function filteredRecords(){const m=data(),q=$('student-search').value.trim().toLowerCase(),filter=$('payment-filter').value;return Object.values(m.records).filter(r=>(!q||(r.name+' '+r.id).toLowerCase().includes(q))&&(filter==='all'||filter==='eligible'&&r.eligible||filter==='blocked'&&!r.eligible||filter==='entered'&&m.entries[r.id])).sort((a,b)=>a.name.localeCompare(b.name))}
  function renderRegistrations(){const records=filteredRecords(),s=paginate(records,page,'page-number','previous-page','next-page');page=s.page;const body=$('registration-rows');body.replaceChildren();for(const r of s.rows){const tr=node('tr'),name=node('td'),open=node('button',r.name,'table-link');open.type='button';open.onclick=()=>showStudent(r.id);name.append(open,node('span',r.id,'cell-secondary'));const pay=node('td');pay.append(node('span',r.eligible?'Paid':'Issue','badge '+(r.eligible?'green':'red')));const status=node('td');status.append(node('span',data().entries[r.id]?'In':'—','badge '+(data().entries[r.id]?'green':'')));const action=node('td'),edit=node('button','Edit','table-link');edit.onclick=()=>editTicket(r);action.append(edit);tr.append(name,pay,node('td',money(r.amount)),status,action);body.append(tr)}$('registration-count').textContent=records.length+' results'}
@@ -121,7 +147,7 @@
  $('show-admin-login').onclick=()=>{$('signin-panel').hidden=true;$('admin-signin').hidden=false};$('show-checker-login').onclick=()=>{$('admin-signin').hidden=true;$('signin-panel').hidden=false};
  $('google-signin').onclick=()=>busy($('google-signin'),()=>C.googleLogin());$('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
  function clearSessionView(){
-  uiGeneration++;pollRun++;syncBusy=false;model=emptyModel();adminPaint='';selected=staffSelected=null;page=entryPage=recentPage=crewPage=0;queuedResults=[];held=false;lastResult=null;pendingBegins.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(pendingTimer);clearTimeout(noticeTimer);
+  uiGeneration++;pollRun++;syncBusy=false;model=emptyModel();adminPaint='';selected=staffSelected=null;page=entryPage=recentPage=crewPage=0;queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);
   for(const d of document.querySelectorAll('dialog[open]'))close(d.id);
   for(const id of ['checker-form','admin-form','manual-form','name-form','ticket-editor','create-checker-form','staff-access-form','change-password-form'])$(id).reset();
   for(const o of $('edit-status').querySelectorAll('[data-custom]'))o.remove();

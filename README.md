@@ -67,7 +67,7 @@ After the opening, Android requests camera and, on Android13+, notifications onc
 
 ## Automatic app updates
 
-From 0.4 onward, the app checks a repository release manifest, downloads signed updates in the background when allowed, and shows an in-app banner and optional notification. It waits/yields while the scanner is active. Account contains status, manual Check, notification permission and automatic-download controls.
+From 0.4 onward, the app checks a repository release manifest, downloads signed updates in the background when allowed, and shows an in-app banner and optional notification. It waits/yields while the scanner is active. Installation also waits for all unconfirmed check-ins to finish, including manual submissions after the camera closes. It rechecks before committing the installer session and opening Android confirmation; update notifications return to the app for these checks. New scan submissions are explicitly rejected while Android installation is pending, and resume when it finishes or is cancelled. Keep the app open and connected until pending work resolves. Account contains status, manual Check, notification permission and automatic-download controls.
 
 APK size/hash, package name, higher version code and the installed signing certificate are checked before installation. Android may ask to allow installs from Navrang Gate and requires its install confirmation in this workflow. No silent forced replacement or live downloaded JavaScript is used. Entry data remains in the same app package.
 
@@ -75,7 +75,7 @@ See [app update publishing](docs/APP-UPDATES.md). Increase `release.json`, build
 
 ## Checks and limits
 
-Run `npm ci --ignore-scripts`, then `npm test`. Set `NAVRANG_TEST_XLSX` and `NAVRANG_LATEST_XLSX` to the private organizer files for real-file regressions. `python tests/sqlite-check.py` checks the in-memory schema, transaction failure and request deduplication. Native QR, camera-hint, latch/PKCE/platform and update-channel policy checks are in `tests/qr`.
+Run `npm ci --ignore-scripts`, then `npm test`. Run `npm run test:native` with Python 3 and a JDK for the native runtime, scanner-result/queue and updater-pending regression harnesses. These use deterministic platform fakes and do not install an APK. Set `NAVRANG_TEST_XLSX` and `NAVRANG_LATEST_XLSX` to the private organizer files for real-file regressions. `python tests/sqlite-check.py` checks the in-memory schema, transaction failure and request deduplication. Native QR, camera-hint, latch/PKCE/platform and update-channel policy checks are in `tests/qr`.
 
 This iteration passed 96 unit/DOM/data checks including Help Desk retries, role controls, session cleanup, CSV formula protection and the actual workbook comparison. A rollback-only database suite verifies authorization, contact isolation, versioned edits, approval, duplicate prevention, import preservation and auditing; it leaves no attendee fixtures. Ten native OAuth callback cases cover query/fragment errors, state checks, duplicate parameters and credential-safe messages. Ten previously passed native update-policy cases cover the existing update channel. Previously established QR decoding coverage includes exact, rotated, inverted, low-contrast, landscape and blank frames. The signed APK and public manifest/hash are checked before handoff. No mutating hosted admission test is run against real attendees.
 

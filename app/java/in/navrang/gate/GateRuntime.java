@@ -44,18 +44,27 @@ public final class GateRuntime {
  public void submit(String id){
   try{JSONObject auth=sessions.read();if(!GateSession.canScan(auth)||("google".equals(auth.getJSONObject("profile").optString("method"))&&!auth.getJSONObject("profile").optBoolean("nameConfirmed",true))){emit("result",safe("code","signed_out").put("message","Sign in with an approved checker account."));return;}
    JSONObject job=db.queue(id,GateSession.actor(auth));GateFeedback.play(app,"scan");JSONObject local=db.lookup(id);emit("result",new JSONObject().put("code","pending").put("id",id).put("record",local.opt("record")).put("message","Awaiting server confirmation. Temporary request stays in memory while this app is open."));drain();
+  }catch(GateDb.UpdateInProgressException e){
+   JSONObject blocked=message("update_in_progress","Finish or cancel the Android app update before scanning another ticket. Entry is NOT confirmed. Retry the same ticket afterward.");try{blocked.put("id",id);}catch(Exception ignored){}emit("result",blocked);
   }catch(Exception e){emit("result",message("storage_error","Could not queue the scan in memory. Entry is NOT confirmed. Retry with the same ticket."));}
  }
  public void drain(){
   if(!draining.compareAndSet(false,true))return;
-  entries.execute(()->{long drainGeneration=sessions.generation();try{
-   for(int n=0;n<20;n++){long generation=sessions.generation();JSONObject auth=sessions.read();if(!GateSession.canScan(auth))break;String actor=GateSession.actor(auth);JSONObject job=db.pending(actor);if(job==null)break;
+  entries.execute(()->{long drainGeneration=sessions.generation();JSONObject job=null;try{
+   for(int n=0;n<20;n++){long generation=sessions.generation();JSONObject auth=sessions.read();if(!GateSession.canScan(auth))break;String actor=GateSession.actor(auth);job=db.pending(actor);if(job==null)break;
     GateApi.Reply r=api.call("checkin",job,auth.optString("token"));
     if(generation!=sessions.generation()||!GateSession.canScan(sessions.read()))break;
-    if(r.status==200&&r.body.optBoolean("ok")){if(generation!=sessions.generation()||!GateSession.canScan(sessions.read()))break;db.finish(job,r.body);online=true;emit("result",r.body);emit("sync",db.snapshot());}
+    if(r.status==200&&r.body.optBoolean("ok")){if(generation!=sessions.generation()||!GateSession.canScan(sessions.read()))break;db.finish(job,r.body);job=null;online=true;emit("result",r.body);emit("sync",db.snapshot());}
     else{online=false;if(r.status==401){expireIfCurrent(generation,auth.optString("token"));break;}if(r.status==403)refresh();emit("result",new JSONObject().put("code","pending").put("id",job.optString("ticketId")).put("message",r.body.optString("error","Waiting for server. Your request is saved.")));break;}
    }
-  }catch(Exception e){online=false;if(drainGeneration==sessions.generation()&&GateSession.canScan(sessions.read()))emit("result",message("pending","Connection or device storage interrupted. Temporary request kept in memory for retry; entry is not confirmed."));}
+  }catch(Exception e){
+   online=false;if(drainGeneration==sessions.generation()&&GateSession.canScan(sessions.read())){
+    String text="Connection or device storage interrupted. Temporary request kept in memory for retry; entry is not confirmed.";
+    if(job!=null&&!job.optString("ticketId").isEmpty()){
+     JSONObject pending=message("pending",text);try{pending.put("id",job.optString("ticketId"));}catch(Exception ignored){}emit("result",pending);
+    }else emit("connection",safe("message","Connection or device storage interrupted. Keep this app open while pending requests retry."));
+   }
+  }
   finally{draining.set(false);}});
  }
  public boolean online(){return online;}

@@ -50,11 +50,24 @@ public final class GateDb extends SQLiteOpenHelper {
  }
  private JSONObject item(String table,String id)throws JSONException{try(Cursor c=getReadableDatabase().rawQuery("SELECT json FROM "+table+" WHERE id=?",new String[]{id})){return c.moveToFirst()?new JSONObject(c.getString(0)):null;}}
  private JSONArray list(String table,String order,String limit)throws JSONException{JSONArray out=new JSONArray();try(Cursor c=getReadableDatabase().rawQuery("SELECT json FROM "+table+" ORDER BY "+order+" "+limit,null)){while(c.moveToNext())out.put(new JSONObject(c.getString(0)));}return out;}
+ // Include every actor: any unresolved RAM-only request would be lost on app replacement.
+ public synchronized int pendingCount(){return count("outbox");}
+ private int updateSession=-1;
+ public static final class UpdateInProgressException extends IllegalStateException {
+  public UpdateInProgressException(){super("Finish or cancel the Android app update before scanning another ticket. This entry is not confirmed.");}
+ }
+ public synchronized boolean pauseForUpdate(int sessionId){
+  if(sessionId<0||updateSession!=-1||pendingCount()!=0)return false;
+  updateSession=sessionId;return true;
+ }
+ public synchronized boolean isUpdateSession(int sessionId){return sessionId>=0&&updateSession==sessionId;}
+ public synchronized void resumeAfterUpdate(int sessionId){if(isUpdateSession(sessionId))updateSession=-1;}
  public synchronized JSONObject snapshot()throws JSONException{
   return new JSONObject().put("deviceId",meta("deviceId","")).put("dataRevision",Long.parseLong(meta("dataRevision","-1"))).put("cursor",Long.parseLong(meta("cursor","0"))).put("source",meta("source","")).put("lastSync",meta("lastSync","")).put("stats",new JSONObject(meta("stats","{}"))).put("localCount",count("tickets")).put("pending",count("outbox")).put("legacyCount",count("legacy_entries")).put("entries",list("entries","seq DESC","LIMIT 15"));
  }
  public synchronized JSONObject lookup(String id)throws JSONException{return new JSONObject().put("record",item("tickets",id)).put("entry",item("entries",id)).put("legacyEntry",item("legacy_entries",id));}
  public synchronized JSONObject queue(String ticket,String actor)throws JSONException{
+  if(updateSession!=-1)throw new UpdateInProgressException();
   if(!ticket.matches("[A-Z0-9]{8}")||actor.isEmpty())throw new IllegalArgumentException("Sign in and scan an exact eight-character ticket ID.");
   SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
   try{try(Cursor c=db.rawQuery("SELECT body FROM outbox WHERE actor=? AND ticket_id=?",new String[]{actor,ticket})){if(c.moveToFirst()){JSONObject p=new JSONObject(c.getString(0));db.setTransactionSuccessful();return p;}}
