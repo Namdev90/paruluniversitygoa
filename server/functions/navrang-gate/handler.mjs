@@ -1,4 +1,5 @@
 import C from './core.mjs';
+import D from './desk-core.mjs';
 import {token,sha256,passwordHash,passwordMatches,validateRequest} from './security.mjs';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,content-type,apikey','Access-Control-Allow-Methods':'POST,GET,OPTIONS','Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8'};
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:cors});
@@ -52,6 +53,9 @@ export function createHandler({rpc,googleUser,googleEnabled}){
     return session('checker',ck.id);
    }
    if(!hash)return json({ok:false,error:'Sign in first.'},401);
+   if(action==='helpdesk-save'||action==='helpdesk-edit'){
+    try{p={...p,details:D.normalize(p.details)}}catch(e){return json({ok:false,error:e.message},400)}
+   }
    let extra={};
    if(action==='import'||action==='upsert'){
     try{p={eventId:C.EVENT,records:canonical(p),source:String(p.source||'Manual update').slice(0,200)}}catch(e){return json({ok:false,error:e.message},400)}
@@ -63,6 +67,7 @@ export function createHandler({rpc,googleUser,googleEnabled}){
    }
    if(action==='staff-update'){
     if(typeof p.active!=='boolean'||typeof p.id!=='string'||!/^[0-9a-f-]{36}$/i.test(p.id))return json({ok:false,error:'Invalid checker update.'},400);
+    if(p.helpdesk!=null&&typeof p.helpdesk!=='boolean')return json({ok:false,error:'Invalid help desk permission.'},400);
    }
    if(action==='admin-password'){
     if(typeof p.password!=='string'||p.password.length<12)return json({ok:false,error:'Use at least 12 characters.'},400);
@@ -70,6 +75,10 @@ export function createHandler({rpc,googleUser,googleEnabled}){
    }
    const result=await rpc(action,p,hash);
    if(result.error)return json({ok:false,error:result.error},result.status||400);
+   if(action==='helpdesk-export'){
+    if(result.records.length>10000)return json({ok:false,error:'Export exceeds 10,000 records. Ask the organizer for a server export.'},413);
+    return json({ok:true,csv:D.csv(result.records),count:result.records.length,filename:'Navrang-Help-Desk-'+new Date().toISOString().slice(0,10)+'.csv'});
+   }
    return json({ok:true,...result,...extra});
   }catch(e){console.error('Navrang API operation failed:',e?.name||'Error');return json({ok:false,error:'The server could not complete this request. Retry with the same request ID.'},503);}
  };

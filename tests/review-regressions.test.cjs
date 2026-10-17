@@ -19,18 +19,20 @@ test('a delayed profile refresh cannot restore sign-out or overwrite a newer log
   w.sessionStorage.setItem('navrang-session',JSON.stringify(session('old','Old checker')));old=w.GateClient.api('me').catch(()=>null);await w.GateClient.api('checker-login',{code:'test'});release();await old;assert.equal(w.GateClient.profile().name,'New checker','old me overwrote a newer identity');
  }finally{dom.window.close()}
 });
-test('overlapping tabs retain the newest persistent revision, cursor and original receipts',async()=>{
+test('student data stays in memory, stale sync cannot replace newer data, and a fresh tab has no roster',async()=>{
  const factory=new IDBFactory(),a=client(factory),b=client(factory);try{
   await Promise.all([a.w.GateClient.local('snapshot'),b.w.GateClient.local('snapshot')]);
   const newer={dataRevision:2,cursor:2,records:[{id:'DEMO0002',name:'New'}],entries:[],stats:{total:1},source:'new'};
   const older={dataRevision:1,cursor:1,records:[{id:'DEMO0001',name:'Old'}],entries:[],stats:{total:9},source:'old'};
-  a.w.fetch=async()=>reply(newer);b.w.fetch=async()=>reply(older);
-  await Promise.all([a.w.GateClient.sync(),b.w.GateClient.sync()]);
-  const saved=await a.w.GateClient.local('backup');assert.equal(saved.dataRevision,2);assert.equal(saved.cursor,2);assert.equal(saved.records[0].id,'DEMO0002');assert.equal(saved.source,'new');
+  a.w.fetch=async()=>reply(newer);await a.w.GateClient.sync();a.w.fetch=async()=>reply(older);await a.w.GateClient.sync();
+  let saved=await a.w.GateClient.local('snapshot');assert.equal(saved.dataRevision,2);assert.equal(saved.cursor,2);assert.equal(saved.stats.total,1);assert.equal((await a.w.GateClient.local('lookup',{id:'DEMO0002'})).record.name,'New');
+  assert.equal((await b.w.GateClient.local('snapshot')).localCount,0,'a fresh tab inherited a persistent roster');
   const entry={ticketId:'DEMO0002',seq:2,name:'Student',checker:'Original',checkerId:'checker',at:'2026-10-16T12:00:00Z',deviceId:'phone'};
   a.w.fetch=async()=>reply({...newer,entries:[entry]});await a.w.GateClient.sync();
   a.w.fetch=async()=>reply({...newer,entries:[{...entry,checker:'Changed'}]});await assert.rejects(a.w.GateClient.sync(),/Conflicting entry history/);
-  assert.equal((await b.w.GateClient.local('backup')).allEntries[0].checker,'Original');
+  assert.equal((await a.w.GateClient.local('lookup',{id:'DEMO0002'})).entry.checker,'Original');
+  await assert.rejects(a.w.GateClient.local('backup'),/server-only/);
+  assert.equal((await factory.databases()).length,0,'client created a persistent student database');
  }finally{a.dom.window.close();b.dom.window.close()}
 });
 test('name-only edits preserve quantity, unknown refunds and arbitrary payment descriptions',async t=>{

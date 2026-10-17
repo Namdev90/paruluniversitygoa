@@ -1,10 +1,10 @@
 {
   "name": "navrang-gate-tests",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Development checks only; no Node dependencies are shipped in the Android app.",
   "scripts": {
-    "test": "node --test tests/core.test.cjs tests/package.test.cjs tests/live-core.test.cjs tests/client.test.cjs tests/review-regressions.test.cjs tests/prototype-ui.test.cjs tests/workbook.test.cjs server/tests/*.test.mjs",
+    "test": "node --test tests/core.test.cjs tests/package.test.cjs tests/live-core.test.cjs tests/client.test.cjs tests/helpdesk.test.cjs tests/review-regressions.test.cjs tests/prototype-ui.test.cjs tests/workbook.test.cjs server/tests/*.test.mjs",
     "test:dom": "node --test tests/live-dom.test.cjs",
     "test:hosted": "node --test server/tests/hosted.mjs"
   },

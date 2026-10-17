@@ -24,7 +24,7 @@ run(TOOLS/'aapt2','compile','--dir',ROOT/'app/res','-o',BUILD/'resources.zip')
 assets=BUILD/'assets'
 if assets.exists():shutil.rmtree(assets)
 assets.mkdir()
-for name in ['index.html','style.css','core.js','live-core.js','store.js','config.js','gate-config.json','client.js','gate.js','local-schema.sql']:
+for name in ['index.html','style.css','core.js','live-core.js','config.js','gate-config.json','client.js','desk-core.js','desk.js','gate.js','local-schema.sql']:
  shutil.copy2(ROOT/'app/assets'/name,assets/name)
 shutil.copytree(ROOT/'app/assets/art',assets/'art')
 run(TOOLS/'aapt2','link','-o',BUILD/'unsigned.apk','--manifest',ROOT/'app/AndroidManifest.xml','-I',PLATFORM,'-A',assets,'--min-sdk-version','24','--target-sdk-version','35','--version-code',RELEASE['versionCode'],'--version-name',RELEASE['versionName'],BUILD/'resources.zip')

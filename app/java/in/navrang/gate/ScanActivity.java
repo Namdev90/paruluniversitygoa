@@ -12,6 +12,7 @@ import java.util.concurrent.*;
 
 @SuppressWarnings("deprecation")
 public final class ScanActivity extends Activity implements SurfaceHolder.Callback,GateRuntime.Listener {
+ private GateReadiness readiness;
  private SurfaceView surface;private Camera camera;private boolean ready,active,torch,continuous,issueHeld;private int torchMode=0,darkFrames=0,brightFrames=0;
  private GateRuntime runtime;private LinearLayout resultCard;private TextView title,person,detail,connection,quality;private Button light,zoomLabel;private View reticle;
  private AlertDialog issueDialog;private JSONObject heldResult;private final ArrayDeque<JSONObject> deferred=new ArrayDeque<>();
@@ -23,7 +24,7 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  private TextView text(int size,int color){TextView v=new TextView(this);v.setTextSize(size);v.setTextColor(color);return v;}
  private Button button(String label){Button b=new Button(this);b.setText(label);b.setTextSize(11);b.setTextColor(0xfff4d3a0);b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff30202e));return b;}
  @Override public void onCreate(Bundle saved){
-  super.onCreate(saved);try{runtime=GateRuntime.get(this);}catch(Exception e){finish();return;}
+  super.onCreate(saved);readiness=new GateReadiness(this);try{runtime=GateRuntime.get(this);}catch(Exception e){finish();return;}
   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);getWindow().setStatusBarColor(0xff100d15);getWindow().setNavigationBarColor(0xff100d15);
   FrameLayout frame=new FrameLayout(this);frame.setBackgroundColor(Color.BLACK);surface=new SurfaceView(this);frame.addView(surface,new FrameLayout.LayoutParams(-1,-1));surface.getHolder().addCallback(this);surface.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_UP){focus();quality.setText("Focusing · hold the QR steady");v.performClick();}return true;});
   LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.VERTICAL);top.setPadding(dp(18),dp(12),dp(18),dp(12));top.setBackgroundColor(0xef100d15);
@@ -41,8 +42,8 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  @Override public void surfaceCreated(SurfaceHolder h){ready=true;if(active)openCamera();}
  @Override public void surfaceChanged(SurfaceHolder h,int f,int w,int height){fitPreview();}
  @Override public void surfaceDestroyed(SurfaceHolder h){ready=false;release();}
- @Override public void onResume(){super.onResume();active=true;GateUpdater.scanActive=true;if(runtime!=null){runtime.add(this);runtime.resume();}if(ready)openCamera();}
- @Override public void onPause(){active=false;GateUpdater.scanActive=false;release();if(runtime!=null){runtime.remove(this);runtime.pause();}super.onPause();}
+ @Override public void onResume(){super.onResume();if(readiness!=null)readiness.resume();active=true;GateUpdater.scanActive=true;if(runtime!=null){runtime.add(this);runtime.resume();}if(ready)openCamera();}
+ @Override public void onPause(){if(readiness!=null)readiness.pause();active=false;GateUpdater.scanActive=false;release();if(runtime!=null){runtime.remove(this);runtime.pause();}super.onPause();}
  @Override public void onDestroy(){if(issueDialog!=null)issueDialog.dismiss();decoder.shutdownNow();super.onDestroy();}
  @Override public void event(JSONObject e){if(!"result".equals(e.optString("type")))return;JSONObject data=e.optJSONObject("data");if(data!=null)runOnUiThread(()->showResult(data));}
  private void showResult(JSONObject r){
@@ -54,7 +55,7 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
   if(!(id+":"+code).equals(lastPaint)){lastPaint=id+":"+code;resultCard.animate().cancel();resultCard.setTranslationY(dp(5));resultCard.setAlpha(.92f);resultCard.animate().translationY(0).alpha(1).setDuration(170).start();}GateFeedback.play(this,admitted?"success":pending?"pending":"issue");
   if(pending){pendingId=id;handler.postDelayed(()->{if(active&&!issueHeld&&id.equals(pendingId)){pendingId="";holdIssue(r);}},2500);}else{if(id.equals(pendingId))pendingId="";if(!admitted)holdIssue(r);else {lastRead=SystemClock.elapsedRealtime();quality.setText("Entry saved · ready for the next student");}}
  }
- private String message(JSONObject r){JSONObject record=r.optJSONObject("record"),entry=r.optJSONObject("entry");String code=r.optString("code");if(entry!=null)return r.optString("id",entry.optString("ticketId"))+"  ·  "+(record==null?"":("₹"+record.optString("amount")))+"\n"+entry.optString("checker")+"  ·  "+localTime(entry.optString("at"))+" IST\n"+("admitted".equals(code)?"Saved on server and phone. Next QR is ready.":"One entry only. No re-entry.");return (r.optString("id").isEmpty()?"":r.optString("id")+"\n")+r.optString("message","Ticket could not be verified.");}
+ private String message(JSONObject r){JSONObject record=r.optJSONObject("record"),entry=r.optJSONObject("entry");String code=r.optString("code");if(entry!=null)return r.optString("id",entry.optString("ticketId"))+"  ·  "+(record==null?"":("₹"+record.optString("amount")))+"\n"+entry.optString("checker")+"  ·  "+localTime(entry.optString("at"))+" IST\n"+("admitted".equals(code)?"Saved on the server. Next QR is ready.":"One entry only. No re-entry.");return (r.optString("id").isEmpty()?"":r.optString("id")+"\n")+r.optString("message","Ticket could not be verified.");}
  private String localTime(String at){try{String clean=at.replaceFirst("\\.\\d+","");java.text.SimpleDateFormat p=new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",java.util.Locale.US);java.text.SimpleDateFormat f=new java.text.SimpleDateFormat("HH:mm:ss",java.util.Locale.US);f.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Kolkata"));return f.format(p.parse(clean));}catch(Exception e){return at;}}
  private void holdIssue(JSONObject r){
   if(!active||isFinishing())return;issueHeld=true;heldResult=r;String msg=message(r)+"\n\nPlease send this student to the help desk. Do not allow entry.\n\nScanning is paused until you acknowledge.";

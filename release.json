@@ -1,1 +1,5 @@
-{"versionCode":4,"versionName":"0.4.0","notes":"Horizontal Parul University Goa identity, smoother motion, longer dancer opening and signed app update checks. Simulation removed."}
+{
+  "versionCode": 5,
+  "versionName": "0.5.0",
+  "notes": "Help Desk for Android and laptop: server-only registration records, admin approval and college CSV export. Student caches are temporary in memory. Startup sound, haptics, adaptive brightness and permission readiness."
+}

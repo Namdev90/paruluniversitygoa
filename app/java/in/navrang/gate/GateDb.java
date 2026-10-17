@@ -12,7 +12,19 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 public final class GateDb extends SQLiteOpenHelper {
  private final Context context;
- public GateDb(Context c){super(c,"navrang-live-v2.db",null,1);context=c.getApplicationContext();setWriteAheadLoggingEnabled(true);getWritableDatabase();migrateLegacy();}
+ public GateDb(Context c){super(c,null,null,1);context=c.getApplicationContext();getWritableDatabase();retireDiskCache();}
+ private void retireDiskCache(){
+  File old=context.getDatabasePath("navrang-live-v2.db");
+  if(old.isFile()){
+   // Carry unconfirmed request IDs into RAM before retiring the previous disk cache.
+   try(SQLiteDatabase disk=SQLiteDatabase.openDatabase(old.getPath(),null,SQLiteDatabase.OPEN_READONLY);Cursor rows=disk.rawQuery("SELECT request_id,ticket_id,actor,body,created_at FROM outbox",null)){
+    while(rows.moveToNext()){ContentValues v=new ContentValues();v.put("request_id",rows.getString(0));v.put("ticket_id",rows.getString(1));v.put("actor",rows.getString(2));v.put("body",rows.getString(3));v.put("created_at",rows.getString(4));getWritableDatabase().insertOrThrow("outbox",null,v);}
+   }catch(Exception e){throw new IllegalStateException("Previous unconfirmed requests could not be migrated. Keep the previous app data and retry.",e);}
+   if(!context.deleteDatabase("navrang-live-v2.db"))throw new IllegalStateException("Previous student cache could not be removed. Reopen the app.");
+  }
+  new AtomicFile(new File(context.getFilesDir(),"navrang-state-v1.json")).delete();
+ }
+ public synchronized void clearTemporary(){SQLiteDatabase d=getWritableDatabase();d.beginTransaction();try{for(String table:new String[]{"tickets","entries","legacy_entries","outbox"})d.delete(table,null,null);putMeta(d,"dataRevision","-1");putMeta(d,"cursor","0");putMeta(d,"source","");putMeta(d,"stats","{}");putMeta(d,"lastSync","");d.setTransactionSuccessful();}finally{d.endTransaction();}}
  public static String now(){SimpleDateFormat f=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",Locale.US);f.setTimeZone(TimeZone.getTimeZone("UTC"));return f.format(new Date());}
  @Override public void onConfigure(SQLiteDatabase db){db.setForeignKeyConstraintsEnabled(true);db.execSQL("PRAGMA synchronous=FULL");}
  @Override public void onCreate(SQLiteDatabase db){
@@ -38,24 +50,6 @@ public final class GateDb extends SQLiteOpenHelper {
  }
  private JSONObject item(String table,String id)throws JSONException{try(Cursor c=getReadableDatabase().rawQuery("SELECT json FROM "+table+" WHERE id=?",new String[]{id})){return c.moveToFirst()?new JSONObject(c.getString(0)):null;}}
  private JSONArray list(String table,String order,String limit)throws JSONException{JSONArray out=new JSONArray();try(Cursor c=getReadableDatabase().rawQuery("SELECT json FROM "+table+" ORDER BY "+order+" "+limit,null)){while(c.moveToNext())out.put(new JSONObject(c.getString(0)));}return out;}
- private void migrateLegacy(){
-  if("yes".equals(meta("legacyMigrated","")))return;
-  AtomicFile file=new AtomicFile(new File(context.getFilesDir(),"navrang-state-v1.json"));
-  File base=file.getBaseFile();JSONObject old=null;
-  if(base.exists()||new File(base.getPath()+".bak").exists()){
-   try(InputStream in=file.openRead();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1){if(out.size()+n>20*1024*1024)throw new IOException();out.write(b,0,n);}old=new JSONObject(new String(out.toByteArray(),StandardCharsets.UTF_8));if(old.optInt("version")!=1||!"O9KL3".equals(old.optString("eventId")))throw new IOException();}
-   catch(Exception e){throw new IllegalStateException("Your previous offline history could not be read. Keep app data and export from the previous version.",e);}
-  }
-  SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
-  try{
-   if(old!=null){JSONObject records=old.optJSONObject("records"),entries=old.optJSONObject("admissions");
-    if(records!=null)for(Iterator<String> it=records.keys();it.hasNext();){String id=it.next();putJson(db,"tickets",id,records.getJSONObject(id));}
-    if(entries!=null)for(Iterator<String> it=entries.keys();it.hasNext();){String id=it.next();putJson(db,"legacy_entries",id,entries.getJSONObject(id));}
-    if(old.optString("deviceId","").length()>0)putMeta(db,"deviceId",old.getString("deviceId"));
-   }
-   putMeta(db,"legacyMigrated","yes");db.setTransactionSuccessful();
-  }catch(Exception e){throw new IllegalStateException("Could not preserve previous entries; no entry is confirmed.",e);}finally{db.endTransaction();}
- }
  public synchronized JSONObject snapshot()throws JSONException{
   return new JSONObject().put("deviceId",meta("deviceId","")).put("dataRevision",Long.parseLong(meta("dataRevision","-1"))).put("cursor",Long.parseLong(meta("cursor","0"))).put("source",meta("source","")).put("lastSync",meta("lastSync","")).put("stats",new JSONObject(meta("stats","{}"))).put("localCount",count("tickets")).put("pending",count("outbox")).put("legacyCount",count("legacy_entries")).put("entries",list("entries","seq DESC","LIMIT 15"));
  }

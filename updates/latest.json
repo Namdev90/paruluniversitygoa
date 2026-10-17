@@ -1,10 +1,10 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 4,
-  "versionName": "0.4.0",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.4.0.apk",
-  "size": 1701765,
-  "sha256": "a9f4678477a3cbc03220cb662ea3aa093a906f90903224cdaa4f6a8b83ef4131",
-  "notes": "Horizontal Parul University Goa identity, smoother motion, longer dancer opening and signed app update checks. Simulation removed.",
-  "publishedAt": "2026-10-17T04:52:17.536294+00:00"
+  "versionCode": 5,
+  "versionName": "0.5.0",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.5.0.apk",
+  "size": 1710021,
+  "sha256": "e81b2efbe7c73b3e4048baa51a30a68ae6e04bc004c3383382ab9a4aca50d617",
+  "notes": "Help Desk for Android and laptop: server-only registration records, admin approval and college CSV export. Student caches are temporary in memory. Startup sound, haptics, adaptive brightness and permission readiness.",
+  "publishedAt": "2026-10-17T05:48:42.945901+00:00"
 }
