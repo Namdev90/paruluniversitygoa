@@ -4,9 +4,10 @@
   "private": true,
   "description": "Development checks only; no Node dependencies are shipped in the Android app.",
   "scripts": {
-    "test": "node --test tests/core.test.cjs tests/package.test.cjs tests/release.test.cjs tests/live-core.test.cjs tests/client.test.cjs tests/helpdesk.test.cjs tests/staff-flow.test.cjs tests/review-regressions.test.cjs tests/prototype-ui.test.cjs tests/hotfix-flow.test.cjs tests/hotfix-layout.test.cjs tests/workbook.test.cjs server/tests/*.test.mjs",
+    "test": "node --test tests/core.test.cjs tests/package.test.cjs tests/release.test.cjs tests/live-core.test.cjs tests/client.test.cjs tests/helpdesk.test.cjs tests/staff-flow.test.cjs tests/review-regressions.test.cjs tests/prototype-ui.test.cjs tests/hotfix-flow.test.cjs tests/hotfix-layout.test.cjs tests/browser-pending.test.cjs tests/workbook.test.cjs server/tests/*.test.mjs",
     "test:dom": "node --test tests/live-dom.test.cjs",
-    "test:hosted": "node --test server/tests/hosted.mjs"
+    "test:hosted": "node --test server/tests/hosted.mjs",
+    "test:native": "python3 tests/native-runtime-check.py && python3 tests/native-pending-result-check.py && python3 tests/native-scanner-queue-check.py && python3 tests/native-updater-pending-check.py"
   },
   "devDependencies": {
     "fake-indexeddb": "6.0.1",

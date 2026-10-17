@@ -29,18 +29,19 @@ public class GateSession {
 }''',
     "in/navrang/gate/GateDb.java": '''package in.navrang.gate;import android.content.Context;import org.json.JSONObject;
 public class GateDb {
- public int clears;public String pendingMarker="new-account-pending";public GateDb(Context c){}
+ public static class UpdateInProgressException extends IllegalStateException {public UpdateInProgressException(){super("Finish or cancel the Android app update before scanning another ticket.");}}
+ public boolean failQueueUpdate;public int clears;public JSONObject job;public boolean failFinish,failPending;public String pendingMarker="new-account-pending";public GateDb(Context c){}
  public synchronized void clearTemporary(){clears++;pendingMarker="";}public JSONObject snapshot(){return new JSONObject().put("dataRevision",0L).put("cursor",0L);}
- public void applySync(JSONObject p){}public JSONObject queue(String id,String actor){return new JSONObject();}public JSONObject lookup(String id){return new JSONObject();}public JSONObject pending(String actor){return null;}public void finish(JSONObject job,JSONObject result){}
+ public void applySync(JSONObject p){}public JSONObject queue(String id,String actor){if(failQueueUpdate)throw new UpdateInProgressException();return new JSONObject();}public JSONObject lookup(String id){return new JSONObject();}public JSONObject pending(String actor){if(failPending)throw new IllegalStateException("Queue read failed");return job;}public void finish(JSONObject job,JSONObject result){if(failFinish)throw new IllegalStateException("Memory write failed");this.job=null;}
 }''',
     "in/navrang/gate/GateApi.java": '''package in.navrang.gate;import android.content.Context;import org.json.JSONObject;import java.util.concurrent.CountDownLatch;
 public class GateApi {
- public final CountDownLatch started=new CountDownLatch(1),release=new CountDownLatch(1);public int response=503;public GateApi(Context c){}
+ public final CountDownLatch started=new CountDownLatch(1),release=new CountDownLatch(1);public int response=503;public boolean failCheckin;public GateApi(Context c){}
  public static class Reply {public final int status;public final JSONObject body;public Reply(int s,JSONObject b){status=s;body=b;}}
- public Reply call(String action,JSONObject payload,String token)throws Exception{if("me".equals(action)){started.countDown();release.await();}return new Reply(response,new JSONObject().put("ok",false));}
+ public Reply call(String action,JSONObject payload,String token)throws Exception{if("me".equals(action)){started.countDown();release.await();}if("checkin".equals(action)){if(failCheckin)throw new java.io.IOException("Connection interrupted");return new Reply(200,new JSONObject().put("ok",true).put("code","admitted").put("id",payload.optString("ticketId")));}return new Reply(response,new JSONObject().put("ok",false));}
 }''',
     "in/navrang/gate/GateFeedback.java": '''package in.navrang.gate;import android.content.Context;public class GateFeedback {public static void play(Context c,String sound){}}''',
-    "NativeRuntimeRaceCheck.java": '''import in.navrang.gate.*;import android.content.Context;import java.lang.reflect.*;import java.util.concurrent.*;
+    "NativeRuntimeRaceCheck.java": '''import in.navrang.gate.*;import android.content.Context;import java.lang.reflect.*;import java.util.concurrent.*;import java.util.*;import org.json.JSONObject;
 public class NativeRuntimeRaceCheck {
  static int checks;static void check(boolean ok,String reason){checks++;if(!ok)throw new AssertionError(reason);}
  static Field field(String name)throws Exception{Field f=GateRuntime.class.getDeclaredField(name);f.setAccessible(true);return f;}
@@ -54,14 +55,44 @@ public class NativeRuntimeRaceCheck {
    check(r.sessions.isCurrent(2,"new-token"),"old failed reply must not sign out newer identity");
   }finally{stop(r);}
  }
+ static void drainAndWait(GateRuntime r)throws Exception{r.drain();((ExecutorService)field("entries").get(r)).submit(()->{}).get(2,TimeUnit.SECONDS);}
+ static void pendingFailure(boolean network)throws Exception{
+  GateRuntime r=runtime();try{
+   r.sessions.replace(2,"checker-token",true);r.db.job=new JSONObject().put("ticketId","TICKET01");r.api.failCheckin=network;r.db.failFinish=!network;
+   List<JSONObject> events=new CopyOnWriteArrayList<>();r.add(e->{if("result".equals(e.optString("type")))events.add(e.getJSONObject("data"));});
+   drainAndWait(r);check(events.size()==1,"an interrupted check-in emits one pending result");
+   check("pending".equals(events.get(0).optString("code"))&&"TICKET01".equals(events.get(0).optString("id")),"network or storage exception must retain the pending ticket ID");
+   check(r.db.job!=null,"interrupted request remains queued for recovery");
+   r.api.failCheckin=false;r.db.failFinish=false;drainAndWait(r);
+   check(events.size()==2&&"admitted".equals(events.get(1).optString("code"))&&"TICKET01".equals(events.get(1).optString("id")),"retry reconciles the same ticket with its server receipt");
+   check(r.db.job==null,"confirmed retry clears the recovery queue");
+  }finally{stop(r);}
+ }
+ static void unidentifiedFailure()throws Exception{
+  GateRuntime r=runtime();try{
+   r.sessions.replace(2,"checker-token",true);r.db.failPending=true;List<JSONObject> events=new CopyOnWriteArrayList<>();r.add(events::add);drainAndWait(r);
+   check(events.stream().noneMatch(e->"result".equals(e.optString("type"))&&"pending".equals(e.getJSONObject("data").optString("code"))),"queue-read failure must not invent an anonymous pending ticket");
+   check(events.stream().anyMatch(e->"connection".equals(e.optString("type"))),"unidentified interruption still reports connection state");
+  }finally{stop(r);}
+ }
+ static void updateFenceFeedback()throws Exception{
+  GateRuntime r=runtime();try{
+   r.sessions.replace(2,"checker-token",true);r.db.failQueueUpdate=true;List<JSONObject> events=new CopyOnWriteArrayList<>();r.add(events::add);r.submit("TICKET01");
+   check(events.size()==1&&"result".equals(events.get(0).optString("type")),"update fence returns one explicit scan result");
+   JSONObject result=events.get(0).getJSONObject("data");
+   check("update_in_progress".equals(result.optString("code"))&&"TICKET01".equals(result.optString("id")),"blocked scan identifies its ticket and update blocker");
+   check(result.optString("message").contains("Finish or cancel")&&result.optString("message").contains("NOT confirmed"),"update-paused scan explains how to retry without claiming admission");
+  }finally{stop(r);}
+ }
  public static void main(String[] args)throws Exception {
+  updateFenceFeedback();pendingFailure(true);pendingFailure(false);unidentifiedFailure();
   for(int status:new int[]{401,403,503})delayedOldReply(status);
   GateRuntime r=runtime();try{Method clear=GateRuntime.class.getDeclaredMethod("clearInactiveIfCurrent",long.class,String.class);clear.setAccessible(true);
    r.sessions.replace(2,"new-token",true);clear.invoke(r,1L,"old-token");check(r.db.clears==0,"inactive cleanup validates epoch and token");
    clear.invoke(r,2L,"new-token");check(r.db.clears==0,"inactive cleanup rereads current active status");
    r.sessions.replace(2,"new-token",false);clear.invoke(r,2L,"new-token");check(r.db.clears==1,"current inactive identity still clears temporary data");
   }finally{stop(r);}
-  System.out.println("PASS actual GateRuntime: "+checks+" checks for stale 401/403/503 replies and guarded pending-data cleanup.");
+  System.out.println("PASS actual GateRuntime: "+checks+" checks for identified pending recovery, stale 401/403/503 replies and guarded cleanup.");
  }
 }''',
 }

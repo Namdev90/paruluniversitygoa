@@ -14,6 +14,8 @@ public final class NativeLifecycleCheck {
   pending.finish("TICKET01");check("TICKET02".equals(pending.expired(12000)),"each unresolved ticket needs its own acknowledgement");
   pending.finish("TICKET02");check(pending.expired(12000)==null&&pending.nextDelay(12000)==-1,"server confirmation or acknowledgement clears the timer");
   pending.start("TICKET03",15000);pending.finish("TICKET03");check(pending.expired(20000)==null,"completed background receipt must not later show pending warning");
+  pending.start("TICKET04",21000);pending.start("",21100);pending.start(null,21200);pending.finish("TICKET04");
+  check(pending.expired(25000)==null&&pending.nextDelay(25000)==-1,"unidentified statuses cannot leave orphan deadlines after confirmation");
   ResponseOrder profiles=new ResponseOrder();long old=profiles.begin(),fresh=profiles.begin();
   check(profiles.accept(fresh),"newest permissions response is accepted");
   check(!profiles.accept(old),"late earlier permissions cannot restore revoked scanner access");
