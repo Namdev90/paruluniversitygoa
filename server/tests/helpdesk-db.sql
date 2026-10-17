@@ -42,7 +42,7 @@ declare
  d jsonb=jsonb_build_object('name','Synthetic Four Field Student','email',gen_random_uuid()::text||'@example.invalid','phone','9999999999','quantity',2);
  r jsonb; ticket text;
 begin
- insert into navrang_private.checkers(id,name,method,active,name_confirmed,helpdesk_enabled,scanner_enabled) values(ck,'Synthetic Desk V06','code',true,true,true,true);
+ insert into navrang_private.checkers(id,name,method,active,name_confirmed,helpdesk_enabled,scanner_enabled,selected_station) values(ck,'Synthetic Desk V06','code',true,true,true,false,'helpdesk');
  insert into navrang_private.sessions(hash,role,checker_id,expires_at) values(admin_token,'admin',null,now()+interval '1 hour'),(desk_token,'checker',ck,now()+interval '1 hour');
  r=public.navrang_gate('helpdesk-save',jsonb_build_object('requestId',req,'details',d),desk_token);rid=(r->'registration'->>'id')::uuid;ticket=r->'registration'->>'ticket_id';
  if rid is null or exists(select 1 from navrang_private.tickets where id=ticket) then raise exception 'Four-field form did not save pending';end if;

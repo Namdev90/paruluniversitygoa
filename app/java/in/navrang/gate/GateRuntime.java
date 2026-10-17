@@ -28,9 +28,9 @@ public final class GateRuntime {
    if(me.status==401){if(sessions.clearIfCurrent(generation,session.optString("token"))){db.clearTemporary();emit("auth",new JSONObject());}return;}
    if(session==null||!session.getJSONObject("profile").optBoolean("active"))return;
   }
-  if(!GateSession.canScan(session)){db.clearTemporary();return;}
+  if(!GateSession.canSync(session)){db.clearTemporary();return;}
   if(System.currentTimeMillis()-lastSync>=1900){JSONObject local=db.snapshot();GateApi.Reply r=api.call("sync",new JSONObject().put("dataRevision",local.getLong("dataRevision")).put("afterSeq",local.getLong("cursor")),session.optString("token"));
-   if(r.status==200&&r.body.optBoolean("ok")){if(generation!=sessions.generation()||!GateSession.canScan(sessions.read()))return;db.applySync(r.body);online=true;lastSync=System.currentTimeMillis();emit("sync",db.snapshot());}
+   if(r.status==200&&r.body.optBoolean("ok")){if(generation!=sessions.generation()||!GateSession.canSync(sessions.read())||!"admin".equals(GateSession.actor(sessions.read()))&&!r.body.optBoolean("staffSummary"))return;db.applySync(r.body);online=true;lastSync=System.currentTimeMillis();emit("sync",db.snapshot());}
    else {online=false;if(r.status==403){GateApi.Reply me=api.call("me",new JSONObject(),session.optString("token"));if(me.status==200){JSONObject profile=new JSONObject(me.body.toString());profile.remove("ok");if(sessions.refreshIfCurrent(generation,session.optString("token"),profile))emit("auth",profile);}}emit("connection",new JSONObject().put("online",false).put("status",r.status).put("message",r.body.optString("error","Waiting for server.")));}
   }drain();
  }catch(Exception e){online=false;emit("connection",safe("message","Connection interrupted. Unconfirmed requests stay only in memory while the app is open."));}}

@@ -73,7 +73,7 @@ public final class GateDb extends SQLiteOpenHelper {
    if("admitted".equals(code)||"duplicate".equals(code)){
     JSONObject entry=result.getJSONObject("entry");if(!pending.getString("ticketId").equals(entry.getString("ticketId")))throw new JSONException("Mismatched admission receipt.");
     if("admitted".equals(code)){String serverActor=entry.isNull("checkerId")?"admin":entry.getString("checkerId");if(!serverActor.equals(pending.getString("actor")))throw new JSONException("Admission belongs to another checker.");}
-    putJson(db,"entries",entry.getString("ticketId"),entry);
+    if("admin".equals(pending.getString("actor")))putJson(db,"entries",entry.getString("ticketId"),entry);
    }
    if(db.delete("outbox","request_id=? AND actor=?",new String[]{pending.getString("requestId"),pending.getString("actor")})!=1)throw new JSONException("Pending request changed; keep the receipt for retry.");db.setTransactionSuccessful();
   }finally{db.endTransaction();}
@@ -81,6 +81,11 @@ public final class GateDb extends SQLiteOpenHelper {
  public synchronized void applySync(JSONObject sync)throws JSONException{
   SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
   try{
+   if(sync.optBoolean("staffSummary")){
+    for(String table:new String[]{"tickets","entries","legacy_entries"})db.delete(table,null,null);if(!sync.optBoolean("scanner"))db.delete("outbox",null,null);
+    JSONObject s=sync.getJSONObject("stats"),safe=new JSONObject().put("ownScans",s.getLong("ownScans")).put("totalEntries",s.getLong("totalEntries"));
+    putMeta(db,"dataRevision","-1");putMeta(db,"cursor","0");putMeta(db,"source","");putMeta(db,"stats",safe.toString());putMeta(db,"lastSync",now());db.setTransactionSuccessful();return;
+   }
    if(!sync.isNull("records")&&sync.has("records")&&sync.getLong("dataRevision")>=Long.parseLong(meta("dataRevision","-1"))){JSONArray records=sync.getJSONArray("records");db.delete("tickets",null,null);for(int i=0;i<records.length();i++){JSONObject r=records.getJSONObject(i);putJson(db,"tickets",r.getString("id"),r);}putMeta(db,"dataRevision",String.valueOf(sync.getLong("dataRevision")));}
    JSONArray entries=sync.optJSONArray("entries");if(entries!=null)for(int i=0;i<entries.length();i++){JSONObject e=entries.getJSONObject(i);putJson(db,"entries",e.getString("ticketId"),e);}
    if(sync.has("cursor"))putMeta(db,"cursor",String.valueOf(Math.max(sync.getLong("cursor"),Long.parseLong(meta("cursor","0")))));if(sync.has("stats"))putMeta(db,"stats",sync.getJSONObject("stats").toString());putMeta(db,"source",sync.optString("source",meta("source","")));putMeta(db,"lastSync",now());db.setTransactionSuccessful();

@@ -5,7 +5,7 @@
  let offset=0,total=0,rows=[],selected=null,editing=null,locked=false,pending=null,loading=false,generation=0,paint='',searchTimer;
  const pageSize=()=>Math.max(1,Math.min(5,Math.floor((innerHeight-440)/70)));
  const admin=()=>C.profile()?.role==='admin';
- const allowed=()=>!!C.profile()?.active&&(admin()||C.profile()?.helpdesk===true);
+ const allowed=()=>!!C.profile()?.active&&(admin()||C.profile()?.helpdesk===true&&(C.profile()?.station==null||C.profile().station==='helpdesk'));
  const identity=()=>C.profile()?.checkerId||C.profile()?.role;
  const scope=()=>JSON.stringify([identity(),admin(),allowed()]);let accessScope=scope();
  const current=(version,who,privileged=false)=>version===generation&&who===identity()&&allowed()&&(!privileged||admin());

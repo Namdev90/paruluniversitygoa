@@ -33,6 +33,6 @@ test('a slow sign-out receipt cannot reset the station screen of a newer login',
   await tick();w.GateClient.signOut=()=>{w.GateClient.profile=()=>null;event({type:'auth',data:null});return new Promise(r=>deliver=r)};
   w.document.getElementById('sign-out').click();assert.equal(w.document.getElementById('view-login').hidden,false);
   w.GateClient.profile=()=>({role:'checker',checkerId:'new',name:'Raju',active:true,scanner:true});event({type:'auth'});
-  deliver();await tick();assert.equal(w.document.getElementById('view-station').hidden,false);assert.equal(w.document.getElementById('view-login').hidden,true);
+  deliver();await tick();assert.equal(w.document.getElementById('view-home').hidden,false);assert.equal(w.document.getElementById('view-login').hidden,true);
  }finally{await tick();dom.window.close()}
 });

@@ -1,5 +1,5 @@
 {
-  "versionCode": 9,
-  "versionName": "0.7.1",
-  "notes": "Google sign-in and station access retained. Immediate sign-out, clean expired-session login, cleared temporary forms and hidden data after access changes, and protection against late private responses or exports."
+  "versionCode": 10,
+  "versionName": "0.7.2",
+  "notes": "Staff station is saved once; only admin can change it. Returning staff open their assigned station. Checker and Help Desk dashboards show only My scans and Total entries. Staff sync no longer downloads the roster or entry log; full statistics stay admin-only."
 }

@@ -17,6 +17,6 @@ Google sign-in was reported fully working by the organizer on 17 October 2026 at
 7. Each verified email retains one staff identity and immutable internal account key. New Google users save their name and choose Checker or Help Desk to request access. Admin approves and assigns the station in Admin → Staff → Manage access; the request itself never grants permission. Existing approved checkers keep their access. Repeated Google login preserves names, assigned permissions and suspensions; it never creates an admin account.
 8. Verify the complete Android sign-in, real-name confirmation and matching checker row in Admin. Version 0.6 parses provider errors from both callback query and fragment, checks state and shows a setup-specific message. The organizer confirmed the Google login itself; verify the new station selection on the actual phone.
 
-The APK uses browser-based Supabase OAuth, not an embedded Google WebView. It does not require a client secret in the app or the Google Play Services sign-in SDK. Install the signed 0.7.1 update over the existing app.
+The APK uses browser-based Supabase OAuth, not an embedded Google WebView. It does not require a client secret in the app or the Google Play Services sign-in SDK. Install the signed 0.7.2 update over the existing app.
 
 References: https://supabase.com/docs/guides/auth/social-login/auth-google and https://supabase.com/docs/guides/auth/sessions/pkce-flow .

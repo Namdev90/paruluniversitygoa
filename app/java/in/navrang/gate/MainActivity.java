@@ -105,7 +105,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
     if(r.status==200&&r.body.optBoolean("ok")){
      if(r.body.has("token")&&r.body.has("profile")){boolean saved=runtime.sessions.saveIfCurrent(generation,r.body.getString("token"),r.body.getJSONObject("profile"));r.body.remove("token");if(!saved)throw new IllegalStateException("Sign-in changed.");runtime.db.clearTemporary();runtime.refresh();}
      if("me".equals(action)&&auth!=null){JSONObject profile=new JSONObject(r.body.toString());profile.remove("ok");if(!runtime.sessions.refreshIfCurrent(generation,token,profile))throw new IllegalStateException("Sign-in changed.");}
-     if("sync".equals(action)&&generation==runtime.sessions.generation()&&GateSession.canScan(runtime.sessions.read()))runtime.db.applySync(r.body);
+     if("sync".equals(action)&&generation==runtime.sessions.generation()&&GateSession.canSync(runtime.sessions.read())&&("admin".equals(GateSession.actor(runtime.sessions.read()))||r.body.optBoolean("staffSummary")))runtime.db.applySync(r.body);
     }
     JSONObject response=new JSONObject().put("id",id).put("status",r.status).put("body",r.body);call("onApiResponse",response.toString());
    }catch(Exception e){try{call("onApiResponse",new JSONObject().put("id",id).put("status",0).put("body",new JSONObject().put("ok",false).put("error","Connection interrupted. Unconfirmed scans stay only in memory while the app is open.")).toString());}catch(Exception ignored){}}});

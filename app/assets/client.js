@@ -27,7 +27,7 @@
   }
   if(!changesIdentity&&a?.token&&(generation!==authGeneration||auth()?.token!==a.token))throw fail('Sign-in changed while this request was running.',409);
   if(b.token&&b.profile){if(generation!==authGeneration)throw fail('Sign-in changed while this request was running.',409);resetMemory();sessionStorage.setItem('navrang-session',JSON.stringify({token:b.token,profile:b.profile}));}
-  if(action==='me'&&a){if(generation!==authGeneration||auth()?.token!==a.token)throw fail('Sign-in changed while this request was running.',409);if(b.role!=='admin'&&b.scanner===false)resetMemory();sessionStorage.setItem('navrang-session',JSON.stringify({token:a.token,profile:b}));}
+  if(action==='me'&&a){if(generation!==authGeneration||auth()?.token!==a.token)throw fail('Sign-in changed while this request was running.',409);if(b.role!=='admin'&&b.scanner===false){const old=memory;resetMemory();if(b.active){memory.stats={ownScans:old.stats.ownScans,totalEntries:old.stats.totalEntries};memory.lastSync=old.lastSync;}}sessionStorage.setItem('navrang-session',JSON.stringify({token:a.token,profile:b}));}
   return b;
  }
  let memory={dataRevision:-1,cursor:0,records:{},entries:{},stats:{},source:'',lastSync:''},jobs=new Map(),deviceId='browser-'+L.uuid();
@@ -49,12 +49,14 @@
   return {deviceId,dataRevision:memory.dataRevision,cursor:memory.cursor,source:memory.source,lastSync:memory.lastSync,stats:memory.stats,localCount:Object.keys(memory.records).length,pending:jobs.size,legacyCount:0,entries:Object.values(memory.entries).sort((a,b)=>b.seq-a.seq).slice(0,15)};
  }
  async function applySync(p){
-  if(native)return;await init();const old=memory,merged=L.merge(old,p);
+  if(native)return;await init();
+  if(p.staffSummary){memory={dataRevision:-1,cursor:0,records:{},entries:{},stats:{ownScans:p.stats.ownScans,totalEntries:p.stats.totalEntries},source:'',lastSync:new Date().toISOString()};if(!p.scanner)jobs.clear();return;}
+  const old=memory,merged=L.merge(old,p);
   if(p.dataRevision<old.dataRevision||(p.cursor||0)<old.cursor)merged.stats=old.stats;
   memory={...merged,lastSync:new Date().toISOString()};
  }
  async function sync(cursors){
-  const generation=authGeneration,s=await local('snapshot');const p=await api('sync',cursors||{dataRevision:s.dataRevision,afterSeq:s.cursor});if(generation!==authGeneration)throw fail('Sign-in changed.');if(profile()?.role!=='admin'&&profile()?.scanner===false)throw fail('Checker access changed.',403);await applySync(p);emit('sync',await local('snapshot'));if(!native)drain();return p;
+  const generation=authGeneration,s=await local('snapshot');const p=await api('sync',cursors||{dataRevision:s.dataRevision,afterSeq:s.cursor});if(generation!==authGeneration)throw fail('Sign-in changed.');if(profile()?.role==='checker'&&(!profile().active||p.staffSummary!==true))throw fail('Staff access changed. Only your scan summary is available.',403);await applySync(p);emit('sync',await local('snapshot'));if(!native)drain();return p;
  }
  async function queue(id){
   if(native){Native.submit(id);return}
@@ -66,7 +68,7 @@
  }
  async function drain(){
   if(native||draining)return;draining=true;const drainGeneration=authGeneration;
-  try{for(let i=0;i<20;i++){const a=auth(),who=actor(a?.profile),generation=authGeneration;if(!a)break;const pair=[...jobs].find(([,j])=>j.actor===who);if(!pair)break;const [key,job]=pair,r=await api('checkin',job,a);if(generation!==authGeneration||profile()?.role!=='admin'&&profile()?.scanner===false)break;L.confirm(job,r);memory=L.merge(memory,{dataRevision:memory.dataRevision,entries:r.entry?[r.entry]:[]});jobs.delete(key);emit('result',r);emit('sync',await local('snapshot'));}}
+  try{for(let i=0;i<20;i++){const a=auth(),who=actor(a?.profile),generation=authGeneration;if(!a)break;const pair=[...jobs].find(([,j])=>j.actor===who);if(!pair)break;const [key,job]=pair,r=await api('checkin',job,a);if(generation!==authGeneration||profile()?.role!=='admin'&&profile()?.scanner===false)break;L.confirm(job,r);if(profile()?.role==='admin')memory=L.merge(memory,{dataRevision:memory.dataRevision,entries:r.entry?[r.entry]:[]});jobs.delete(key);emit('result',r);emit('sync',await local('snapshot'));}}
   catch(e){if(drainGeneration===authGeneration&&auth())emit('result',{code:'pending',message:e.message+' No universal entry is confirmed.'});}
   finally{draining=false}
  }
@@ -103,6 +105,6 @@
    sample(kind).then(buffer=>{if(kind==='intro'&&generation!==introGeneration)return;const source=audio.createBufferSource(),gain=audio.createGain();source.buffer=buffer;gain.gain.value=kind==='tap'?.7:1;source.connect(gain);gain.connect(audio.destination);if(kind==='intro'){introSources.add(source);source.onended=()=>introSources.delete(source)}source.start(audio.currentTime+delay)}).catch(()=>{});
   }catch{}
  }
- function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.1',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
+ function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.2',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
  root.GateClient={copy,feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);

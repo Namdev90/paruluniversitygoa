@@ -6,10 +6,10 @@ declare
  r jsonb; r2 jsonb; email text=gen_random_uuid()::text||'@example.invalid'; ticket text='HD'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,6));
 begin
  insert into navrang_private.sessions(hash,role,expires_at) values(admin_token,'admin',now()+interval '1 hour');
- insert into navrang_private.checkers(id,name,method,active,name_confirmed,scanner_enabled,helpdesk_enabled) values(desk,'Synthetic Help Desk','code',true,true,false,true),(scanner,'Synthetic Checker','code',true,true,true,false);
+ insert into navrang_private.checkers(id,name,method,active,name_confirmed,scanner_enabled,helpdesk_enabled,selected_station) values(desk,'Synthetic Help Desk','code',true,true,false,true,'helpdesk'),(scanner,'Synthetic Checker','code',true,true,true,false,'checker');
  insert into navrang_private.sessions(hash,role,checker_id,expires_at) values(desk_token,'checker',desk,now()+interval '1 hour'),(scan_token,'checker',scanner,now()+interval '1 hour');
  r=public.navrang_gate('me','{}',desk_token);if r->>'scanner'<>'false' or r->>'helpdesk'<>'true' then raise exception 'Wrong Help Desk profile';end if;
- r=public.navrang_gate('sync','{}',desk_token);if r->>'status'<>'403' then raise exception 'Help Desk downloaded checker roster';end if;
+ r=public.navrang_gate('sync','{}',desk_token);if r->>'staffSummary'<>'true' or r->'records'<>'null'::jsonb or r->'entries'<>'[]'::jsonb then raise exception 'Help Desk downloaded checker roster';end if;
  r=public.navrang_gate('checkin',jsonb_build_object('ticketId',ticket,'requestId',gen_random_uuid(),'deviceId','rollback-roles'),desk_token);if r->>'status'<>'403' then raise exception 'Help Desk admitted a student';end if;
  r=public.navrang_gate('helpdesk-list','{}',scan_token);if r->>'status'<>'403' then raise exception 'Checker accessed private Help Desk contacts';end if;
  r=public.navrang_gate('staff-update',jsonb_build_object('id',scanner,'active',true,'helpdesk',true),scan_token);if r->>'status'<>'403' then raise exception 'Checker elevated own role';end if;
@@ -19,12 +19,13 @@ begin
  r=public.navrang_gate('staff-request','{"station":"helpdesk"}',pending_token);if r->>'status'<>'403' then raise exception 'Unconfirmed name requested access';end if;
  r=public.navrang_gate('checker-profile','{"name":"Synthetic Raju"}',pending_token);if r->>'saved'<>'true' then raise exception 'Pending user could not save name';end if;
  r=public.navrang_gate('staff-request','{"station":"helpdesk"}',pending_token);if r->>'requested'<>'helpdesk' then raise exception 'Access request not saved';end if;
- r=public.navrang_gate('me','{}',pending_token);if r->>'active'<>'false' or r->>'helpdesk'<>'false' then raise exception 'Request granted access';end if;
+ r=public.navrang_gate('staff-request','{"station":"checker"}',pending_token);if r->>'status'<>'409' then raise exception 'Staff changed the station after choosing';end if;
+ r=public.navrang_gate('me','{}',pending_token);if r->>'station'<>'helpdesk' or r->>'active'<>'false' or r->>'helpdesk'<>'false' then raise exception 'Request granted access';end if;
  r=public.navrang_gate('staff-update',jsonb_build_object('id',newcomer,'name','Synthetic Raju','active',true,'scanner',false,'helpdesk',true),admin_token);if r->'checker'->>'helpdesk'<>'true' then raise exception 'Admin did not grant Help Desk';end if;
  r=public.navrang_gate('me','{}',pending_token);if r->>'active'<>'true' or r->>'scanner'<>'false' or r->>'helpdesk'<>'true' or r->>'requestedRole'<>'' then raise exception 'Existing session did not pick up role grant';end if;
  r=public.navrang_gate('google-register',jsonb_build_object('id',gid,'name','Ignored Rename','email',upper(email)),'');if r->>'id'<>newcomer::text or r->>'name'<>'Synthetic Raju' or r->>'scanner'<>'false' or r->>'helpdesk'<>'true' then raise exception 'Google login duplicated account or reset assigned name/permissions';end if;
  r=public.navrang_gate('staff-update',jsonb_build_object('id',newcomer,'name','Synthetic Renamed','active',true,'scanner',true,'helpdesk',false),admin_token);
- r=public.navrang_gate('me','{}',pending_token);if r->>'name'<>'Synthetic Renamed' or r->>'scanner'<>'true' or r->>'helpdesk'<>'false' then raise exception 'Admin name/role change failed';end if;
+ r=public.navrang_gate('me','{}',pending_token);if r->>'station'<>'checker' or r->>'name'<>'Synthetic Renamed' or r->>'scanner'<>'true' or r->>'helpdesk'<>'false' then raise exception 'Admin name/role change failed';end if;
  r=public.navrang_gate('helpdesk-list','{}',pending_token);if r->>'status'<>'403' then raise exception 'Help Desk revocation failed';end if;
  r=public.navrang_gate('staff-update',jsonb_build_object('id',newcomer,'active',false),admin_token);
  r=public.navrang_gate('google-register',jsonb_build_object('id',gid,'name','Ignored','email',email),'');if r->>'active'<>'false' then raise exception 'Google login undid suspension';end if;

@@ -60,7 +60,7 @@ test('an in-flight roster sync cannot restore student data after checker access 
 
 test('an expired current session clears temporary student data and returns to signed out',async()=>{
  const {dom,w}=client();try{
-  w.sessionStorage.setItem('navrang-session',JSON.stringify(session('expired','Raju')));
+  w.sessionStorage.setItem('navrang-session',JSON.stringify({token:'expired',profile:{role:'admin',name:'namdev',active:true}}));
   w.fetch=async()=>reply({dataRevision:1,cursor:0,records:[{id:'DEMO0001',name:'Temporary student'}],entries:[],stats:{total:1}});
   await w.GateClient.sync();assert.equal((await w.GateClient.local('snapshot')).localCount,1);
   const events=[];w.GateClient.on(e=>events.push(e));
@@ -96,5 +96,16 @@ test('sign-out is immediate on a slow connection and its late receipt cannot era
   w.fetch=async(_url,o)=>JSON.parse(o.body).action==='logout'?new Promise(r=>deliver=()=>r(reply({signedOut:true}))):reply(session('new','New checker'));
   const logout=w.GateClient.signOut();assert.equal(w.GateClient.profile(),null);
   await w.GateClient.api('checker-login',{code:'test'});deliver();await logout;assert.equal(w.GateClient.profile().name,'New checker');
+ }finally{dom.window.close()}
+});
+
+test('a staff summary clears old rosters and entry history and retains only the two allowed counters',async()=>{
+ const {dom,w}=client();try{
+  w.fetch=async()=>reply({dataRevision:1,cursor:0,records:[{id:'DEMO0001',name:'Old cached student'}],entries:[],stats:{total:1124}});await w.GateClient.sync();
+  w.sessionStorage.setItem('navrang-session',JSON.stringify({...session('staff','Raju'),profile:{...session('staff','Raju').profile,station:'helpdesk',scanner:false,helpdesk:true}}));
+  w.fetch=async()=>reply({staffSummary:true,scanner:false,dataRevision:-1,cursor:0,records:null,entries:[],stats:{ownScans:7,totalEntries:200,total:1124,remaining:900}});await w.GateClient.sync();
+  const s=await w.GateClient.local('snapshot');assert.equal(s.localCount,0);assert.equal(s.entries.length,0);assert.equal((await w.GateClient.local('lookup',{id:'DEMO0001'})).record,undefined);assert.equal(JSON.stringify(s.stats),JSON.stringify({ownScans:7,totalEntries:200}));
+  w.fetch=async()=>reply(w.GateClient.profile());await w.GateClient.api('me');assert.equal((await w.GateClient.local('snapshot')).stats.totalEntries,200,'a profile refresh cleared the permitted counters');
+  w.fetch=async()=>reply({dataRevision:1,records:[{id:'DEMO0001',name:'Should not load'}],entries:[],stats:{total:1124}});await assert.rejects(w.GateClient.sync(),/Only your scan summary/);assert.equal((await w.GateClient.local('snapshot')).localCount,0);
  }finally{dom.window.close()}
 });

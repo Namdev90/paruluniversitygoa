@@ -95,6 +95,7 @@ grant select,insert,update on navrang_private.helpdesk_registrations,navrang_pri
 alter table navrang_private.checkers add column if not exists scanner_enabled boolean not null default false;
 alter table navrang_private.checkers add column if not exists requested_role text not null default '' check(requested_role in ('','checker','helpdesk'));
 alter table navrang_private.checkers add column if not exists access_expires_at timestamptz;
+alter table navrang_private.checkers add column if not exists selected_station text not null default '' check(selected_station in ('','checker','helpdesk'));
 
 create or replace function public.navrang_gate(p_action text,p jsonb default '{}'::jsonb,p_token text default '')
 returns jsonb language plpgsql security invoker set search_path = '' as $$
@@ -130,14 +131,14 @@ begin
   else
    insert into navrang_private.checkers(google_id,name,email,method,active,scanner_enabled) values((p->>'id')::uuid,left(p->>'name',128),lower(trim(p->>'email')),'google',false,false) returning * into c;
   end if;
-  return jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'scanner',c.scanner_enabled,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'helpdesk',c.helpdesk_enabled,'nameConfirmed',c.name_confirmed,'method',c.method);
+  return jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'scanner',c.scanner_enabled,'station',c.selected_station,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'helpdesk',c.helpdesk_enabled,'nameConfirmed',c.name_confirmed,'method',c.method);
  elsif p_action='session-create' then
   if p->>'role'='checker' then
    select * into c from navrang_private.checkers where id=(p->>'checkerId')::uuid;
    if not found or (c.access_expires_at is not null and c.access_expires_at<=now()) then return jsonb_build_object('error','Staff access expired. Ask Namdev for a new code.','status',403);end if;
   end if;
   insert into navrang_private.sessions(hash,role,checker_id,expires_at) values(p->>'hash',p->>'role',c.id,least(now()+interval '12 hours',coalesce(c.access_expires_at,now()+interval '12 hours')));
-  return jsonb_build_object('role',p->>'role','name',case when p->>'role'='admin' then 'namdev' else c.name end,'checkerId',c.id,'username',c.name,'accountKey',c.username,'helpdesk',c.helpdesk_enabled,'nameConfirmed',c.name_confirmed,'method',c.method,'scanner',case when p->>'role'='admin' then true else c.scanner_enabled end,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'active',case when p->>'role'='admin' then true else c.active end,'expiresAt',least(now()+interval '12 hours',coalesce(c.access_expires_at,now()+interval '12 hours')));
+  return jsonb_build_object('role',p->>'role','name',case when p->>'role'='admin' then 'namdev' else c.name end,'checkerId',c.id,'username',c.name,'accountKey',c.username,'helpdesk',c.helpdesk_enabled,'nameConfirmed',c.name_confirmed,'method',c.method,'scanner',case when p->>'role'='admin' then true else c.scanner_enabled end,'station',c.selected_station,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'active',case when p->>'role'='admin' then true else c.active end,'expiresAt',least(now()+interval '12 hours',coalesce(c.access_expires_at,now()+interval '12 hours')));
  end if;
  select * into s from navrang_private.sessions where hash=p_token and expires_at>now();
  if not found then return jsonb_build_object('error','Sign in again. Your session expired.','status',401);end if;
@@ -152,18 +153,22 @@ begin
  if p_action='staff-request' then
   if s.role<>'checker' or not coalesce(c.name_confirmed,false) then return jsonb_build_object('error','Save your real name before choosing a station.','status',403);end if;
   if coalesce(p->>'station','') not in ('checker','helpdesk') then return jsonb_build_object('error','Choose Checker or Help Desk.','status',400);end if;
-  update navrang_private.checkers set requested_role=p->>'station' where id=c.id;
-  return jsonb_build_object('requested',p->>'station','message','Namdev will assign your station in Admin → Staff.');
+  select * into c from navrang_private.checkers where id=s.checker_id for update;
+  if c.selected_station<>'' and c.selected_station<>p->>'station' then return jsonb_build_object('error','Your station is already saved. Only Namdev can change it in Admin → Staff.','status',409);end if;
+  if c.selected_station='' then
+   update navrang_private.checkers set selected_station=p->>'station',requested_role=case when active and ((p->>'station'='checker' and scanner_enabled) or (p->>'station'='helpdesk' and helpdesk_enabled)) then '' else p->>'station' end where id=c.id returning * into c;
+  end if;
+  return jsonb_build_object('station',c.selected_station,'requested',c.requested_role,'message','Station saved. Only Namdev can change it.');
  end if;
  if p_action='logout' then delete from navrang_private.sessions where hash=p_token;return jsonb_build_object('signedOut',true);end if;
- if p_action='me' then return jsonb_build_object('role',s.role,'name',actor_name,'checkerId',c.id,'username',c.name,'accountKey',c.username,'nameConfirmed',c.name_confirmed,'method',c.method,'scanner',s.role='admin' or coalesce(c.scanner_enabled,false),'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'helpdesk',s.role='admin' or coalesce(c.helpdesk_enabled,false),'active',s.role='admin' or coalesce(c.active,false),'expiresAt',s.expires_at);end if;
+ if p_action='me' then return jsonb_build_object('role',s.role,'name',actor_name,'checkerId',c.id,'username',c.name,'accountKey',c.username,'nameConfirmed',c.name_confirmed,'method',c.method,'scanner',s.role='admin' or coalesce(c.scanner_enabled,false),'station',c.selected_station,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'helpdesk',s.role='admin' or coalesce(c.helpdesk_enabled,false),'active',s.role='admin' or coalesce(c.active,false),'expiresAt',s.expires_at);end if;
  if s.role='checker' and not coalesce(c.active,false) then return jsonb_build_object('error','Your checker account needs admin approval or has been suspended.','status',403);end if;
- if p_action in ('sync','checkin') and s.role='checker' and not coalesce(c.scanner_enabled,false) then return jsonb_build_object('error','Checker access required. Choose your assigned Help Desk station or ask Namdev.','status',403);end if;
+ if p_action='checkin' and s.role='checker' and (not coalesce(c.scanner_enabled,false) or c.selected_station<>'checker') then return jsonb_build_object('error','Checker access required. Choose your assigned Help Desk station or ask Namdev.','status',403);end if;
  if p_action='checkin' and c.method='google' and not c.name_confirmed then return jsonb_build_object('error','Save your real checker name before scanning.','status',403);end if;
  if p_action in ('import','upsert','staff-create','staff-update','admin-password','helpdesk-review','helpdesk-edit','helpdesk-export') and s.role<>'admin' then return jsonb_build_object('error','Administrator access required.','status',403);end if;
 
  if p_action like 'helpdesk-%' then
-  if s.role<>'admin' and not coalesce(c.helpdesk_enabled,false) then return jsonb_build_object('error','Ask Namdev to enable Help Desk access for your account in Admin → Checkers.','status',403);end if;
+  if s.role<>'admin' and (not coalesce(c.helpdesk_enabled,false) or c.selected_station<>'helpdesk') then return jsonb_build_object('error','Ask Namdev to enable Help Desk access for your account in Admin → Checkers.','status',403);end if;
   if s.role='checker' and c.method='google' and not c.name_confirmed then return jsonb_build_object('error','Save your real name first.','status',403);end if;
  end if;
  if p_action='helpdesk-save' then
@@ -240,12 +245,12 @@ begin
  end if;
 
  if p_action='staff-create' then
-  insert into navrang_private.checkers(name,method,code_hash,active,name_confirmed,scanner_enabled,helpdesk_enabled) values(left(trim(p->>'name'),40),'code',p->>'hash',true,true,coalesce((p->>'scanner')::boolean,true),coalesce((p->>'helpdesk')::boolean,false)) returning * into c;
-  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'scanner',c.scanner_enabled,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'helpdesk',c.helpdesk_enabled,'nameConfirmed',c.name_confirmed,'method',c.method));
+  insert into navrang_private.checkers(name,method,code_hash,active,name_confirmed,scanner_enabled,helpdesk_enabled,selected_station) values(left(trim(p->>'name'),40),'code',p->>'hash',true,true,coalesce((p->>'scanner')::boolean,true),coalesce((p->>'helpdesk')::boolean,false),case when coalesce((p->>'scanner')::boolean,true) and not coalesce((p->>'helpdesk')::boolean,false) then 'checker' when not coalesce((p->>'scanner')::boolean,true) and coalesce((p->>'helpdesk')::boolean,false) then 'helpdesk' else '' end) returning * into c;
+  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'scanner',c.scanner_enabled,'station',c.selected_station,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'helpdesk',c.helpdesk_enabled,'nameConfirmed',c.name_confirmed,'method',c.method));
  elsif p_action='staff-update' then
-  update navrang_private.checkers set active=(p->>'active')::boolean,name=coalesce(nullif(trim(p->>'name'),''),name),name_confirmed=case when nullif(trim(p->>'name'),'') is not null then true else name_confirmed end,scanner_enabled=coalesce((p->>'scanner')::boolean,scanner_enabled),helpdesk_enabled=coalesce((p->>'helpdesk')::boolean,helpdesk_enabled),requested_role=case when (p->>'active')::boolean then '' else requested_role end where id=(p->>'id')::uuid returning * into c;
+  update navrang_private.checkers set active=(p->>'active')::boolean,name=coalesce(nullif(trim(p->>'name'),''),name),name_confirmed=case when nullif(trim(p->>'name'),'') is not null then true else name_confirmed end,scanner_enabled=coalesce((p->>'scanner')::boolean,scanner_enabled),helpdesk_enabled=coalesce((p->>'helpdesk')::boolean,helpdesk_enabled),selected_station=case when coalesce((p->>'scanner')::boolean,scanner_enabled) and not coalesce((p->>'helpdesk')::boolean,helpdesk_enabled) then 'checker' when coalesce((p->>'helpdesk')::boolean,helpdesk_enabled) and not coalesce((p->>'scanner')::boolean,scanner_enabled) then 'helpdesk' else selected_station end,requested_role=case when (p->>'active')::boolean then '' else requested_role end where id=(p->>'id')::uuid returning * into c;
   if not found then return jsonb_build_object('error','Checker not found.','status',404);end if;
-  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'scanner',c.scanner_enabled,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'helpdesk',c.helpdesk_enabled,'nameConfirmed',c.name_confirmed,'method',c.method));
+  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'scanner',c.scanner_enabled,'station',c.selected_station,'requestedRole',c.requested_role,'accessExpiresAt',c.access_expires_at,'helpdesk',c.helpdesk_enabled,'nameConfirmed',c.name_confirmed,'method',c.method));
  elsif p_action='admin-password' then
   update navrang_private.admin_credentials set salt=p->>'salt',hash=p->>'hash' where username='namdev';
   delete from navrang_private.sessions where role='admin' and hash<>p_token;
@@ -283,6 +288,9 @@ begin
   insert into navrang_private.attempts(actor,request_id,ticket_id,device_id,response) values(actor_key,(p->>'requestId')::uuid,p->>'ticketId',p->>'deviceId',result);
   return result;
  elsif p_action='sync' then
+  if s.role='checker' then
+   return jsonb_build_object('staffSummary',true,'scanner',c.scanner_enabled and c.selected_station='checker','dataRevision',-1,'cursor',0,'hasMore',false,'records',null,'entries','[]'::jsonb,'stats',jsonb_build_object('ownScans',(select count(*) from navrang_private.admissions where not test_fixture and checker_id=c.id),'totalEntries',(select count(*) from navrang_private.admissions where not test_fixture)));
+  end if;
   select * into e from navrang_private.event where id='O9KL3';
   if coalesce((p->>'dataRevision')::bigint,-1)<>e.data_revision then
    select coalesce(jsonb_agg(to_jsonb(ts)-'active'-'updated_at' order by ts.id),'[]') into records from navrang_private.tickets ts where ts.active;
@@ -293,7 +301,7 @@ begin
   select jsonb_build_object('total',count(*),'eligible',count(*) filter(where ti.eligible),'blocked',count(*) filter(where not ti.eligible),'remaining',count(*) filter(where ti.eligible and not exists(select 1 from navrang_private.admissions ad where not ad.test_fixture and ad.ticket_id=ti.id))) into stats from navrang_private.tickets ti where ti.active;
   stats=stats||jsonb_build_object('admitted',(select count(*) from navrang_private.admissions where not test_fixture),'lastMinute',(select count(*) from navrang_private.admissions where not test_fixture and at>now()-interval '1 minute'),'lastFiveMinutes',(select count(*) from navrang_private.admissions where not test_fixture and at>now()-interval '5 minutes'),'duplicateAttempts',(select count(*) from navrang_private.attempts where not test_fixture and response->>'code'='duplicate'),'blockedAttempts',(select count(*) from navrang_private.attempts where not test_fixture and response->>'code' in ('blocked','not_found')));
   if s.role='admin' then
-   select coalesce(jsonb_agg(jsonb_build_object('id',ck.id,'username',ck.name,'accountKey',ck.username,'name',ck.name,'email',ck.email,'method',ck.method,'active',ck.active,'scanner',ck.scanner_enabled,'requestedRole',ck.requested_role,'accessExpiresAt',ck.access_expires_at,'helpdesk',ck.helpdesk_enabled,'entries',(select count(*) from navrang_private.admissions ad where not ad.test_fixture and ad.checker_id=ck.id)) order by ck.created_at),'[]') into staff from navrang_private.checkers ck;
+   select coalesce(jsonb_agg(jsonb_build_object('id',ck.id,'username',ck.name,'accountKey',ck.username,'name',ck.name,'email',ck.email,'method',ck.method,'active',ck.active,'scanner',ck.scanner_enabled,'station',ck.selected_station,'requestedRole',ck.requested_role,'accessExpiresAt',ck.access_expires_at,'helpdesk',ck.helpdesk_enabled,'entries',(select count(*) from navrang_private.admissions ad where not ad.test_fixture and ad.checker_id=ck.id)) order by ck.created_at),'[]') into staff from navrang_private.checkers ck;
   end if;
   return jsonb_build_object('dataRevision',e.data_revision,'source',e.source,'updatedAt',e.updated_at,'records',records,'entries',entries,'cursor',cursor_seq,'hasMore',cursor_seq<last_seq,'stats',stats,'checkers',staff);
  end if;
