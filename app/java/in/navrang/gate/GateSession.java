@@ -15,10 +15,10 @@ public final class GateSession {
  private final SharedPreferences prefs;
  private long generation=0;
  public synchronized long generation(){return generation;}
- public synchronized long beginChange(){return ++generation;}
+ public synchronized long beginChange(){generation++;prefs.edit().putLong("generation",generation).commit();return generation;}
  public synchronized boolean saveIfCurrent(long expected,String token,JSONObject profile)throws Exception{if(expected!=generation)return false;save(token,profile);return true;}
  public synchronized boolean refreshIfCurrent(long expected,String token,JSONObject profile)throws Exception{JSONObject current=read();if(expected!=generation||current==null||!token.equals(current.optString("token")))return false;save(token,profile);return true;}
- public GateSession(Context context){prefs=context.getSharedPreferences("navrang-live-auth",Context.MODE_PRIVATE);}
+ public GateSession(Context context){prefs=context.getSharedPreferences("navrang-live-auth",Context.MODE_PRIVATE);generation=prefs.getLong("generation",0);}
  private SecretKey key() throws Exception{
   KeyStore store=KeyStore.getInstance("AndroidKeyStore");store.load(null);
   if(!store.containsAlias("navrang-session-v2")){KeyGenerator g=KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES,"AndroidKeyStore");g.init(new KeyGenParameterSpec.Builder("navrang-session-v2",KeyProperties.PURPOSE_ENCRYPT|KeyProperties.PURPOSE_DECRYPT).setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build());g.generateKey();}
@@ -35,6 +35,6 @@ public final class GateSession {
   try{String[] parts=raw.split(":",2);Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key(),new GCMParameterSpec(128,Base64.decode(parts[0],Base64.NO_WRAP)));return new JSONObject(new String(c.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),StandardCharsets.UTF_8));}
   catch(Exception e){return null;}
  }
- public synchronized void clear(){generation++;prefs.edit().remove("encrypted").commit();}
+ public synchronized void clear(){beginChange();prefs.edit().remove("encrypted").commit();}
  public static String actor(JSONObject session){if(session==null)return "";JSONObject p=session.optJSONObject("profile");if(p==null)return "";return "admin".equals(p.optString("role"))?"admin":p.optString("checkerId","");}
 }

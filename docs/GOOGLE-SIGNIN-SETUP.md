@@ -14,8 +14,8 @@ The Android external-browser OAuth + PKCE flow and server verification are imple
    - https://navrang-gate-admin.namubhai.chatgpt.site/
    If Google browser sign-in will be used at the hosted app, add that HTTPS origin to Google's authorized JavaScript origins too.
 6. Open the Android app, tap Continue with Google and finish in the system browser. The app receives a short-lived authorization code, checks the saved state and exchanges with its saved PKCE verifier.
-7. Every verified Google account automatically becomes an active checker. Each verified email has one checker row and a unique immutable `checker_<UUID>` username. Repeat login reuses that account. Admin suspension remains effective across sign-ins. Google checkers never receive admin privileges.
-8. Verify the full flow on the actual Android phone. The owner confirmed successful phone sign-in; retest scanning with the intended checker account.
+7. Every verified Google account automatically becomes an active checker. Each verified email has one checker row and a unique immutable internal account key. The displayed username is the checker’s real name, confirmed in the app before scanning. Repeat login reuses that account. Admin suspension remains effective across sign-ins. Google checkers never receive admin privileges.
+8. Verify the full flow on the actual Android phone. The owner reported a successful redirect; the last database check before v0.3 still had zero Google identities. Verify the completed APK sign-in and saved name, rather than assuming provider enablement proves the full flow.
 
 The APK uses browser-based Supabase OAuth, not an embedded Google WebView or a fabricated identity. It does not require shipping a client secret or the Google Play Services sign-in SDK. Android app data is preserved by installing the signed 0.2.0 APK over 0.1.0; do not uninstall or clear data during live use.
 

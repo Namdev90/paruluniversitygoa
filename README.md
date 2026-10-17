@@ -1,82 +1,55 @@
-# Navrang Gate — Parul University Goa
+# Navrang Gate · Parul University Goa
 
-Android QR check-in and live event administration for Navrang 2026.
+Android QR check-in and event administration for Navrang 2026. **Version 0.3.0 is a temporary rehearsal prototype.**
 
-[Download Android 0.2.0](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.2.0.apk) · [Admin console](https://navrang-gate-admin.namubhai.chatgpt.site/#admin)
+[Download Android 0.3.0](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.3.0.apk)
 
-## Start at the gate
+## Install and sign in
 
-1. Install the APK on Android 7.0 or newer. Update Android System WebView / Chrome to version 86 or newer if requested.
-2. Install over version 0.1.0 to preserve its data. **Do not uninstall or clear app data during live entry.** The private original signing key is retained outside this repository.
-3. Admin: sign in with username **namdev** and the password supplied privately by the organizer. It is stored as a salted hash on the server and is not in the app or this repository.
-4. The supplied organizer workbook is loaded in the private hosted database: 997 registrations, 926 eligible and 71 blocked at initial import. For later updates, use **Data & files → Update shared database**.
-5. Open Admin → Checkers, enter each volunteer's name and create a checker code. The code is shown once. Share it privately with that checker.
-6. Checkers sign in with the assigned code. Google sign-in is implemented but needs the owner's provider setup described below. Each accepted entry records the authenticated checker, device and server time.
-7. Tap **Start scanning**, or swipe down on the scanner panel. The native camera stays active behind the result card. Each new QR submits automatically; no confirmation button. A held QR is suppressed until it leaves view.
-8. **Allow entry after green.** The server validates the current organizer record and saves one admission, then the phone saves its receipt. Another scanner receives “Already admitted” with the original checker and time.
-9. The exact eight-character Transaction ID can also be entered manually. O and 0 are different. Staff still compare the student's university ID; the payment export has no university enrolment-number field.
+1. Install the new APK over the previous signed version. Keep app data; do not uninstall during event operations. Android 7+ and WebView/Chrome 86+ are required.
+2. The opening shows the supplied event art, the official Parul University Goa wordmark and the approved Navrang icon. A separate login page follows.
+3. Checkers use Google or an assigned code. Verified Google accounts activate automatically. They must save a real name, for example **Raju**, before scanning. Repeated sign-in reuses the account. Emails are private and never shown in the checker interface. Different people can share a real name; the immutable internal account ID distinguishes them.
+4. Admin: choose **Administrator sign-in**, username **namdev**, and the privately supplied password. The complete admin console is inside the APK. Admin → Checkers has one-tap Activate / Suspend controls. A suspended account stays suspended after another Google sign-in.
+5. Google must also allow the intended audience. If the OAuth application is still in Testing, only its Google Test users can sign in. See [provider setup](docs/GOOGLE-SIGNIN-SETUP.md).
 
-The owner dashboard is hosted privately. Open it with the owning ChatGPT account, then use the event admin login. The same admin console is included in the APK and browser companion, so the gate does not depend on dashboard hosting.
+## Live gate operation
 
-## Updates, stats and files
+Tap **Start scanning**, or swipe down on its panel. The camera stays open; a different student QR is read without reopening it. Green appears only after a server admission and local receipt save. A held code is suppressed until it leaves view. One ticket permits one entry, with no re-entry.
 
-- Admin → Data & files accepts the original Easebuzz XLSX export or a versioned Navrang JSON registration package. Preview the counts and apply the shared update.
-- Excel converts once. Android scans use an indexed internal SQLite database; they do not reopen Excel.
-- **Download converted JSON** creates a file another device can import without parsing Excel. The current APK supports both formats.
-- Admin → Update data also adds or edits an individual registration. Existing admissions remain immutable across full imports, payment changes and removal of a registration.
-- Connected checkers and the dashboard receive registration updates and entry deltas by foreground polling every **2 seconds**. Check-in itself validates immediately at the server; it does not wait for the next poll.
-- Statistics include current registrations, payment-eligible/blocked records, admitted/remaining students, last-minute throughput, entry history, checker counts and refused/duplicate attempts.
-- Search registrations or entries; inspect a student's payment and entry details; approve or suspend Google checkers or assigned-code checkers. Suspension blocks existing sessions at the server.
-- Admin CSV exports all fetched event entries. Device CSV distinguishes server receipts from previous-version local entries.
-- Device backup contains cached records, receipts, legacy entries and pending requests, without sign-in credentials. It is an export for recovery tools; this version has no in-app device-backup restore.
-- **Save offline reference** stores the file locally. Shared-server records refresh it after reconnection.
+Payment, duplicate, invalid and unknown-ticket issues display a **manual-acknowledgment help-desk alert**, pausing new QR submissions. An unresolved network request also raises that alert after a short grace period. Acknowledgment never grants entry. Pending requests remain durable and retry using their original UUID. If a pending request later succeeds, its updated receipt is shown.
 
-Payment eligibility uses successful transaction Description, event O9KL3, quantity 1, amount at least INR 100 and zero refunds. Merchant PayOutStatus is not used to decide student payment.
+The scanner adds automatic torch assistance in low light, capped automatic zoom when small finder patterns are present, manual zoom/reset, tap-to-focus, focus guidance and inverted-QR decoding. These depend on device capabilities. Soft-image messages are heuristic guidance, not a calibrated blur diagnosis. Sound cues are original, local synthesized bells; the sound toggle also applies in the native scanner. Success and issues have different vibration patterns.
 
-## Interrupted internet
+Use the exact eight-character Transaction ID manually if the camera cannot decode a ticket. O and 0 remain distinct. Compare the student's university ID separately: the organizer export has no enrolment-number field.
 
-Every scan is saved to a durable local outbox before transmission. Retries reuse its request UUID, including after reopening the app. A lost response cannot create another admission or change the original checker/time.
+**No upload, document download, CSV export or backup tools are exposed in the current app.** Send a new organizer workbook privately in the working chat; the authorized operator applies it to the server. Only the admin can edit individual shared registrations inside the app. Importing a newer list preserves confirmed admissions. Scans use indexed SQLite, not a repeatedly opened workbook.
 
-**Amber means pending, not permission to enter.** Disconnected devices can retain reference data and queued requests, but cannot guarantee universal no-re-entry. Requests resume under the same checker account; changing accounts does not submit someone else's pending scans.
+## Admin rehearsal
 
-Previous-version local admissions are preserved separately. They are not silently uploaded as universal admissions. Export the legacy ledger for organizer review if it contains real entries.
+Sign in as admin → **Simulate** → **Start auto scan**. A persistent amber strip identifies simulation. Its sample QR stream covers paid, duplicate, unpaid and unknown tickets. Toggle the sample network offline and online to try pending recovery. Alerts pause the stream until acknowledged. Sample registration edits, checker activation/suspension, code creation and statistics use a separate in-memory ledger. Sample password changes are disabled. **No simulation operation calls the live check-in/import/upsert endpoints.** Return to live mode using the amber strip; reset discards samples only.
 
-Set up and sign in each phone while connected before the event. Confirm actual camera, torch/autofocus, file picker, persistence after force-close and venue latency on the intended phones.
+The home/admin layout fits the available viewport. Student, checker and entry lists use pages rather than sideways tables or an endless page. Small screens, large accessibility fonts, the keyboard and long text still need physical-phone review; rendered layout has not been verified in this workspace.
 
-## Google sign-in
+Chota Namu appears as the admin guide with a CN medallion. A separate mascot portrait has not been invented.
 
-Real external-browser Google OAuth with PKCE and server-verified identity is implemented. The dedicated project's Google provider is **not enabled yet** because no Google Cloud OAuth client credentials have been supplied. The UI reports this accurately; assigned checker codes provide a working alternative.
+## Data and server
 
-Follow [Google provider setup](docs/GOOGLE-SIGNIN-SETUP.md). New Google users remain pending until Namdev approves them. Client secrets and server service keys are never bundled.
+The approved private workbook initially loaded **997 registrations: 926 eligible, 71 blocked**. Real tickets, contacts and receipts are not bundled in the APK or public repository. Eligibility requires event O9KL3, successful transaction Description, amount at least INR 100, quantity 1 and zero refunds. PayOutStatus does not decide student payment.
 
-## Security and storage
+The Mumbai Supabase service serializes admissions and organizer updates. Event data is in a private RLS-enabled schema; the Edge Function authenticates opaque sessions and uses its service key internally. Google identity is verified by Supabase Auth, never by client-supplied names. Admin access remains separate from Google checker access.
 
-The dedicated Supabase Postgres project is in Mumbai. Event tables have RLS in a private schema; only the Edge Function's service role can execute the admission RPC. Clients use revocable opaque sessions, restricted roles and throttled sign-in. The server serializes registration changes and admissions and enforces one event/ticket row.
+Foreground updates poll every two seconds; check-in validates directly at the server. Strict universal no-re-entry requires server confirmation. Offline requests are retained on the phone but do not authorize entry. Previous-version local admissions remain separate from universal receipts. APK updates preserve the SQLite database and encrypted session storage.
 
-Android stores sessions using Android Keystore AES-GCM and uses SQLite WAL with full synchronization. The app requests CAMERA, VIBRATE, INTERNET and ACCESS_NETWORK_STATE; camera runs only in the foreground.
+The APK uses its embedded interface and connects directly to Supabase; it does not load the hosted ChatGPT Site. The previous owner-private Site remains a configured OAuth fallback/home URL. It has not been deleted: the Sites connector has no delete/unpublish operation. Remove or replace its OAuth references before retiring it manually. No new Site is required for this app.
 
-No student database, entry log, real ticket QR, admin password, service key or signing key is in this public repository. University/event artwork was supplied by the organizer; see [asset notes](app/assets/art/ASSET-NOTES.md) and [third-party notices](THIRD-PARTY-NOTICES.md).
+## Build and verification
 
-## Development and checks
+`python tools/build.py` uses JDK17+, Android API35/build-tools and ZXing3.5.3. The original private signing key is required for an in-place release update; newly generated test keys cannot update the distributed APK. Only current assets are packaged; legacy import/export pages and spreadsheet libraries are excluded.
 
-- app/assets: shared business rules, canonical converter, scanner shell and browser/admin companion.
-- app/java/in/navrang/gate: SQLite/legacy migration, encrypted sessions, native HTTPS/outbox and continuous QR camera.
-- server/schema.sql: service-only Postgres schema/RPC.
-- server/functions/navrang-gate: authenticated Edge API. Its body verifies sessions, so gateway verify_jwt is false; direct anonymous database access is still denied.
-- tools/build.py: Linux Android API 35/build-tools 35.0.0, JDK 17+. Supply NAVRANG_ANDROID_JAR, NAVRANG_BUILD_TOOLS and NAVRANG_ZXING_JAR. A new local test key is generated if the private original key is absent; such an APK cannot replace the original installation in place.
-- tools/sync-server-core.py regenerates the server ESM rules from app/assets/core.js.
-- tools/package-web.py exports the browser companion into a chosen static directory.
-- test-codes/index.html contains synthetic QR codes, not attendees.
-- app/assets/legacy.html preserves the separate 0.1 offline browser companion for reference testing. The current gate uses index.html.
+`npm ci --ignore-scripts` then `npm test` runs unit and DOM regressions. Set `NAVRANG_TEST_XLSX` to the private export for the real-file converter test. `python tests/sqlite-check.py` checks transactional durability. Native QR, camera-assistance and latch/PKCE/platform logic checks are in `tests/qr`.
 
-Run npm ci --ignore-scripts, then npm test. Set NAVRANG_TEST_XLSX to a private local export for the real-file integration; otherwise that test is explicitly skipped. Run python tests/sqlite-check.py for local database-schema failure/persistence checks. Java logic checks are in tests/qr.
+The v0.3 checks cover simulation isolation, manual issue acknowledgment, role gating, name-preserving edits, real-name validation, server role enforcement, exact/rotated/inverted/low-contrast/landscape QR decoding, SQLite recovery, and signed APK permissions/certificate. Server profile tests use a transaction that rolls all fixtures back. Never run mutating hosted tests against the live event.
 
-The hosted integration suite and DOM/API integration are separate commands (npm run test:hosted and npm run test:dom). They require private test credentials, a dedicated synthetic dataset and the documented environment variables. Never run mutating integration checks against a live event. No credentials or attendee fixture is committed.
+Supported rendered preview failed with a mount-permission error. Physical Android camera, torch/zoom/focus, haptics/audio, keyboard/layout, process recovery and Google OAuth still need an actual phone trial. Provider-enabled status is not proof of a successful login. Earlier hosted admission/idempotency checks are recorded in `docs/live-progress.md`; no real attendee was admitted for this update. This prototype has no measured near-zero camera failure rate and is not a venue performance certification.
 
-## Verification limits
-
-The rule/protocol unit suite, real-file import, hosted concurrency/idempotency/authorization tests, DOM/IndexedDB offline recovery, Java QR/latch/PKCE/platform logic, SQLite-schema fault tests and APK signature/permissions were checked in this workspace. The dedicated hosted service was tested with synthetic registrations. Their audit rows are retained with reversible test flags and excluded from live entry counts; test checker accounts are suspended. After explicit owner approval, the supplied workbook was imported privately and all canonical fields were verified against the source: 997 registrations, 926 eligible, 71 blocked and zero real admissions at import. Contact and card details were excluded.
-
-Rendered browser QA was blocked by the supported preview environment's mount-permission failure. DOM tests verify behavior, not visual layout. Physical Android camera/Keystore/lifecycle and an actual Google OAuth login have not been executed here. Google sign-in needs owner configuration and all event phones need a trial before live use.
-
-Version 0.1 documentation in docs/spec.md and docs/plan.md is historical. The current design and implementation record are docs/LIVE-V02-DESIGN.md and docs/live-progress.md.
+Older v0.1/v0.2 design files are historical. Current follow-up work is in [next steps](docs/NEXT-STEPS.md). Asset sources and licenses are in [asset notes](app/assets/art/ASSET-NOTES.md) and [third-party notices](THIRD-PARTY-NOTICES.md).

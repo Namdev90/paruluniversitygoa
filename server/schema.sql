@@ -15,6 +15,7 @@ create table navrang_private.checkers (
  username text generated always as ('checker_' || replace(id::text,'-','')) stored unique,
  name text not null check(length(name) between 1 and 128), email text not null default '',
  method text not null check(method in ('google','code')), code_hash text unique,
+ name_confirmed boolean not null default false,
  active boolean not null default false, created_at timestamptz not null default now()
 );
 create unique index checkers_google_email_unique on navrang_private.checkers(lower(email)) where method='google';
@@ -97,31 +98,38 @@ begin
   else
    insert into navrang_private.checkers(google_id,name,email,method,active) values((p->>'id')::uuid,left(p->>'name',128),lower(trim(p->>'email')),'google',true) returning * into c;
   end if;
-  return jsonb_build_object('id',c.id,'username',c.username,'name',c.name,'active',c.active,'method',c.method);
+  return jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'nameConfirmed',c.name_confirmed,'method',c.method);
  elsif p_action='session-create' then
   if p->>'role'='checker' then
    select * into c from navrang_private.checkers where id=(p->>'checkerId')::uuid;
    if not found then return jsonb_build_object('error','Checker not found.','status',403);end if;
   end if;
   insert into navrang_private.sessions(hash,role,checker_id,expires_at) values(p->>'hash',p->>'role',c.id,now()+interval '12 hours');
-  return jsonb_build_object('role',p->>'role','name',case when p->>'role'='admin' then 'namdev' else c.name end,'checkerId',c.id,'username',c.username,'method',c.method,'active',case when p->>'role'='admin' then true else c.active end,'expiresAt',now()+interval '12 hours');
+  return jsonb_build_object('role',p->>'role','name',case when p->>'role'='admin' then 'namdev' else c.name end,'checkerId',c.id,'username',c.name,'accountKey',c.username,'nameConfirmed',c.name_confirmed,'method',c.method,'active',case when p->>'role'='admin' then true else c.active end,'expiresAt',now()+interval '12 hours');
  end if;
  select * into s from navrang_private.sessions where hash=p_token and expires_at>now();
  if not found then return jsonb_build_object('error','Sign in again. Your session expired.','status',401);end if;
  if s.role='checker' then select * into c from navrang_private.checkers where id=s.checker_id;end if;
  actor_key=coalesce(c.id::text,'admin'); actor_name=case when s.role='admin' then 'namdev' else c.name end;
+ if p_action='checker-profile' then
+  if s.role<>'checker' then return jsonb_build_object('error','Checker account required.','status',403);end if;
+  if length(trim(p->>'name')) not between 1 and 40 or trim(p->>'name') ~ '[@0-9]' then return jsonb_build_object('error','Enter a real name, up to 40 letters.','status',400);end if;
+  update navrang_private.checkers set name=trim(p->>'name'),name_confirmed=true where id=c.id returning * into c;
+  return jsonb_build_object('saved',true,'name',c.name);
+ end if;
  if p_action='logout' then delete from navrang_private.sessions where hash=p_token;return jsonb_build_object('signedOut',true);end if;
- if p_action='me' then return jsonb_build_object('role',s.role,'name',actor_name,'checkerId',c.id,'username',c.username,'method',c.method,'active',s.role='admin' or coalesce(c.active,false),'expiresAt',s.expires_at);end if;
+ if p_action='me' then return jsonb_build_object('role',s.role,'name',actor_name,'checkerId',c.id,'username',c.name,'accountKey',c.username,'nameConfirmed',c.name_confirmed,'method',c.method,'active',s.role='admin' or coalesce(c.active,false),'expiresAt',s.expires_at);end if;
  if s.role='checker' and not coalesce(c.active,false) then return jsonb_build_object('error','Your checker account needs admin approval or has been suspended.','status',403);end if;
+ if p_action='checkin' and c.method='google' and not c.name_confirmed then return jsonb_build_object('error','Save your real checker name before scanning.','status',403);end if;
  if p_action in ('import','upsert','staff-create','staff-update','admin-password') and s.role<>'admin' then return jsonb_build_object('error','Administrator access required.','status',403);end if;
 
  if p_action='staff-create' then
-  insert into navrang_private.checkers(name,method,code_hash,active) values(left(trim(p->>'name'),128),'code',p->>'hash',true) returning * into c;
-  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'username',c.username,'name',c.name,'active',c.active,'method',c.method));
+  insert into navrang_private.checkers(name,method,code_hash,active,name_confirmed) values(left(trim(p->>'name'),128),'code',p->>'hash',true,true) returning * into c;
+  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'nameConfirmed',c.name_confirmed,'method',c.method));
  elsif p_action='staff-update' then
   update navrang_private.checkers set active=(p->>'active')::boolean where id=(p->>'id')::uuid returning * into c;
   if not found then return jsonb_build_object('error','Checker not found.','status',404);end if;
-  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'username',c.username,'name',c.name,'active',c.active,'method',c.method));
+  return jsonb_build_object('checker',jsonb_build_object('id',c.id,'username',c.name,'accountKey',c.username,'name',c.name,'active',c.active,'nameConfirmed',c.name_confirmed,'method',c.method));
  elsif p_action='admin-password' then
   update navrang_private.admin_credentials set salt=p->>'salt',hash=p->>'hash' where username='namdev';
   delete from navrang_private.sessions where role='admin' and hash<>p_token;
@@ -169,7 +177,7 @@ begin
   select jsonb_build_object('total',count(*),'eligible',count(*) filter(where ti.eligible),'blocked',count(*) filter(where not ti.eligible),'remaining',count(*) filter(where ti.eligible and not exists(select 1 from navrang_private.admissions ad where not ad.test_fixture and ad.ticket_id=ti.id))) into stats from navrang_private.tickets ti where ti.active;
   stats=stats||jsonb_build_object('admitted',(select count(*) from navrang_private.admissions where not test_fixture),'lastMinute',(select count(*) from navrang_private.admissions where not test_fixture and at>now()-interval '1 minute'),'lastFiveMinutes',(select count(*) from navrang_private.admissions where not test_fixture and at>now()-interval '5 minutes'),'duplicateAttempts',(select count(*) from navrang_private.attempts where not test_fixture and response->>'code'='duplicate'),'blockedAttempts',(select count(*) from navrang_private.attempts where not test_fixture and response->>'code' in ('blocked','not_found')));
   if s.role='admin' then
-   select coalesce(jsonb_agg(jsonb_build_object('id',ck.id,'username',ck.username,'name',ck.name,'email',ck.email,'method',ck.method,'active',ck.active,'entries',(select count(*) from navrang_private.admissions ad where not ad.test_fixture and ad.checker_id=ck.id)) order by ck.created_at),'[]') into staff from navrang_private.checkers ck;
+   select coalesce(jsonb_agg(jsonb_build_object('id',ck.id,'username',ck.name,'accountKey',ck.username,'name',ck.name,'email',ck.email,'method',ck.method,'active',ck.active,'entries',(select count(*) from navrang_private.admissions ad where not ad.test_fixture and ad.checker_id=ck.id)) order by ck.created_at),'[]') into staff from navrang_private.checkers ck;
   end if;
   return jsonb_build_object('dataRevision',e.data_revision,'source',e.source,'updatedAt',e.updated_at,'records',records,'entries',entries,'cursor',cursor_seq,'hasMore',cursor_seq<last_seq,'stats',stats,'checkers',staff);
  end if;

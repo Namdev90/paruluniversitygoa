@@ -47,7 +47,8 @@ export function createHandler({rpc,googleUser,googleEnabled}){
     if(!await budget('google'))return json({ok:false,error:'Too many sign-in attempts.'},429);
     const user=await googleUser(p.accessToken||'');
     if(!user||!user.id||!user.email_confirmed_at||user.is_anonymous||!(user.app_metadata?.providers||[user.app_metadata?.provider]).includes('google'))return json({ok:false,error:'Google sign-in could not be verified.'},401);
-    const ck=await rpc('google-register',{id:user.id,name:String(user.user_metadata?.full_name||user.email||'Checker').slice(0,128),email:user.email||''},'');
+    const ck=await rpc('google-register',{id:user.id,name:String(user.user_metadata?.given_name||user.user_metadata?.full_name?.split(' ')[0]||'Checker').slice(0,40),email:user.email||''},'');
+    if(!ck.id)return json({ok:false,error:ck.error||'Checker account could not be created.'},ck.status||400);
     return session('checker',ck.id);
    }
    if(!hash)return json({ok:false,error:'Sign in first.'},401);

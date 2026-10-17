@@ -94,6 +94,10 @@
   if(native)return;const code=new URL(location.href).searchParams.get('code');if(!code)return;const verifier=sessionStorage.getItem('navrang-pkce');if(!verifier)throw fail('Google callback has no saved sign-in request.');
   const r=await fetch(config.project+'/auth/v1/token?grant_type=pkce',{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({auth_code:code,code_verifier:verifier})});const data=await r.json();if(!r.ok)throw fail('Google sign-in could not be exchanged. Try again.');await api('google-login',{accessToken:data.access_token});sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);emit('auth',profile());
  }
- function save(name,mime,text){if(native){Native.saveText(name,mime,text);return}const url=URL.createObjectURL(new Blob([text],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
- root.GateClient={native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
+ function save(){throw fail('File export is not available in this prototype.')}
+ let audio;function feedback(kind,enabled=true){
+  if(native&&typeof Native.feedback==='function'){Native.feedback(kind,enabled);return}
+  if(!enabled)return;try{audio=audio||new (root.AudioContext||root.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const t=audio.currentTime,notes=kind==='intro'?[392,523,659]:kind==='success'?[659,880]:kind==='issue'?[220,165]:[kind==='tap'?420:330];for(let i=0;i<notes.length;i++){const o=audio.createOscillator(),g=audio.createGain(),at=t+i*.1;o.frequency.value=notes[i];g.gain.setValueAtTime(.0001,at);g.gain.exponentialRampToValueAtTime(kind==='tap'?.025:.09,at+.009);g.gain.exponentialRampToValueAtTime(.0001,at+(kind==='tap'?.035:.14));o.connect(g);g.connect(audio.destination);o.start(at);o.stop(at+.16)}}catch{}
+ }
+ root.GateClient={feedback,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);

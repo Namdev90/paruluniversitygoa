@@ -34,7 +34,7 @@ public final class GateRuntime {
  private static JSONObject message(String code,String text){try{return new JSONObject().put("code",code).put("message",text);}catch(Exception e){return new JSONObject();}}
  private static JSONObject safe(String k,String v){try{return new JSONObject().put(k,v);}catch(Exception e){return new JSONObject();}}
  public void submit(String id){
-  try{JSONObject auth=sessions.read();if(auth==null||!auth.getJSONObject("profile").optBoolean("active")){emit("result",safe("code","signed_out").put("message","Sign in with an approved checker account."));return;}
+  try{JSONObject auth=sessions.read();if(auth==null||!auth.getJSONObject("profile").optBoolean("active")||("google".equals(auth.getJSONObject("profile").optString("method"))&&!auth.getJSONObject("profile").optBoolean("nameConfirmed",true))){emit("result",safe("code","signed_out").put("message","Sign in with an approved checker account."));return;}
    JSONObject job=db.queue(id,GateSession.actor(auth));JSONObject local=db.lookup(id);emit("result",new JSONObject().put("code","pending").put("id",id).put("record",local.opt("record")).put("message","Awaiting server confirmation. Request saved on this phone."));drain();
   }catch(Exception e){emit("result",message("storage_error","Could not save the scan. Entry is NOT confirmed. Free storage or reopen the app."));}
  }
