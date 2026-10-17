@@ -2,7 +2,7 @@
 
 Android QR entry and embedded administration for Navrang 2026.
 
-[Download Android 0.7.4](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.4.apk)
+[Download Android 0.7.5](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.5.apk)
 
 Install over the existing signed app. Student records remain on the server; the current app keeps temporary copies in memory only. The private original signing key is retained outside this repository. Android 7+ and WebView/Chrome86+ are required. Version 0.4 introduces the update client; older APKs need this one manual installation.
 
@@ -26,6 +26,8 @@ Version 0.7.2 locks the first station choice to the account and lets only admin 
 Version 0.7.3 fixes scanner pause/resume receipts and per-ticket pending deadlines, delayed account/permission responses, Help Desk search/save/review races and delayed CSV exports. It improves warm 3D controls, official Google sign-in artwork, touch targets, accessible dialogs and narrow-screen flow. Release tooling now refuses a missing/replaced signing identity, changed bytes under an existing APK version and update-channel rollback. See the [production review](docs/PRODUCTION-REVIEW-2026-10-17.md).
 
 Version 0.7.4 is a focused hotfix for name/station-save acknowledgements racing native profile refresh, admin station navigation, queued scanner issues and late-confirmed receipt cards. It restores opening-button centering and popup fallbacks for older Android WebViews. Combined client/UI callback regression checks were added; live registrations and entry data are unchanged.
+
+Version 0.7.5 (versionCode 13) includes merged PR #1, commit `734bb60eaf1e6373b116703c7278ef80aaddf6bf`: pending scan warnings recover when the final server response arrives, and Android installation waits for unresolved entry requests. Permissions, checker approvals and server behavior are unchanged.
 
 ## Gate operation
 

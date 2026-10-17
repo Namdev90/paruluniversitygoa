@@ -1,5 +1,5 @@
 {
-  "versionCode": 12,
-  "versionName": "0.7.4",
-  "notes": "Hotfix: successful name and station saves no longer get stuck after background profile refresh; admin station navigation repaired; queued scanner warnings and late confirmations display correctly; opening button and older Android popup placement corrected."
+  "versionCode": 13,
+  "versionName": "0.7.5",
+  "notes": "Includes merged PR #1 (734bb60): pending scan warnings recover when final server results arrive; pending receipts remain visible until acknowledged or resolved; Android update installation waits for pending entry requests. Existing permissions, checker approvals and server behavior are preserved."
 }

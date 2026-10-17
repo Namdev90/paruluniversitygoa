@@ -1,10 +1,10 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 12,
-  "versionName": "0.7.4",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.4.apk",
+  "versionCode": 13,
+  "versionName": "0.7.5",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.5.apk",
   "size": 1936718,
-  "sha256": "6cfb7fde090ff17bd6e0957d7eaddd66cef2cfaca971d1c215bba79ff696eecc",
-  "notes": "Hotfix: successful name and station saves no longer get stuck after background profile refresh; admin station navigation repaired; queued scanner warnings and late confirmations display correctly; opening button and older Android popup placement corrected.",
-  "publishedAt": "2026-10-17T11:30:37.821946+00:00"
+  "sha256": "5bdbf9ca0852488ab7ae51153a389215f05ad727b9b5b92b37f4dd840b36345b",
+  "notes": "Includes merged PR #1 (734bb60): pending scan warnings recover when final server results arrive; pending receipts remain visible until acknowledged or resolved; Android update installation waits for pending entry requests. Existing permissions, checker approvals and server behavior are preserved.",
+  "publishedAt": "2026-10-17T13:54:49.487891+00:00"
 }
