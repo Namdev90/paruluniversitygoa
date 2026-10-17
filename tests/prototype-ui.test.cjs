@@ -36,3 +36,49 @@ test('a slow sign-out receipt cannot reset the station screen of a newer login',
   deliver();await tick();assert.equal(w.document.getElementById('view-home').hidden,false);assert.equal(w.document.getElementById('view-login').hidden,true);
  }finally{await tick();dom.window.close()}
 });
+
+test('admin access removal immediately clears private views and returns to the assigned station',async()=>{
+ const {w,dom,event}=ui({role:'admin',name:'namdev',active:true});try{
+  await tick();await tick();const $=id=>w.document.getElementById(id);
+  for(const id of ['registration-rows','all-entry-rows','checker-list','dialog-details'])$(id).textContent='Private contact';
+  $('new-checker-code').textContent='NG-PRIVATE';$('edit-name').value='Private contact';$('staff-name').value='Private staff';$('new-admin-password').value='private-password';
+  for(const id of ['student-dialog','edit-dialog','code-dialog','staff-dialog','password-dialog'])$(id).setAttribute('open','');
+  w.GateClient.profile=()=>({role:'checker',checkerId:'staff',name:'Raju',active:true,station:'checker',scanner:true});event({type:'profile'});
+  assert.equal($('view-admin').hidden,true);assert.equal($('view-home').hidden,false);assert.equal($('admin-nav').hidden,true);
+  for(const id of ['registration-rows','all-entry-rows','checker-list','dialog-details','new-checker-code'])assert.equal($(id).textContent,'',id);
+  for(const id of ['edit-name','staff-name','new-admin-password'])assert.equal($(id).value,'',id);
+  for(const id of ['student-dialog','edit-dialog','code-dialog','staff-dialog','password-dialog'])assert.equal($(id).open,false,id);
+ }finally{await tick();dom.window.close()}
+});
+
+test('a staff code completed before a slow refresh never appears after sign-out',async()=>{
+ const {w,dom,event}=ui({role:'admin',name:'namdev',active:true});let deliver;try{
+  await tick();await tick();const $=id=>w.document.getElementById(id);
+  w.GateClient.api=async action=>action==='staff-create'?{code:'NG-PRIVATE-LATE'}:{};
+  w.GateClient.sync=()=>new Promise(r=>deliver=r);
+  $('open-code').click();$('new-checker-name').value='Sample volunteer';$('create-checker-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.equal(typeof deliver,'function');
+  w.GateClient.profile=()=>null;event({type:'auth',data:null});deliver({dataRevision:7,cursor:0,records:[{id:'DEMO0001',name:'Private student',eligible:true}],entries:[],stats:{total:1},checkers:[]});await tick();await tick();
+  assert.equal($('view-login').hidden,false);assert.equal($('new-checker-code').textContent,'');assert.equal($('new-code-panel').hidden,true);assert.equal($('registration-rows').textContent,'');assert.equal($('code-dialog').open,false);
+ }finally{await tick();dom.window.close()}
+});
+
+test('admin tabs support arrow, home and end navigation and announce the active panel',async()=>{
+ const {w,dom}=ui({role:'admin',name:'namdev',active:true});try{
+  await tick();const $=id=>w.document.getElementById(id),tabs=[...w.document.querySelectorAll('[data-admin-tab]')];
+  assert.equal(tabs[0].getAttribute('aria-selected'),'true');assert.equal(tabs[0].tabIndex,0);assert.equal(tabs[1].tabIndex,-1);
+  tabs[0].dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[1]);assert.equal($('admin-admissions').hidden,false);assert.equal($('admin-registrations').hidden,true);assert.equal(tabs[1].getAttribute('aria-selected'),'true');
+  tabs[1].dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[3]);assert.equal($('admin-updates').hidden,false);
+  tabs[3].dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[0]);assert.equal($('admin-registrations').hidden,false);
+ }finally{await tick();dom.window.close()}
+});
+
+test('saved staff have no station-switch navigation and scan outcomes use distinct text and symbols',async()=>{
+ const {w,dom,event}=ui({role:'checker',checkerId:'staff',name:'Raju',active:true,station:'checker',scanner:true});try{
+  await tick();const $=id=>w.document.getElementById(id);assert.equal($('station-nav').hidden,true);assert.equal($('scan-nav').getAttribute('aria-current'),'page');
+  event({type:'result',data:{code:'admitted',id:'DEMO0001',entry:{name:'Sample',ticketId:'DEMO0001',checker:'Raju',at:new Date().toISOString(),seq:1}}});
+  assert.equal($('result-popup').dataset.state,'confirmed');assert.equal($('result-symbol').textContent,'✓');assert.equal($('result-popup').dataset.modal,'false');
+  event({type:'result',data:{code:'duplicate',id:'DEMO0001',entry:{name:'Sample',ticketId:'DEMO0001',checker:'Raju',at:new Date().toISOString(),seq:1}}});
+  assert.equal($('result-popup').dataset.state,'duplicate');assert.equal($('result-symbol').textContent,'↺');assert.equal($('result-popup').dataset.modal,'true');assert.equal($('help-desk').hidden,false);
+  $('close-result').click();assert.equal($('result-popup').open,false);
+ }finally{await tick();dom.window.close()}
+});

@@ -1,19 +1,21 @@
 (function(root){
  'use strict';
  const native=!!(root.Native&&typeof root.Native.local==='function'),L=root.NavrangLive,config=root.NavrangConfig;
- const callbacks=new Map(),listeners=new Set();let initPromise,draining=false,automaticRegion=false,authGeneration=0;
+ const callbacks=new Map(),listeners=new Set();let initPromise,draining=false,automaticRegion=false,authGeneration=0,profileSequence=0,appliedProfile=0,syncSequence=0,appliedStaffSync=0;
  const emit=(type,data)=>{for(const f of listeners)f({type,data});};
  function fail(message,status){const e=Error(message);e.status=status||0;return e;}
  function profile(){if(native){const r=JSON.parse(Native.local('session','{}'));return r.data?.profile||null;}try{return JSON.parse(sessionStorage.getItem('navrang-session')||'null')?.profile||null}catch{return null}}
  function auth(){try{return JSON.parse(sessionStorage.getItem('navrang-session')||'null')}catch{return null}}
  function actor(p){return p?.role==='admin'?'admin':p?.checkerId||''}
+ const accessScope=p=>JSON.stringify(p?.role==='admin'?['admin',!!p.active]:[p?.role,p?.checkerId,!!p?.active,p?.scanner!==false,!!p?.helpdesk,p?.station,p?.nameConfirmed!==false]);
+ const canScan=p=>!!p?.active&&(p.role==='admin'||p.role==='checker'&&p.scanner!==false&&(p.station==null||p.station==='checker')&&(p.method!=='google'||p.nameConfirmed!==false));
  root.onApiResponse=raw=>{try{const r=JSON.parse(raw),cb=callbacks.get(r.id);if(cb){callbacks.delete(r.id);clearTimeout(cb.timer);r.body.ok?cb.resolve(r.body):cb.reject(fail(r.body.error||'Request failed.',r.status));}}catch{}};
  root.onGateEvent=raw=>{try{const e=JSON.parse(raw);if(e.type==='auth')authGeneration++;emit(e.type,e.data)}catch{}};
  root.onNativeError=text=>emit('error',{message:text});
  root.onNativeSaved=name=>emit('notice',{message:'Saved '+name});
  async function api(action,payload={},sessionOverride){
-  const changesIdentity=['login','checker-login','google-login','logout'].includes(action),generation=changesIdentity?++authGeneration:authGeneration;
-  if(native)return new Promise((resolve,reject)=>{const id=L.uuid(),timer=setTimeout(()=>{callbacks.delete(id);reject(fail('Server response timed out. Unconfirmed scans stay only in memory while the app is open.'));},25000);callbacks.set(id,{resolve:value=>generation===authGeneration?resolve(value):reject(fail('Sign-in changed while this request was running.',409)),reject,timer});Native.api(action,JSON.stringify(payload),id);});
+  const changesIdentity=['login','checker-login','google-login','logout'].includes(action),generation=changesIdentity?++authGeneration:authGeneration,scope=accessScope(profile()),profileRequest=action==='me'?++profileSequence:0;
+  if(native)return new Promise((resolve,reject)=>{const id=L.uuid(),timer=setTimeout(()=>{callbacks.delete(id);reject(fail('Server response timed out. Unconfirmed scans stay only in memory while the app is open.'));},25000);callbacks.set(id,{resolve:value=>generation!==authGeneration?reject(fail('Sign-in changed while this request was running.',409)):!changesIdentity&&action!=='me'&&scope!==accessScope(profile())?reject(fail('Your station access changed while this request was running.',403)):resolve(value),reject,timer});Native.api(action,JSON.stringify(payload),id);});
   const a=sessionOverride||auth();
   if(action==='logout')sessionStorage.removeItem('navrang-session');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
@@ -26,8 +28,9 @@
    throw fail(b.error||'Request failed.',r.status);
   }
   if(!changesIdentity&&a?.token&&(generation!==authGeneration||auth()?.token!==a.token))throw fail('Sign-in changed while this request was running.',409);
+  if(!changesIdentity&&action!=='me'&&a?.token&&scope!==accessScope(profile()))throw fail('Your station access changed while this request was running.',403);
   if(b.token&&b.profile){if(generation!==authGeneration)throw fail('Sign-in changed while this request was running.',409);resetMemory();sessionStorage.setItem('navrang-session',JSON.stringify({token:b.token,profile:b.profile}));}
-  if(action==='me'&&a){if(generation!==authGeneration||auth()?.token!==a.token)throw fail('Sign-in changed while this request was running.',409);if(b.role!=='admin'&&b.scanner===false){const old=memory;resetMemory();if(b.active){memory.stats={ownScans:old.stats.ownScans,totalEntries:old.stats.totalEntries};memory.lastSync=old.lastSync;}}sessionStorage.setItem('navrang-session',JSON.stringify({token:a.token,profile:b}));}
+  if(action==='me'&&a){if(generation!==authGeneration||auth()?.token!==a.token)throw fail('Sign-in changed while this request was running.',409);if(profileRequest<appliedProfile)throw fail('A newer account refresh already arrived.',409);appliedProfile=profileRequest;if(b.role!=='admin'&&(!canScan(b)||a.profile?.role==='admin')){const old=memory;resetMemory();if(b.active){memory.stats={ownScans:old.stats.ownScans,totalEntries:old.stats.totalEntries};memory.lastSync=old.lastSync;}}sessionStorage.setItem('navrang-session',JSON.stringify({token:a.token,profile:b}));}
   return b;
  }
  let memory={dataRevision:-1,cursor:0,records:{},entries:{},stats:{},source:'',lastSync:''},jobs=new Map(),deviceId='browser-'+L.uuid();
@@ -48,28 +51,28 @@
   if(action!=='snapshot')throw fail('Student data is server-only. Local import and backup are disabled.');
   return {deviceId,dataRevision:memory.dataRevision,cursor:memory.cursor,source:memory.source,lastSync:memory.lastSync,stats:memory.stats,localCount:Object.keys(memory.records).length,pending:jobs.size,legacyCount:0,entries:Object.values(memory.entries).sort((a,b)=>b.seq-a.seq).slice(0,15)};
  }
- async function applySync(p){
-  if(native)return;await init();
+ async function applySync(p,generation,scope){
+  if(native)return;await init();if(generation!==authGeneration)throw fail('Sign-in changed.',409);if(scope!==accessScope(profile()))throw fail('Your station access changed while this request was running.',403);
   if(p.staffSummary){memory={dataRevision:-1,cursor:0,records:{},entries:{},stats:{ownScans:p.stats.ownScans,totalEntries:p.stats.totalEntries},source:'',lastSync:new Date().toISOString()};if(!p.scanner)jobs.clear();return;}
   const old=memory,merged=L.merge(old,p);
   if(p.dataRevision<old.dataRevision||(p.cursor||0)<old.cursor)merged.stats=old.stats;
   memory={...merged,lastSync:new Date().toISOString()};
  }
  async function sync(cursors){
-  const generation=authGeneration,s=await local('snapshot');const p=await api('sync',cursors||{dataRevision:s.dataRevision,afterSeq:s.cursor});if(generation!==authGeneration)throw fail('Sign-in changed.');if(profile()?.role==='checker'&&(!profile().active||p.staffSummary!==true))throw fail('Staff access changed. Only your scan summary is available.',403);await applySync(p);emit('sync',await local('snapshot'));if(!native)drain();return p;
+  const generation=authGeneration,scope=accessScope(profile()),sequence=++syncSequence,s=await local('snapshot');const p=await api('sync',cursors||{dataRevision:s.dataRevision,afterSeq:s.cursor});if(generation!==authGeneration)throw fail('Sign-in changed.');if(profile()?.role==='checker'&&(!profile().active||p.staffSummary!==true))throw fail('Staff access changed. Only your scan summary is available.',403);if(!native&&p.staffSummary){if(sequence<appliedStaffSync)return{...p,stats:{...memory.stats}};appliedStaffSync=sequence;}await applySync(p,generation,scope);const snapshot=await local('snapshot');if(generation!==authGeneration)throw fail('Sign-in changed.',409);emit('sync',snapshot);if(!native)drain();return p;
  }
  async function queue(id){
   if(native){Native.submit(id);return}
-  const p=profile();if(!p?.active||p.role!=='admin'&&p.scanner===false)throw fail('Checker access is required. Choose your assigned station.');
+  const p=profile(),generation=authGeneration;if(!canScan(p))throw fail('Checker access is required. Choose your assigned station.');
   if(!/^[A-Z0-9]{8}$/.test(id))throw fail('Enter the exact eight-character transaction ID.');
   const a=actor(p),key=a+':'+id;let job=jobs.get(key);
   if(!job){job={requestId:L.uuid(),ticketId:id,actor:a,deviceId,createdAt:new Date().toISOString()};jobs.set(key,job)}
-  const lookup=await local('lookup',{id});feedback('scan');emit('result',{code:'pending',id,record:lookup.record,message:'Awaiting server confirmation. Temporary request stays only while this app is open.'});drain();return job;
+  const lookup=await local('lookup',{id});if(generation!==authGeneration||!canScan(profile())||actor(profile())!==a)throw fail('Your sign-in or station changed before this scan could be sent.',409);feedback('scan');emit('result',{code:'pending',id,record:lookup.record,message:'Awaiting server confirmation. Temporary request stays only while this app is open.'});drain();return job;
  }
  async function drain(){
-  if(native||draining)return;draining=true;const drainGeneration=authGeneration;
-  try{for(let i=0;i<20;i++){const a=auth(),who=actor(a?.profile),generation=authGeneration;if(!a)break;const pair=[...jobs].find(([,j])=>j.actor===who);if(!pair)break;const [key,job]=pair,r=await api('checkin',job,a);if(generation!==authGeneration||profile()?.role!=='admin'&&profile()?.scanner===false)break;L.confirm(job,r);if(profile()?.role==='admin')memory=L.merge(memory,{dataRevision:memory.dataRevision,entries:r.entry?[r.entry]:[]});jobs.delete(key);emit('result',r);emit('sync',await local('snapshot'));}}
-  catch(e){if(drainGeneration===authGeneration&&auth())emit('result',{code:'pending',message:e.message+' No universal entry is confirmed.'});}
+  if(native||draining)return;draining=true;const drainGeneration=authGeneration;let currentJob;
+  try{for(let i=0;i<20;i++){const a=auth(),who=actor(a?.profile),generation=authGeneration;if(!canScan(a?.profile))break;const pair=[...jobs].find(([,j])=>j.actor===who);if(!pair)break;const [key,job]=pair;currentJob=job;const r=await api('checkin',job,a);if(generation!==authGeneration||!canScan(profile()))break;L.confirm(job,r);if(profile()?.role==='admin')memory=L.merge(memory,{dataRevision:memory.dataRevision,entries:r.entry?[r.entry]:[]});jobs.delete(key);emit('result',r);emit('sync',await local('snapshot'));}}
+  catch(e){if(drainGeneration===authGeneration&&canScan(profile()))emit('result',{code:'pending',id:currentJob?.ticketId,message:e.message+' No universal entry is confirmed.'});}
   finally{draining=false}
  }
  async function signOut(){const request=api('logout');resetMemory();if(!native)sessionStorage.removeItem('navrang-session');emit('auth',profile());await request;}
@@ -84,8 +87,10 @@
  async function finishGoogle(){
   if(native)return;const url=new URL(location.href),fragment=new URLSearchParams(url.hash.slice(1)),error=url.searchParams.get('error')||fragment.get('error')||url.searchParams.get('error_code')||fragment.get('error_code');
   if(error){const description=url.searchParams.get('error_description')||fragment.get('error_description')||'',cancel=/access_denied|cancel/i.test(error+' '+description);sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);throw fail(cancel?'Google sign-in was cancelled. Tap Continue with Google to try again.':'Google sign-in setup needs the organizer’s attention. Namdev must check the Google client ID and client secret in Supabase. Use an assigned checker code meanwhile.')}
-  const code=url.searchParams.get('code');if(!code)return;const verifier=sessionStorage.getItem('navrang-pkce');if(!verifier)throw fail('Google callback has no saved sign-in request.');
-  const r=await fetch(config.project+'/auth/v1/token?grant_type=pkce',{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({auth_code:code,code_verifier:verifier})});const data=await r.json();if(!r.ok)throw fail('Google sign-in could not be exchanged. Try again.');await api('google-login',{accessToken:data.access_token});sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);emit('auth',profile());
+  const code=url.searchParams.get('code');if(!code)return;const generation=authGeneration,verifier=sessionStorage.getItem('navrang-pkce');sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);if(!verifier)throw fail('This Google sign-in request has expired. Tap Continue with Google to start again.');
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);let r,data;
+  try{r=await fetch(config.project+'/auth/v1/token?grant_type=pkce',{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({auth_code:code,code_verifier:verifier}),signal:controller.signal,cache:'no-store'});data=await r.json();}catch{throw fail('Google sign-in was interrupted. Tap Continue with Google to try again.');}finally{clearTimeout(timer)}
+  if(generation!==authGeneration)throw fail('Sign-in changed while Google was connecting. Keep using your current account.',409);if(!r.ok||!data.access_token)throw fail('Google sign-in could not be exchanged. Tap Continue with Google to try again.');await api('google-login',{accessToken:data.access_token});emit('auth',profile());
  }
  function save(name,mime,content){
   if(native&&typeof Native.save==='function'){Native.save(name,mime,content);return}

@@ -2,7 +2,7 @@
 
 Android QR entry and embedded administration for Navrang 2026.
 
-[Download Android 0.7.2](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.2.apk)
+[Download Android 0.7.3](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.3.apk)
 
 Install over the existing signed app. Student records remain on the server; the current app keeps temporary copies in memory only. The private original signing key is retained outside this repository. Android 7+ and WebView/Chrome86+ are required. Version 0.4 introduces the update client; older APKs need this one manual installation.
 
@@ -17,11 +17,13 @@ Install over the existing signed app. Student records remain on the server; the 
 
 Version 0.6 removes the mute button and blue WebView tap/selection wash, adds warm beveled controls and a branded close dialog that warns about RAM-only pending work, and replaces the clipped shared dancer image with separate complete figures. Ten distinct bundled CC0 cues cover reads, outcomes and controls. A QR read sounds immediately; confirmed admission, duplicate, invalid code, payment issue and delayed connection warning have different cues. Sound loading and playback do not block scanning.
 
-Version 0.7 adds the station picker and server-enforced separation: Help Desk-only staff cannot check in or download the checker roster, while Checker-only staff cannot read Help Desk contacts. Choosing a role requests access without granting it. Admin can create named codes for either station or both, and name/permission changes reach existing sessions. The Android scanner closes after access is revoked. Temporary test-code sessions expire server-side; production staff codes remain random and named. Student data is still RAM-only on devices.
+Version 0.7 adds the station picker and server-enforced separation: Help Desk-only staff cannot check in or download the checker roster, while Checker-only staff cannot read Help Desk contacts. Choosing a role requests access without granting it. Admin can create named codes for a specific station, and name/permission changes reach existing sessions. The Android scanner closes after access is revoked. Temporary test-code sessions expire server-side; production staff codes remain random and named. Student data is still RAM-only on devices.
 
 Version 0.7.1 makes sign-out immediate, clears hidden forms, dialogs and temporary data when sessions expire or Help Desk access changes, and prevents delayed exports or old-session responses from resurfacing private details.
 
 Version 0.7.2 locks the first station choice to the account and lets only admin reassign it. Ordinary staff receive only **My scans** (their own server-confirmed admissions) and **Total entries** (all confirmed admissions). Their sync response contains no roster, entry history, staff list, registration total, remaining count or payment statistics. The Android and browser clients discard previous bulk copies. Admin retains the full dashboard. Help Desk staff keep their own paged cases for the existing registration workflow.
+
+Version 0.7.3 fixes scanner pause/resume receipts and per-ticket pending deadlines, delayed account/permission responses, Help Desk search/save/review races and delayed CSV exports. It improves warm 3D controls, official Google sign-in artwork, touch targets, accessible dialogs and narrow-screen flow. Release tooling now refuses a missing/replaced signing identity, changed bytes under an existing APK version and update-channel rollback. See the [production review](docs/PRODUCTION-REVIEW-2026-10-17.md).
 
 ## Gate operation
 
@@ -73,7 +75,7 @@ See [app update publishing](docs/APP-UPDATES.md). Increase `release.json`, build
 
 Run `npm ci --ignore-scripts`, then `npm test`. Set `NAVRANG_TEST_XLSX` and `NAVRANG_LATEST_XLSX` to the private organizer files for real-file regressions. `python tests/sqlite-check.py` checks the in-memory schema, transaction failure and request deduplication. Native QR, camera-hint, latch/PKCE/platform and update-channel policy checks are in `tests/qr`.
 
-This iteration passed 76 unit/DOM/data checks including Help Desk retries, role controls, session cleanup, CSV formula protection and the actual workbook comparison. A rollback-only database suite verifies authorization, contact isolation, versioned edits, approval, duplicate prevention, import preservation and auditing; it leaves no attendee fixtures. Ten native OAuth callback cases cover query/fragment errors, state checks, duplicate parameters and credential-safe messages. Ten previously passed native update-policy cases cover the existing update channel. Previously established QR decoding coverage includes exact, rotated, inverted, low-contrast, landscape and blank frames. The signed APK and public manifest/hash are checked before handoff. No mutating hosted admission test is run against real attendees.
+This iteration passed 96 unit/DOM/data checks including Help Desk retries, role controls, session cleanup, CSV formula protection and the actual workbook comparison. A rollback-only database suite verifies authorization, contact isolation, versioned edits, approval, duplicate prevention, import preservation and auditing; it leaves no attendee fixtures. Ten native OAuth callback cases cover query/fragment errors, state checks, duplicate parameters and credential-safe messages. Ten previously passed native update-policy cases cover the existing update channel. Previously established QR decoding coverage includes exact, rotated, inverted, low-contrast, landscape and blank frames. The signed APK and public manifest/hash are checked before handoff. No mutating hosted admission test is run against real attendees.
 
 The supported rendered preview could not start due to an environment mount-permission failure. No physical Android was attached; the new opening, install/notification flow, camera and frame smoothness still need phone verification. Unit/DOM tests do not establish visual frame-rate or end-to-end Android update behavior.
 

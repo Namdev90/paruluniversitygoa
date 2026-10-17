@@ -7,7 +7,7 @@ declare
  r jsonb; ticket text; before_receipt jsonb; after_receipt jsonb;
 begin
  if has_table_privilege('anon','navrang_private.helpdesk_registrations','SELECT') or has_function_privilege('authenticated','public.navrang_gate(text,jsonb,text)','EXECUTE') then raise exception 'Help desk is publicly accessible';end if;
- insert into navrang_private.checkers(id,name,method,active,name_confirmed,helpdesk_enabled,scanner_enabled) values(ck,'Synthetic Desk','code',true,true,true,true),(other_ck,'Synthetic Other','code',true,true,false,true);
+ insert into navrang_private.checkers(id,name,method,active,name_confirmed,helpdesk_enabled,scanner_enabled,selected_station) values(ck,'Synthetic Desk','code',true,true,true,false,'helpdesk'),(other_ck,'Synthetic Other','code',true,true,false,true,'checker');
  insert into navrang_private.sessions(hash,role,checker_id,expires_at) values(admin_token,'admin',null,now()+interval '1 hour'),(desk_token,'checker',ck,now()+interval '1 hour'),(other_token,'checker',other_ck,now()+interval '1 hour');
  r=public.navrang_gate('helpdesk-save',jsonb_build_object('requestId',request,'details',d),'');if r->>'status'<>'401' then raise exception 'Anonymous save not blocked';end if;
  r=public.navrang_gate('helpdesk-save',jsonb_build_object('requestId',request,'details',d),other_token);if r->>'status'<>'403' then raise exception 'Unassigned checker save not blocked';end if;
@@ -24,10 +24,10 @@ begin
  r=public.navrang_gate('helpdesk-edit',jsonb_build_object('id',registration,'version',1,'details',d),admin_token);if r->>'status'<>'409' then raise exception 'Stale edit overwrote new version';end if;
  r=public.navrang_gate('helpdesk-save',jsonb_build_object('requestId',request,'details',d||jsonb_build_object('ticketId','','paymentStatus','pending','paymentMethod','unknown','amount',null)),desk_token);if not (r->>'replayed')::boolean then raise exception 'Retry after admin edit did not find original receipt';end if;
  r=public.navrang_gate('helpdesk-review',jsonb_build_object('id',registration,'version',2,'status','approved','confirmExisting',true),admin_token);if r->'registration'->>'status'<>'approved' or not exists(select 1 from navrang_private.tickets where id=ticket and eligible and active) then raise exception 'Admin approval did not publish ticket';end if;
- r=public.navrang_gate('checkin',jsonb_build_object('ticketId',ticket,'requestId',gen_random_uuid(),'deviceId','rollback-test'),desk_token);if r->>'code'<>'admitted' then raise exception 'Approved ticket failed check-in';end if;before_receipt=r->'entry';
+ r=public.navrang_gate('checkin',jsonb_build_object('ticketId',ticket,'requestId',gen_random_uuid(),'deviceId','rollback-test'),other_token);if r->>'code'<>'admitted' then raise exception 'Approved ticket failed check-in';end if;before_receipt=r->'entry';
  r=public.navrang_gate('checkin',jsonb_build_object('ticketId',ticket,'requestId',gen_random_uuid(),'deviceId','rollback-test'),other_token);if r->>'code'<>'duplicate' or r->'entry'<>before_receipt then raise exception 'Duplicate changed original entry';end if;
  r=public.navrang_gate('helpdesk-list',jsonb_build_object('offset',0,'limit',2,'status','all','search','SYNTHETIC-ONLY'),desk_token);if r->>'total'<>'1' then raise exception 'Desk list missing own record';end if;
- update navrang_private.checkers set helpdesk_enabled=true where id=other_ck;
+ update navrang_private.checkers set helpdesk_enabled=true,scanner_enabled=false,selected_station='helpdesk' where id=other_ck;
  r=public.navrang_gate('helpdesk-list',jsonb_build_object('offset',0,'limit',2,'status','all','search','SYNTHETIC-ONLY'),other_token);if r->>'total'<>'0' then raise exception 'Another desk saw private contacts';end if;
  r=public.navrang_gate('import','{"records":[],"source":"Rollback-only empty import"}',admin_token);if not exists(select 1 from navrang_private.tickets where id=ticket and active) then raise exception 'File update removed approved Help Desk ticket';end if;
  select receipt->'entry' into after_receipt from navrang_private.admissions where ticket_id=ticket;if after_receipt<>before_receipt then raise exception 'Import changed admission';end if;

@@ -98,3 +98,41 @@ test('an export finishing after sign-out or admin downgrade cannot download cont
   }finally{dom.window.close()}
  }
 });
+
+test('a changed Help Desk search is fetched after an in-flight page and never shows the stale rows',async()=>{
+ const t=desk(),{w,dom,calls}=t;let deliver;
+ try{
+  t.setBehavior(async(action,payload)=>payload.search==='Newest'?{records:[],total:0,stats:{total:0,pending:0,approved:0}}:new Promise(r=>deliver=()=>r({records:[{id:'old',ticket_id:'HDABCDEF',created_by_name:'Raju',created_at:'2026-10-17T01:00:00Z',details,status:'pending',version:1}],total:1,stats:{total:1,pending:1,approved:0}})));
+  const first=w.NavrangDesk.refresh(true);w.document.getElementById('desk-search').value='Newest';await w.NavrangDesk.refresh(true);deliver();await first;await pause();
+  assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);assert.equal(calls.at(-1).p.search,'Newest');assert.ok(!w.document.getElementById('desk-records').textContent.includes(details.name));assert.equal(w.document.getElementById('desk-total').textContent,'0');
+ }finally{dom.window.close()}
+});
+
+test('an unconfirmed save locks record navigation until its identical request is resolved',async()=>{
+ const t=desk(),{w,dom,calls}=t;let attempt=0;
+ try{
+  t.setBehavior(async()=>{if(++attempt===1)throw Error('Connection lost');return{registration:{ticket_id:'HDABCDEF'}}});
+  const form=w.document.getElementById('desk-form');await form.onsubmit({preventDefault(){}});
+  for(const id of ['desk-new','desk-saved','desk-close-record'])assert.equal(w.document.getElementById(id).disabled,true,id+' allowed an uncertain save to be discarded');
+  w.document.getElementById('desk-new').click();w.document.getElementById('desk-saved').click();assert.equal(w.document.getElementById('desk-name').value,details.name);assert.equal(form.dataset.pending,'true');
+  await form.onsubmit({preventDefault(){}});assert.deepEqual(calls[0].p,calls[1].p);assert.equal(form.dataset.pending,'false');for(const id of ['desk-new','desk-saved','desk-close-record'])assert.equal(w.document.getElementById(id).disabled,false);
+ }finally{dom.window.close()}
+});
+
+test('a rejected save unlocks navigation without keeping a false pending marker',async()=>{
+ const t=desk(),{w,dom}=t;try{
+  t.setBehavior(async()=>{const e=Error('Already saved');e.status=409;throw e});await w.document.getElementById('desk-form').onsubmit({preventDefault(){}});
+  assert.equal(w.document.getElementById('desk-form').dataset.pending,'false');assert.equal(w.document.getElementById('desk-saved').disabled,false);assert.equal(w.document.getElementById('desk-name').value,details.name);
+ }finally{dom.window.close()}
+});
+
+test('a completed review cannot close or overwrite a newer record review dialog',async()=>{
+ const t=desk({role:'admin',name:'namdev',active:true}),{w,dom}=t;let deliver;
+ const records=[1,2].map(n=>({id:'case-'+n,ticket_id:'HDABCDE'+n,created_by_name:'Raju',created_at:'2026-10-17T01:00:00Z',details:{...details,name:'Student '+n},status:'pending',version:1}));
+ t.setBehavior(async action=>action==='helpdesk-list'?{records,total:2,stats:{total:2,pending:2,approved:0}}:new Promise(r=>deliver=()=>r({saved:true})));
+ try{
+  await w.NavrangDesk.refresh(true);w.document.querySelectorAll('#desk-records .button')[0].click();w.document.getElementById('desk-confirm-existing').checked=true;w.document.getElementById('desk-approve').click();
+  w.document.getElementById('desk-review-close').click();w.document.querySelectorAll('#desk-records .button')[1].click();deliver();await pause();await pause();
+  assert.equal(w.document.getElementById('desk-review-dialog').open,true);assert.equal(w.document.getElementById('desk-review-name').textContent,'Student 2');assert.equal(w.document.getElementById('desk-review-message').textContent,'');
+ }finally{dom.window.close()}
+});

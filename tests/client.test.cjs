@@ -31,3 +31,13 @@ test('the Android bridge rejects late private responses after its auth session c
   w.onGateEvent(JSON.stringify({type:'auth',data:null}));w.onApiResponse(JSON.stringify({id:request,status:200,body:{ok:true,csv:'private test contact'}}));await denied;
  }finally{w.close()}
 });
+
+test('the Android bridge rejects a late private response after station permission changes',async()=>{
+ const dom=new JSDOM('',{url:'https://gate.test/',runScripts:'outside-only'}),w=dom.window;let request,profile={role:'checker',checkerId:'staff',active:true,helpdesk:true,scanner:false,station:'helpdesk'};
+ w.Native={local:()=>JSON.stringify({ok:true,data:{profile}}),api:(action,payload,id)=>request=id};
+ for(const file of ['live-core.js','config.js','client.js'])w.eval(fs.readFileSync(root+'/app/assets/'+file,'utf8'));
+ try{
+  const pending=w.GateClient.api('helpdesk-list'),denied=assert.rejects(pending,e=>e.status===403&&/access changed/.test(e.message));profile={...profile,helpdesk:false,scanner:true,station:'checker'};
+  w.onGateEvent(JSON.stringify({type:'profile',data:profile}));w.onApiResponse(JSON.stringify({id:request,status:200,body:{ok:true,records:[{details:{email:'private@example.invalid'}}]}}));await denied;
+ }finally{w.close()}
+});

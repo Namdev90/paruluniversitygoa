@@ -1,5 +1,5 @@
 {
-  "versionCode": 10,
-  "versionName": "0.7.2",
-  "notes": "Staff station is saved once; only admin can change it. Returning staff open their assigned station. Checker and Help Desk dashboards show only My scans and Total entries. Staff sync no longer downloads the roster or entry log; full statistics stay admin-only."
+  "versionCode": 11,
+  "versionName": "0.7.3",
+  "notes": "Production review: resilient scanner pause/resume and pending alerts; stronger account and export isolation; reliable Help Desk retries; responsive warm 3D interface and accessible transitions; verified original signing identity and immutable release safeguards."
 }

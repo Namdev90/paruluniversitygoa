@@ -11,10 +11,12 @@ A ready update appears in Account and, if allowed, as a notification. Tap Instal
 ## Publishing the next app version
 
 1. Increase `versionCode` and `versionName` in `release.json`. Keep the original private signing key; a new test key cannot update existing installations.
-2. Run `python tools/build.py` using the established Android SDK/JDK setup. It signs/verifies the APK and invokes `tools/prepare-release.py` to create `downloads/Navrang-Gate-<version>.apk`, `updates/latest.json` and the checksum line.
+2. Run `python tools/build.py` using the established Android SDK/JDK setup. It refuses to generate a replacement key, verifies the original signer certificate and exact package/version, then signs/verifies the APK and invokes `tools/prepare-release.py` to create `downloads/Navrang-Gate-<version>.apk`, `updates/latest.json` and the checksum line.
 3. Commit and push those release files along with the source. Installed 0.4+ clients can then discover/download that release. A source-only Git push does not build or distribute a new APK by itself; no secret-bearing GitHub signing workflow has been configured.
 4. Check the public manifest and APK hash after pushing. Test a real upgrade on the intended Android phone before relying on it at the venue.
 
 Official references:
 - https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams#setRequireUserAction(int)
 - https://developer.android.com/guide/playcore/in-app-updates (the separate Google Play distribution workflow)
+
+Release preparation refuses changed bytes for an existing downloadable version and refuses older/reused update version codes. An identical rerun is allowed. Keep the original signing key in a private backup; it must never enter this public repository.

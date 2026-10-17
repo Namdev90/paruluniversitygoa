@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Build the offline prototype with a locally supplied Android SDK and JDK 17+."""
+"""Build the established Android app with its original signing identity."""
 import os,pathlib,shutil,subprocess,zipfile,json,runpy
+from release_policy import require_signing_key
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
 RELEASE=json.loads((ROOT/'release.json').read_text())
+key=ROOT/'signing'/'prototype-debug.p12'
+require_signing_key(key)
 BUILD=ROOT/'.build'
 SDK=pathlib.Path(os.environ.get('NAVRANG_ANDROID_SDK',str(BUILD/'tools')))
 TOOLS=pathlib.Path(os.environ.get('NAVRANG_BUILD_TOOLS',str(SDK/'android-15')))
@@ -32,9 +35,6 @@ run(TOOLS/'aapt2','link','-o',BUILD/'unsigned.apk','--manifest',ROOT/'app/Androi
 with zipfile.ZipFile(BUILD/'unsigned.apk','a',zipfile.ZIP_DEFLATED) as z:
  for p in (BUILD/'dex').glob('*.dex'):z.write(p,p.name)
 run(TOOLS/'zipalign','-f','4',BUILD/'unsigned.apk',BUILD/'aligned.apk')
-key=ROOT/'signing'/'prototype-debug.p12';key.parent.mkdir(exist_ok=True)
-if not key.exists():
- run('keytool','-genkeypair','-keystore',key,'-storetype','PKCS12','-storepass','android','-keypass','android','-alias','androiddebugkey','-keyalg','RSA','-keysize','2048','-validity','3650','-dname','CN=Navrang Prototype, O=Prototype, C=IN')
 apk=ROOT/'dist'/('Navrang-Gate-'+RELEASE['versionName']+'.apk')
 run(TOOLS/'apksigner','sign','--ks',key,'--ks-pass','pass:android','--key-pass','pass:android','--ks-key-alias','androiddebugkey','--v4-signing-enabled','false','--out',apk,BUILD/'aligned.apk')
 run(TOOLS/'apksigner','verify','--verbose','--print-certs',apk)

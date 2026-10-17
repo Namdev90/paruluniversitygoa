@@ -109,3 +109,65 @@ test('a staff summary clears old rosters and entry history and retains only the 
   w.fetch=async()=>reply({dataRevision:1,records:[{id:'DEMO0001',name:'Should not load'}],entries:[],stats:{total:1124}});await assert.rejects(w.GateClient.sync(),/Only your scan summary/);assert.equal((await w.GateClient.local('snapshot')).localCount,0);
  }finally{dom.window.close()}
 });
+
+test('an older same-session profile response cannot restore a superseded station',async()=>{
+ const {dom,w}=client();let older,newer;try{
+  const original={...session('same','Raju').profile,scanner:true,helpdesk:true,station:'checker'};w.sessionStorage.setItem('navrang-session',JSON.stringify({token:'same',profile:original}));
+  let count=0;w.fetch=async()=>new Promise(resolve=>{if(++count===1)older=()=>resolve(reply(original));else newer=()=>resolve(reply({...original,station:'helpdesk',scanner:false}))});
+  const first=w.GateClient.api('me'),rejected=assert.rejects(first,/newer account refresh/),second=w.GateClient.api('me');newer();await second;older();await rejected;
+  assert.equal(w.GateClient.profile().station,'helpdesk');assert.equal(w.GateClient.profile().scanner,false);
+ }finally{dom.window.close()}
+});
+
+test('private responses are rejected when the same account loses its station permission',async()=>{
+ const {dom,w}=client();let deliver;try{
+  const original={...session('same','Raju').profile,scanner:false,helpdesk:true,station:'helpdesk'};w.sessionStorage.setItem('navrang-session',JSON.stringify({token:'same',profile:original}));
+  w.fetch=async(_url,options)=>JSON.parse(options.body).action==='helpdesk-list'?new Promise(r=>deliver=()=>r(reply({records:[{details:{email:'private@example.invalid'}}]}))):reply({...original,scanner:true,helpdesk:false,station:'checker'});
+  const pending=w.GateClient.api('helpdesk-list'),rejected=assert.rejects(pending,e=>e.status===403&&/access changed/.test(e.message));await w.GateClient.api('me');deliver();await rejected;
+ }finally{dom.window.close()}
+});
+
+test('out-of-order staff summaries cannot move confirmed admission counters backwards',async()=>{
+ const {dom,w}=client();const releases=[];try{
+  w.sessionStorage.setItem('navrang-session',JSON.stringify({...session('staff','Raju'),profile:{...session('staff','Raju').profile,station:'checker',scanner:true}}));
+  w.fetch=async()=>new Promise(resolve=>releases.push(stats=>resolve(reply({staffSummary:true,scanner:true,dataRevision:-1,cursor:0,records:null,entries:[],stats}))));
+  const older=w.GateClient.sync();await until(()=>releases.length===1);const newer=w.GateClient.sync();await until(()=>releases.length===2);releases[1]({ownScans:9,totalEntries:201});await newer;releases[0]({ownScans:8,totalEntries:200});const oldResult=await older;
+  assert.equal((await w.GateClient.local('snapshot')).stats.ownScans,9);assert.equal((await w.GateClient.local('snapshot')).stats.totalEntries,201);assert.equal(oldResult.stats.totalEntries,201);
+ }finally{dom.window.close()}
+});
+
+test('unconfirmed scan errors retain the ticket ID so their popup can receive the eventual receipt',async()=>{
+ const {dom,w}=client();const results=[];try{
+  w.sessionStorage.setItem('navrang-session',JSON.stringify({...session('staff','Raju'),profile:{...session('staff','Raju').profile,station:'checker',scanner:true}}));
+  w.fetch=async()=>{throw Error('Network unavailable')};w.GateClient.on(e=>{if(e.type==='result')results.push(e.data)});await w.GateClient.submit('DEMO0001');await until(()=>results.length===2);
+  assert.equal(results[0].id,'DEMO0001');assert.equal(results[1].id,'DEMO0001');assert.equal(results[1].code,'pending');assert.equal((await w.GateClient.local('snapshot')).pending,1);
+ }finally{dom.window.close()}
+});
+
+test('the browser will not queue a scan outside the saved checker station or before Google name confirmation',async()=>{
+ const {dom,w}=client();let calls=0;try{
+  w.fetch=async()=>{calls++;return reply({})};
+  for(const variation of [{station:'helpdesk',scanner:true,helpdesk:true},{station:'checker',scanner:true,method:'google',nameConfirmed:false}]){
+   w.sessionStorage.setItem('navrang-session',JSON.stringify({...session('staff','Raju'),profile:{...session('staff','Raju').profile,...variation}}));await assert.rejects(w.GateClient.submit('DEMO0001'),/Checker access/);
+  }
+  assert.equal(calls,0);assert.equal((await w.GateClient.local('snapshot')).pending,0);
+ }finally{dom.window.close()}
+});
+
+test('a delayed Google callback cannot replace a code account chosen while Google was connecting',async()=>{
+ const {dom,w}=client();let deliver;const actions=[];try{
+  w.history.replaceState(null,'','/?code=temporary-google-code');w.sessionStorage.setItem('navrang-pkce','temporary-verifier');
+  w.fetch=async(url,options)=>url.includes('grant_type=pkce')?new Promise(r=>deliver=()=>r(reply({access_token:'temporary-access-token'}))):(actions.push(JSON.parse(options.body).action),reply(session('chosen','Chosen checker')));
+  const google=w.GateClient.finishGoogle(),rejected=assert.rejects(google,/Sign-in changed/);assert.equal(w.location.search,'');assert.equal(w.sessionStorage.getItem('navrang-pkce'),null);
+  await w.GateClient.api('checker-login',{code:'assigned-code'});deliver();await rejected;assert.equal(w.GateClient.profile().name,'Chosen checker');assert.deepEqual(actions,['checker-login']);
+ }finally{dom.window.close()}
+});
+
+test('expired and failed Google callbacks remove their code and allow a fresh sign-in attempt',async()=>{
+ for(const hasVerifier of [false,true]){
+  const {dom,w}=client();try{
+   w.history.replaceState(null,'','/?code=temporary-google-code');if(hasVerifier)w.sessionStorage.setItem('navrang-pkce','temporary-verifier');w.fetch=async()=>{throw Error('Connection lost')};
+   await assert.rejects(w.GateClient.finishGoogle(),/Continue with Google/);assert.equal(w.location.search,'');assert.equal(w.sessionStorage.getItem('navrang-pkce'),null);await w.GateClient.finishGoogle();
+  }finally{dom.window.close()}
+ }
+});

@@ -2,7 +2,7 @@
  'use strict';
  const C=GateClient,D=NavrangDeskCore,$=id=>document.getElementById(id);
  const fields=['name','email','phone','quantity'];
- let offset=0,total=0,rows=[],selected=null,editing=null,locked=false,pending=null,loading=false,generation=0,paint='',searchTimer;
+ let offset=0,total=0,rows=[],selected=null,editing=null,locked=false,pending=null,loading=false,generation=0,paint='',searchTimer,refreshQueued=false,reviewGeneration=0;
  const pageSize=()=>Math.max(1,Math.min(5,Math.floor((innerHeight-440)/70)));
  const admin=()=>C.profile()?.role==='admin';
  const allowed=()=>!!C.profile()?.active&&(admin()||C.profile()?.helpdesk===true&&(C.profile()?.station==null||C.profile().station==='helpdesk'));
@@ -10,7 +10,7 @@
  const scope=()=>JSON.stringify([identity(),admin(),allowed()]);let accessScope=scope();
  const current=(version,who,privileged=false)=>version===generation&&who===identity()&&allowed()&&(!privileged||admin());
  const el=(tag,text,cls)=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n};
- function closeReview(){const d=$('desk-review-dialog');if(d.close)d.close();else d.removeAttribute('open');selected=null;for(const id of ['desk-review-name','desk-review-details','desk-review-message'])$(id).textContent='';$('desk-confirm-existing').checked=false;$('desk-approve').disabled=$('desk-reject').disabled=false;}
+ function closeReview(){reviewGeneration++;const d=$('desk-review-dialog');if(d.close)d.close();else d.removeAttribute('open');selected=null;for(const id of ['desk-review-name','desk-review-details','desk-review-message'])$(id).textContent='';$('desk-confirm-existing').checked=false;$('desk-approve').disabled=$('desk-reject').disabled=false;}
  function showReview(){const d=$('desk-review-dialog');if(d.showModal)d.showModal();else d.setAttribute('open','')}
  const feedback=kind=>C.feedback?.(kind,true);
  const when=at=>new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(at));
@@ -18,6 +18,7 @@
  function showPanel(list){$('desk-form-panel').hidden=list;$('desk-list-panel').hidden=!list;$('desk-new').classList.toggle('selected',!list);$('desk-saved').classList.toggle('selected',list);if(list)refresh(true);}
  function paintForm(){
   $('desk-fields').disabled=locked||!!pending;$('desk-submit').hidden=locked;$('desk-close-record').hidden=!editing;
+  $('desk-form').dataset.pending=String(!!pending);for(const id of ['desk-new','desk-saved','desk-close-record'])$(id).disabled=!!pending;
   $('desk-form-title').textContent=editing?(locked?'Saved registration':'Edit pending record'):'New registration';
   $('desk-submit').textContent=pending?'Retry same save':editing?'Save changes to server':'Save to server';
   $('desk-bill').textContent='Registration fee · ₹'+((Number($('desk-quantity').value)||1)*100).toLocaleString('en-IN');
@@ -25,6 +26,7 @@
  function values(){const data={};for(const key of fields)data[key]=$('desk-'+key).value;data.quantity=Number(data.quantity);return data;}
  function reset(){editing=null;locked=false;pending=null;$('desk-form').reset();$('desk-form').dataset.pending='false';message('');paintForm();}
  function displayRecord(record){
+  if(pending){showPanel(false);return}
   editing=record;locked=!admin()||record.status!=='pending';pending=null;
   for(const key of fields)$('desk-'+key).value=record.details[key]??(key==='quantity'?1:'');
   message(record.ticket_id+' · '+record.status+' · recorded by '+record.created_by_name+' · '+when(record.created_at)+' IST');showPanel(false);paintForm();
@@ -32,14 +34,15 @@
  async function refresh(force=false){
   if(accessScope!==scope())clear();
   const yes=allowed();$('desk-denied').hidden=yes;$('desk-workspace').hidden=!yes;$('desk-export').hidden=!admin();
-  if(!yes){clear();return}if(loading||(!force&&($('view-desk').hidden||$('desk-list-panel').hidden)))return;
-  loading=true;const requestGeneration=generation,who=identity();
+  if(!yes){clear();return}if(loading){if(force)refreshQueued=true;return}if(!force&&($('view-desk').hidden||$('desk-list-panel').hidden))return;
+  loading=true;refreshQueued=false;const requestGeneration=generation,who=identity(),query={offset,limit:pageSize(),search:$('desk-search').value.trim(),status:$('desk-filter').value};
   try{
-   const result=await C.api('helpdesk-list',{offset,limit:pageSize(),search:$('desk-search').value.trim(),status:$('desk-filter').value});
+   const result=await C.api('helpdesk-list',query);
    if(!current(requestGeneration,who))return;
+   if(query.offset!==offset||query.limit!==pageSize()||query.search!==$('desk-search').value.trim()||query.status!==$('desk-filter').value){refreshQueued=true;return}
    rows=result.records;total=result.total;const key=JSON.stringify(result);$('desk-total').textContent=total;
    const stats=result.stats;$('desk-list-stats').textContent=stats.total+' saved · '+stats.pending+' pending · '+stats.approved+' approved';
-   if(offset>=total&&offset>0){offset=Math.max(0,Math.ceil(total/pageSize())*pageSize()-pageSize());loading=false;return refresh(true)}
+   if(offset>=total&&offset>0){offset=Math.max(0,Math.ceil(total/pageSize())*pageSize()-pageSize());refreshQueued=true;return}
    if(key===paint)return;paint=key;$('desk-records').replaceChildren();
    for(const record of rows){
     const card=el('div','','desk-record'),info=el('button','','desk-record-info');info.type='button';
@@ -50,25 +53,25 @@
    if(!rows.length)$('desk-records').append(el('p','No saved records match this view.','empty'));
    $('desk-page').textContent=(Math.floor(offset/pageSize())+1)+' / '+Math.max(1,Math.ceil(total/pageSize()));$('desk-prev').disabled=offset===0;$('desk-next-page').disabled=offset+pageSize()>=total;
   }catch(e){if(current(requestGeneration,who))$('desk-list-stats').textContent=e.message;}
-  finally{if(requestGeneration===generation)loading=false;}
+  finally{if(requestGeneration===generation){loading=false;if(refreshQueued){refreshQueued=false;refresh(true)}}}
  }
  function clear(){
-  generation++;accessScope=scope();loading=false;paint='';rows=[];offset=0;total=0;clearTimeout(searchTimer);reset();closeReview();$('desk-records').replaceChildren();
+  generation++;accessScope=scope();loading=false;refreshQueued=false;paint='';rows=[];offset=0;total=0;clearTimeout(searchTimer);reset();closeReview();$('desk-records').replaceChildren();
   $('desk-search').value='';$('desk-filter').selectedIndex=0;$('desk-total').textContent='0';$('desk-list-stats').textContent='';$('desk-page').textContent='1 / 1';$('desk-prev').disabled=$('desk-next-page').disabled=true;
   $('desk-form-panel').hidden=false;$('desk-list-panel').hidden=true;$('desk-new').classList.add('selected');$('desk-saved').classList.remove('selected');$('desk-submit').disabled=$('desk-export').disabled=false;
  }
  function openReview(record){
-  if(!admin())return;selected=record;$('desk-review-name').textContent=record.details.name;
+  if(!admin())return;reviewGeneration++;selected=record;$('desk-review-name').textContent=record.details.name;
   const d=record.details;$('desk-review-details').textContent=[record.ticket_id,d.email,d.phone,'Quantity: '+(d.quantity||1)+' · expected ₹'+((d.quantity||1)*100),'Recorded by '+record.created_by_name+' · '+when(record.created_at)+' IST'].join('\n');
-  $('desk-confirm-existing').checked=false;$('desk-review-message').textContent='';showReview();
+  $('desk-confirm-existing').checked=false;$('desk-review-message').textContent='';$('desk-approve').disabled=$('desk-reject').disabled=false;showReview();
  }
  async function review(status,button){
   if(!admin()||!selected||button.disabled)return;
   if(status==='approved'&&!$('desk-confirm-existing').checked){$('desk-review-message').textContent='Verify the student and payment, then tick the confirmation.';return}
-  $('desk-approve').disabled=$('desk-reject').disabled=true;const requestGeneration=generation,who=identity();
-  try{await C.api('helpdesk-review',{id:selected.id,version:selected.version,status,confirmExisting:$('desk-confirm-existing').checked,confirmPayment:$('desk-confirm-existing').checked});if(!current(requestGeneration,who,true))return;closeReview();feedback('success');await refresh(true);if(current(requestGeneration,who,true))C.sync().catch(()=>{});}
-  catch(e){if(current(requestGeneration,who,true))$('desk-review-message').textContent=e.message;}
-  finally{if(requestGeneration===generation)$('desk-approve').disabled=$('desk-reject').disabled=false;}
+  $('desk-approve').disabled=$('desk-reject').disabled=true;const requestGeneration=generation,who=identity(),reviewVersion=reviewGeneration;
+  try{await C.api('helpdesk-review',{id:selected.id,version:selected.version,status,confirmExisting:$('desk-confirm-existing').checked,confirmPayment:$('desk-confirm-existing').checked});if(!current(requestGeneration,who,true))return;if(reviewVersion===reviewGeneration)closeReview();feedback('success');await refresh(true);if(current(requestGeneration,who,true))C.sync().catch(()=>{});}
+  catch(e){if(current(requestGeneration,who,true)&&reviewVersion===reviewGeneration)$('desk-review-message').textContent=e.message;}
+  finally{if(requestGeneration===generation&&reviewVersion===reviewGeneration)$('desk-approve').disabled=$('desk-reject').disabled=false;}
  }
  $('desk-new').onclick=()=>{if(pending){showPanel(false);return}reset();showPanel(false)};$('desk-saved').onclick=()=>showPanel(true);
  $('desk-close-record').onclick=()=>{reset();showPanel(true)};
@@ -78,7 +81,7 @@
   event.preventDefault();const button=$('desk-submit');if(button.disabled||locked||!allowed())return;
   try{if(!pending){const details=D.normalize(values());pending={action:editing?'helpdesk-edit':'helpdesk-save',payload:editing?{id:editing.id,version:editing.version,details}:{requestId:NavrangLive.uuid(),details}}}}
   catch(e){message(e.message);return}
-  button.disabled=true;message('Saving to server… Keep this page open.');$('desk-fields').disabled=true;
+  button.disabled=true;message('Saving to server… Keep this page open.');paintForm();
   const request=pending,requestGeneration=generation,who=identity();$('desk-form').dataset.pending='true';
   try{
    const result=await C.api(request.action,request.payload);if(!current(requestGeneration,who))return;

@@ -13,3 +13,6 @@ test-data/
 .env
 .env.*
 Navrang-Backup*.json
+
+__pycache__/
+*.pyc

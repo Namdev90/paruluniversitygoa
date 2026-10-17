@@ -23,3 +23,8 @@ Mode: built-in image generation/editing with the prior organizer-derived dancer 
 Both output images were inspected at full figure size, then resized to 900×1350 and encoded as WebP without compositing or cropping. Full-device animation layout still needs phone review.
 
 Sound source details, hashes and CC0 license texts are in `app/assets/audio/`. The ten cues use Kenney Interface Sounds, UI Audio and Music Jingles; no oscillator synthesis is used in the current live client/native feedback. Samples were loudness-normalized; hardware and OS policies determine actual output volume.
+
+
+## Production sign-in branding
+
+`google-g.png` is the unchanged official current gradient Google G from `https://developers.google.com/static/identity/images/g-logo.png`, linked from Google's Sign in with Google branding guidelines at `https://developers.google.com/identity/branding-guidelines` (retrieved 17 October 2026). It is used only next to the "Continue with Google" sign-in action, with its original aspect ratio preserved on a white background. The previous hand-typed blue G was removed. The PNG is bundled locally so sign-in artwork requires no external image request. Brand use is governed by Google's branding guidelines; it is not a newly generated mark.
