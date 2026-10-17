@@ -49,3 +49,11 @@ test('name-only edits preserve quantity, unknown refunds and arbitrary payment d
   }finally{await pause();await pause();dom.window.close()}
  });
 });
+
+test('an in-flight roster sync cannot restore student data after checker access is revoked',async()=>{
+ const {dom,w}=client();let deliver;try{
+  w.sessionStorage.setItem('navrang-session',JSON.stringify({...session('same','Raju'),profile:{...session('same','Raju').profile,scanner:true,helpdesk:false}}));
+  w.fetch=async(_url,o)=>JSON.parse(o.body).action==='sync'?new Promise(r=>deliver=()=>r(reply({dataRevision:3,cursor:0,records:[{id:'DEMO0001',name:'Synthetic Student'}],entries:[],stats:{total:1}}))):reply({...session('same','Raju').profile,scanner:false,helpdesk:true});
+  const pending=w.GateClient.sync();await until(()=>deliver);await w.GateClient.api('me');deliver();await assert.rejects(pending,/access changed/);assert.equal((await w.GateClient.local('snapshot')).localCount,0);
+ }finally{dom.window.close()}
+});

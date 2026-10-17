@@ -36,5 +36,6 @@ public final class GateSession {
   catch(Exception e){return null;}
  }
  public synchronized void clear(){beginChange();prefs.edit().remove("encrypted").commit();}
+ public static boolean canScan(JSONObject session){JSONObject p=session==null?null:session.optJSONObject("profile");return p!=null&&p.optBoolean("active")&&("admin".equals(p.optString("role"))||p.optBoolean("scanner",false));}
  public static String actor(JSONObject session){if(session==null)return "";JSONObject p=session.optJSONObject("profile");if(p==null)return "";return "admin".equals(p.optString("role"))?"admin":p.optString("checkerId","");}
 }

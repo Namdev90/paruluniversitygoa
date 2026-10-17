@@ -1,5 +1,5 @@
 {
-  "versionCode": 7,
-  "versionName": "0.6.1",
-  "notes": "Four-field Help Desk, always-on Kenney scan/result sounds, warm 3D controls without blue touch highlights, branded close screen, full individual dancers and clearer Google setup errors. Editable text fields retain copy and paste."
+  "versionCode": 8,
+  "versionName": "0.7.0",
+  "notes": "Google sign-in retained. Save your real name, choose Checker or Help Desk, and use admin-assigned station permissions. Admin can manage names/access and generate role-specific staff codes. Separate server enforcement, temporary test-code expiry and live access updates."
 }

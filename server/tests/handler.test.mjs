@@ -7,3 +7,11 @@ test('request body is cancelled as soon as the byte limit is exceeded without Co
  const handler=H.createHandler({rpc:async()=>{calls++;return{}},googleUser:async()=>null,googleEnabled:async()=>false});
  const r=await handler(new Request('https://example.test/',{method:'POST',body,duplex:'half'}));assert.equal(r.status,413);assert.equal(calls,0);assert.equal(cancelled,true);assert.ok(chunks<=10,'oversized input was fully buffered');
 });
+
+test('named staff codes retain admin-selected permissions and reject invalid station grants',async()=>{
+ let seen;const handler=H.createHandler({rpc:async(a,p)=>{seen={a,p};return{checker:{id:'synthetic'}}},googleUser:async()=>null,googleEnabled:async()=>true});
+ const post=(action,payload)=>handler(new Request('https://test.invalid/',{method:'POST',headers:{Authorization:'Bearer '+'a'.repeat(64)},body:JSON.stringify({action,payload})}));
+ assert.equal((await post('staff-create',{name:'Raju',scanner:false,helpdesk:true})).status,200);assert.equal(seen.p.scanner,false);assert.equal(seen.p.helpdesk,true);assert.equal(seen.p.name,'Raju');assert.match(seen.p.hash,/^[a-f0-9]{64}$/);
+ for(const payload of [{name:'Raju',scanner:'true',helpdesk:true},{name:'Raju',scanner:false,helpdesk:false},{name:'bad@example.invalid',scanner:true}])assert.equal((await post('staff-create',payload)).status,400);
+ assert.equal((await post('staff-request',{station:'admin'})).status,400);
+});

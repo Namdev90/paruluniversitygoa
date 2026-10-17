@@ -51,7 +51,7 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  @Override public void onResume(){super.onResume();if(readiness!=null)readiness.resume();active=true;GateUpdater.scanActive=true;if(runtime!=null){runtime.add(this);runtime.resume();}if(ready)openCamera();}
  @Override public void onPause(){if(readiness!=null)readiness.pause();active=false;GateUpdater.scanActive=false;release();if(runtime!=null){runtime.remove(this);runtime.pause();}super.onPause();}
  @Override public void onDestroy(){if(issueDialog!=null)issueDialog.dismiss();decoder.shutdownNow();super.onDestroy();}
- @Override public void event(JSONObject e){if(!"result".equals(e.optString("type")))return;JSONObject data=e.optJSONObject("data");if(data!=null)runOnUiThread(()->showResult(data));}
+ @Override public void event(JSONObject e){if(("profile".equals(e.optString("type"))||"auth".equals(e.optString("type")))&&!GateSession.canScan(runtime.sessions.read())){runOnUiThread(()->{Toast.makeText(this,"Checker access changed. Choose your approved station.",Toast.LENGTH_LONG).show();finish();});return;}if(!"result".equals(e.optString("type")))return;JSONObject data=e.optJSONObject("data");if(data!=null)runOnUiThread(()->showResult(data));}
  private void showResult(JSONObject r){
   if(!active)return;String code=r.optString("code"),id=r.optString("id");boolean admitted="admitted".equals(code),dup="duplicate".equals(code),pending="pending".equals(code);
   if(pending&&acknowledgedPending.contains(id))return;if(!pending)acknowledgedPending.remove(id);

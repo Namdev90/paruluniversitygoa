@@ -42,7 +42,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  @Override public void updated(JSONObject state){try{event(new JSONObject().put("type","update").put("data",state));}catch(Exception ignored){}}
  @Override public void event(JSONObject e){call("onGateEvent",e.toString());}
  private void beginScan(){
-  JSONObject auth=runtime.sessions.read();if(auth==null||auth.optJSONObject("profile")==null||!auth.optJSONObject("profile").optBoolean("active")||("google".equals(auth.optJSONObject("profile").optString("method"))&&!auth.optJSONObject("profile").optBoolean("nameConfirmed",true))){error("Sign in with an approved checker account first.");return;}
+  JSONObject auth=runtime.sessions.read();if(!GateSession.canScan(auth)||("google".equals(auth.optJSONObject("profile").optString("method"))&&!auth.optJSONObject("profile").optBoolean("nameConfirmed",true))){error("Sign in with an approved checker account first.");return;}
   if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.CAMERA},CAMERA_PERMISSION);return;}
   try{startActivity(new Intent(this,ScanActivity.class));}catch(Exception e){error("Camera could not open. Use manual entry.");}
  }
@@ -78,7 +78,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    GateApi.Reply exchange=runtime.api.exchange(code,verifier);if(exchange.status!=200)throw new IOException();
    GateApi.Reply r=runtime.api.call("google-login",new JSONObject().put("accessToken",exchange.body.getString("access_token")),"");
    if(r.status!=200||!r.body.optBoolean("ok")){error(r.body.optString("error","Google sign-in failed."));return;}
-   if(!runtime.sessions.saveIfCurrent(generation,r.body.getString("token"),r.body.getJSONObject("profile")))return;p.edit().clear().commit();runtime.emit("auth",r.body.getJSONObject("profile"));runtime.refresh();
+   if(!runtime.sessions.saveIfCurrent(generation,r.body.getString("token"),r.body.getJSONObject("profile")))return;p.edit().clear().commit();runtime.db.clearTemporary();runtime.emit("auth",r.body.getJSONObject("profile"));runtime.refresh();
   }catch(Exception e){error("Google sign-in could not finish. Reopen sign-in with a working connection.");}});
  }
  private final class Bridge {
@@ -101,9 +101,9 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    runtime.requests.execute(()->{try{
     GateApi.Reply r=runtime.api.call(action,new JSONObject(value),token);
     if(r.status==200&&r.body.optBoolean("ok")){
-     if(r.body.has("token")&&r.body.has("profile")){boolean saved=runtime.sessions.saveIfCurrent(generation,r.body.getString("token"),r.body.getJSONObject("profile"));r.body.remove("token");if(!saved)throw new IllegalStateException("Sign-in changed.");runtime.refresh();}
+     if(r.body.has("token")&&r.body.has("profile")){boolean saved=runtime.sessions.saveIfCurrent(generation,r.body.getString("token"),r.body.getJSONObject("profile"));r.body.remove("token");if(!saved)throw new IllegalStateException("Sign-in changed.");runtime.db.clearTemporary();runtime.refresh();}
      if("me".equals(action)&&auth!=null){JSONObject profile=new JSONObject(r.body.toString());profile.remove("ok");if(!runtime.sessions.refreshIfCurrent(generation,token,profile))throw new IllegalStateException("Sign-in changed.");}
-     if("sync".equals(action)&&generation==runtime.sessions.generation())runtime.db.applySync(r.body);
+     if("sync".equals(action)&&generation==runtime.sessions.generation()&&GateSession.canScan(runtime.sessions.read()))runtime.db.applySync(r.body);
     }
     JSONObject response=new JSONObject().put("id",id).put("status",r.status).put("body",r.body);call("onApiResponse",response.toString());
    }catch(Exception e){try{call("onApiResponse",new JSONObject().put("id",id).put("status",0).put("body",new JSONObject().put("ok",false).put("error","Connection interrupted. Unconfirmed scans stay only in memory while the app is open.")).toString());}catch(Exception ignored){}}});
@@ -117,6 +117,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    else if("notifications".equals(action))runOnUiThread(()->{if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},UPDATE_NOTIFICATIONS);else startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()));});
    return GateUpdater.status(MainActivity.this).toString();
   }
+  @JavascriptInterface public void copy(String value){if(value==null||value.length()>256)return;runOnUiThread(()->{android.content.ClipboardManager clip=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(clip!=null)clip.setPrimaryClip(android.content.ClipData.newPlainText("Navrang staff code",value));});}
   @JavascriptInterface public void exit(){runOnUiThread(()->finishAndRemoveTask());}
   @JavascriptInterface public void submit(String id){runtime.submit(id);}
   @JavascriptInterface public String destination(String value){android.content.SharedPreferences p=getSharedPreferences("navrang-ui",MODE_PRIVATE);if("home".equals(value)||"desk".equals(value))p.edit().putString("destination",value).apply();return p.getString("destination","home");}

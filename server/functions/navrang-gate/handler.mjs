@@ -63,11 +63,13 @@ export function createHandler({rpc,googleUser,googleEnabled}){
    }
    if(action==='staff-create'){
     if(!p.name?.trim()||p.name.trim().length>128)return json({ok:false,error:'Enter a checker name, up to 128 characters.'},400);
-    const code='NG-'+token().slice(0,16).toUpperCase();p={name:p.name.trim(),hash:await sha256(code)};extra={code};
+    if(p.scanner!=null&&typeof p.scanner!=='boolean'||p.helpdesk!=null&&typeof p.helpdesk!=='boolean')return json({ok:false,error:'Invalid station permissions.'},400);
+    if(p.scanner===false&&p.helpdesk!==true)return json({ok:false,error:'Assign Checker, Help Desk or both.'},400);
+    const code='NG-'+token().slice(0,16).toUpperCase();p={name:p.name.trim(),hash:await sha256(code),scanner:p.scanner!==false,helpdesk:p.helpdesk===true};extra={code};
    }
    if(action==='staff-update'){
     if(typeof p.active!=='boolean'||typeof p.id!=='string'||!/^[0-9a-f-]{36}$/i.test(p.id))return json({ok:false,error:'Invalid checker update.'},400);
-    if(p.helpdesk!=null&&typeof p.helpdesk!=='boolean')return json({ok:false,error:'Invalid help desk permission.'},400);
+    if(p.scanner!=null&&typeof p.scanner!=='boolean'||p.helpdesk!=null&&typeof p.helpdesk!=='boolean')return json({ok:false,error:'Invalid help desk permission.'},400);
    }
    if(action==='admin-password'){
     if(typeof p.password!=='string'||p.password.length<12)return json({ok:false,error:'Use at least 12 characters.'},400);

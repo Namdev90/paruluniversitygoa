@@ -21,8 +21,8 @@
   catch{automaticRegion=!automaticRegion;throw fail('Connection interrupted. Unconfirmed scans stay only in memory while the app is open.');}finally{clearTimeout(timer)}
   if(r.status>=500)automaticRegion=!automaticRegion;
   if(!b.ok)throw fail(b.error||'Request failed.',r.status);
-  if(b.token&&b.profile){if(generation!==authGeneration)throw fail('Sign-in changed while this request was running.',409);sessionStorage.setItem('navrang-session',JSON.stringify({token:b.token,profile:b.profile}));}
-  if(action==='me'&&a){if(generation!==authGeneration||auth()?.token!==a.token)throw fail('Sign-in changed while this request was running.',409);sessionStorage.setItem('navrang-session',JSON.stringify({token:a.token,profile:b}));}
+  if(b.token&&b.profile){if(generation!==authGeneration)throw fail('Sign-in changed while this request was running.',409);resetMemory();sessionStorage.setItem('navrang-session',JSON.stringify({token:b.token,profile:b.profile}));}
+  if(action==='me'&&a){if(generation!==authGeneration||auth()?.token!==a.token)throw fail('Sign-in changed while this request was running.',409);if(b.role!=='admin'&&b.scanner===false)resetMemory();sessionStorage.setItem('navrang-session',JSON.stringify({token:a.token,profile:b}));}
   return b;
  }
  let memory={dataRevision:-1,cursor:0,records:{},entries:{},stats:{},source:'',lastSync:''},jobs=new Map(),deviceId='browser-'+L.uuid();
@@ -49,11 +49,11 @@
   memory={...merged,lastSync:new Date().toISOString()};
  }
  async function sync(cursors){
-  const generation=authGeneration,s=await local('snapshot');const p=await api('sync',cursors||{dataRevision:s.dataRevision,afterSeq:s.cursor});if(generation!==authGeneration)throw fail('Sign-in changed.');await applySync(p);emit('sync',await local('snapshot'));if(!native)drain();return p;
+  const generation=authGeneration,s=await local('snapshot');const p=await api('sync',cursors||{dataRevision:s.dataRevision,afterSeq:s.cursor});if(generation!==authGeneration)throw fail('Sign-in changed.');if(profile()?.role!=='admin'&&profile()?.scanner===false)throw fail('Checker access changed.',403);await applySync(p);emit('sync',await local('snapshot'));if(!native)drain();return p;
  }
  async function queue(id){
   if(native){Native.submit(id);return}
-  const p=profile();if(!p?.active)throw fail('Sign in with an approved checker account first.');
+  const p=profile();if(!p?.active||p.role!=='admin'&&p.scanner===false)throw fail('Checker access is required. Choose your assigned station.');
   if(!/^[A-Z0-9]{8}$/.test(id))throw fail('Enter the exact eight-character transaction ID.');
   const a=actor(p),key=a+':'+id;let job=jobs.get(key);
   if(!job){job={requestId:L.uuid(),ticketId:id,actor:a,deviceId,createdAt:new Date().toISOString()};jobs.set(key,job)}
@@ -61,7 +61,7 @@
  }
  async function drain(){
   if(native||draining)return;draining=true;
-  try{for(let i=0;i<20;i++){const a=auth(),who=actor(a?.profile),generation=authGeneration;if(!a)break;const pair=[...jobs].find(([,j])=>j.actor===who);if(!pair)break;const [key,job]=pair,r=await api('checkin',job,a);if(generation!==authGeneration)break;L.confirm(job,r);memory=L.merge(memory,{dataRevision:memory.dataRevision,entries:r.entry?[r.entry]:[]});jobs.delete(key);emit('result',r);emit('sync',await local('snapshot'));}}
+  try{for(let i=0;i<20;i++){const a=auth(),who=actor(a?.profile),generation=authGeneration;if(!a)break;const pair=[...jobs].find(([,j])=>j.actor===who);if(!pair)break;const [key,job]=pair,r=await api('checkin',job,a);if(generation!==authGeneration||profile()?.role!=='admin'&&profile()?.scanner===false)break;L.confirm(job,r);memory=L.merge(memory,{dataRevision:memory.dataRevision,entries:r.entry?[r.entry]:[]});jobs.delete(key);emit('result',r);emit('sync',await local('snapshot'));}}
   catch(e){emit('result',{code:'pending',message:e.message+' No universal entry is confirmed.'});}
   finally{draining=false}
  }
@@ -84,6 +84,7 @@
   if(native&&typeof Native.save==='function'){Native.save(name,mime,content);return}
   const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
+ async function copy(text){if(native&&typeof Native.copy==='function'){Native.copy(text);return}if(navigator.clipboard){await navigator.clipboard.writeText(text);return}throw fail('Copy is unavailable in this browser. Use the Android app or HTTPS portal.')}
  function destination(value){if(native&&typeof Native.destination==='function')return Native.destination(value||'');if(value)sessionStorage.setItem('navrang-destination',value);return sessionStorage.getItem('navrang-destination')||'home'}
  function readiness(action='status'){if(native&&typeof Native.readiness==='function')return JSON.parse(Native.readiness(action));return{native:false,message:'Use the Android app for camera, volume, vibration and brightness controls.'}}
 
@@ -97,6 +98,6 @@
    sample(kind).then(buffer=>{if(kind==='intro'&&generation!==introGeneration)return;const source=audio.createBufferSource(),gain=audio.createGain();source.buffer=buffer;gain.gain.value=kind==='tap'?.7:1;source.connect(gain);gain.connect(audio.destination);if(kind==='intro'){introSources.add(source);source.onended=()=>introSources.delete(source)}source.start(audio.currentTime+delay)}).catch(()=>{});
   }catch{}
  }
- function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.6.1',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
- root.GateClient={feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
+ function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.0',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
+ root.GateClient={copy,feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);
