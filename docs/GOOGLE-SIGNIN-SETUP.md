@@ -19,6 +19,6 @@ Copy the current secret directly from the matching Google **Web application** OA
 7. Every verified Google account automatically becomes an active checker. Each verified email has one checker row and a unique immutable internal account key. The displayed username is the checker’s real name, confirmed in the app before scanning. Repeat login reuses that account. Admin suspension remains effective across sign-ins. Google checkers never receive admin privileges.
 8. Verify the complete Android sign-in, real-name confirmation and matching checker row in Admin. Version 0.6 parses provider errors from both callback query and fragment, checks state and shows a setup-specific message. No successful end-to-end Google login is claimed by this release.
 
-The APK uses browser-based Supabase OAuth, not an embedded Google WebView. It does not require a client secret in the app or the Google Play Services sign-in SDK. Install the signed 0.6.0 update over the existing app.
+The APK uses browser-based Supabase OAuth, not an embedded Google WebView. It does not require a client secret in the app or the Google Play Services sign-in SDK. Install the signed 0.6.1 update over the existing app.
 
 References: https://supabase.com/docs/guides/auth/social-login/auth-google and https://supabase.com/docs/guides/auth/sessions/pkce-flow .

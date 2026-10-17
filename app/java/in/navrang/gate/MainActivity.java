@@ -26,7 +26,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   if(!WebViewSupport.supported(web.getSettings().getUserAgentString())){web.destroy();web=null;showMessage("Update Android System WebView / Chrome to version 86 or newer, then reopen Navrang Gate. Your saved entries are kept.");return;}
   frame.addView(web);frame.setOnApplyWindowInsetsListener((v,i)->{v.setPadding(i.getSystemWindowInsetLeft(),i.getSystemWindowInsetTop(),i.getSystemWindowInsetRight(),i.getSystemWindowInsetBottom());return i.consumeSystemWindowInsets();});setContentView(frame);frame.requestApplyInsets();
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setAllowFileAccessFromFileURLs(false);s.setAllowUniversalAccessFromFileURLs(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-  s.setCacheMode(WebSettings.LOAD_NO_CACHE);web.clearCache(true);web.clearFormData();web.setSaveEnabled(false);web.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);web.setLongClickable(false);web.setOnLongClickListener(v->true);
+  s.setCacheMode(WebSettings.LOAD_NO_CACHE);web.clearCache(true);web.clearFormData();web.setSaveEnabled(false);web.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);web.setOnLongClickListener(v->{WebView.HitTestResult hit=web.getHitTestResult();return hit==null||hit.getType()!=WebView.HitTestResult.EDIT_TEXT_TYPE;});
   WebView.setWebContentsDebuggingEnabled(false);web.addJavascriptInterface(new Bridge(),"Native");
   web.setWebViewClient(new WebViewClient(){
    private boolean allowed(String url){return url!=null&&url.startsWith("file:///android_asset/");}

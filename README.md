@@ -2,7 +2,7 @@
 
 Android QR entry and embedded administration for Navrang 2026.
 
-[Download Android 0.6.0](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.6.0.apk)
+[Download Android 0.6.1](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.6.1.apk)
 
 Install over the existing signed app. Student records remain on the server; the current app keeps temporary copies in memory only. The private original signing key is retained outside this repository. Android 7+ and WebView/Chrome86+ are required. Version 0.4 introduces the update client; older APKs need this one manual installation.
 
