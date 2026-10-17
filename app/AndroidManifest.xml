@@ -2,6 +2,9 @@
  <uses-permission android:name="android.permission.CAMERA"/>
  <uses-permission android:name="android.permission.VIBRATE"/>
  <uses-permission android:name="android.permission.INTERNET"/>
+ <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+ <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+ <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
  <uses-feature android:name="android.hardware.camera" android:required="false"/>
  <application android:label="Navrang Gate" android:icon="@drawable/app_icon" android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@android:style/Theme.Material.NoActionBar">
@@ -10,5 +13,7 @@
    <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="navranggate" android:host="auth-callback"/></intent-filter>
   </activity>
   <activity android:name=".ScanActivity" android:exported="false" android:screenOrientation="portrait"/>
+  <service android:name=".UpdateJob" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE"/>
+  <receiver android:name=".UpdateReceiver" android:exported="false"/>
  </application>
 </manifest>

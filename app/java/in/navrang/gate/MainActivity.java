@@ -12,12 +12,12 @@ import org.json.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
-public final class MainActivity extends Activity implements GateRuntime.Listener {
- private static final int CAMERA_PERMISSION=44;
+public final class MainActivity extends Activity implements GateRuntime.Listener,GateUpdater.Listener {
+ private static final int CAMERA_PERMISSION=44,UPDATE_NOTIFICATIONS=45;
  private WebView web;
  private GateRuntime runtime;
  @Override public void onCreate(Bundle saved){
-  super.onCreate(saved);GateFeedback.init(this);
+  super.onCreate(saved);GateFeedback.init(this);GateUpdater.init(this);
   try{runtime=GateRuntime.get(this);}catch(Exception e){showMessage("Could not open saved data. Keep app data.\n\n"+e.getMessage());return;}
   getWindow().setStatusBarColor(Color.rgb(16,13,21));getWindow().setNavigationBarColor(Color.rgb(16,13,21));getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
   FrameLayout frame=new FrameLayout(this);
@@ -37,13 +37,14 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  private void showMessage(String text){TextView v=new TextView(this);v.setText(text);v.setTextSize(18);v.setPadding(35,70,35,35);setContentView(v);}
  private void call(String fn,String json){runOnUiThread(()->{if(web!=null&&!isFinishing())web.evaluateJavascript("window."+fn+" && window."+fn+"("+JSONObject.quote(json)+");",null);});}
  private void error(String text){call("onNativeError",text);}
+ @Override public void updated(JSONObject state){try{event(new JSONObject().put("type","update").put("data",state));}catch(Exception ignored){}}
  @Override public void event(JSONObject e){call("onGateEvent",e.toString());}
  private void beginScan(){
   JSONObject auth=runtime.sessions.read();if(auth==null||auth.optJSONObject("profile")==null||!auth.optJSONObject("profile").optBoolean("active")||("google".equals(auth.optJSONObject("profile").optString("method"))&&!auth.optJSONObject("profile").optBoolean("nameConfirmed",true))){error("Sign in with an approved checker account first.");return;}
   if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.CAMERA},CAMERA_PERMISSION);return;}
   try{startActivity(new Intent(this,ScanActivity.class));}catch(Exception e){error("Camera could not open. Use manual entry.");}
  }
- @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){super.onRequestPermissionsResult(request,permissions,results);if(request==CAMERA_PERMISSION){if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)beginScan();else error("Allow camera permission in Android settings, or use manual entry.");}}
+ @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){super.onRequestPermissionsResult(request,permissions,results);if(request==UPDATE_NOTIFICATIONS){GateUpdater.publish(this);return;}if(request==CAMERA_PERMISSION){if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)beginScan();else error("Allow camera permission in Android settings, or use manual entry.");}}
  @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handleOAuth(intent);}
  private void googleLogin(){
   final long generation=runtime.sessions.beginChange();
@@ -97,18 +98,27 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
     JSONObject response=new JSONObject().put("id",id).put("status",r.status).put("body",r.body);call("onApiResponse",response.toString());
    }catch(Exception e){try{call("onApiResponse",new JSONObject().put("id",id).put("status",0).put("body",new JSONObject().put("ok",false).put("error","Connection interrupted. Pending scans remain saved.")).toString());}catch(Exception ignored){}}});
   }
+  @JavascriptInterface public String update(String action,boolean value){
+   if("check".equals(action))GateUpdater.check(MainActivity.this,true,false);
+   else if("background".equals(action)&&GateUpdater.automatic(MainActivity.this))GateUpdater.check(MainActivity.this,false,false);
+   else if("download".equals(action))GateUpdater.check(MainActivity.this,true,true);
+   else if("automatic".equals(action))GateUpdater.setAutomatic(MainActivity.this,value);
+   else if("install".equals(action))runOnUiThread(()->GateUpdater.install(MainActivity.this));
+   else if("notifications".equals(action))runOnUiThread(()->{if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},UPDATE_NOTIFICATIONS);else startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()));});
+   return GateUpdater.status(MainActivity.this).toString();
+  }
   @JavascriptInterface public void submit(String id){runtime.submit(id);}
   @JavascriptInterface public void scan(){runOnUiThread(()->beginScan());}
   @JavascriptInterface public void googleLogin(){googleLoginFromBridge();}
   private void googleLoginFromBridge(){MainActivity.this.googleLogin();}
   @JavascriptInterface public void feedback(String kind,boolean enabled){
-   if(!java.util.Arrays.asList("intro","tap","transition","success","pending","issue").contains(kind))return;
+   if(!java.util.Arrays.asList("intro","stop-intro","tap","transition","success","pending","issue").contains(kind))return;
    GateFeedback.setSound(MainActivity.this,enabled);GateFeedback.play(MainActivity.this,kind,enabled);
   }
 
  }
- @Override public void onResume(){super.onResume();if(web!=null)web.onResume();if(runtime!=null){runtime.add(this);runtime.resume();}}
- @Override public void onPause(){if(runtime!=null){runtime.remove(this);runtime.pause();}if(web!=null)web.onPause();super.onPause();}
+ @Override public void onResume(){super.onResume();if(web!=null)web.onResume();if(runtime!=null){runtime.add(this);runtime.resume();}GateUpdater.add(this);GateUpdater.publish(this);if(GateUpdater.automatic(this))GateUpdater.check(this,false,false);}
+ @Override public void onPause(){GateUpdater.remove(this);if(runtime!=null){runtime.remove(this);runtime.pause();}if(web!=null)web.onPause();super.onPause();}
  @Override public void onDestroy(){if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}super.onDestroy();}
  @Override public void onBackPressed(){new android.app.AlertDialog.Builder(this).setTitle("Close Navrang Gate?").setMessage("Saved entries and pending requests stay on this phone.").setNegativeButton("Keep open",null).setPositiveButton("Close",(d,w)->finish()).show();}
 }
