@@ -25,7 +25,7 @@ public final class GateRuntime {
   if(System.currentTimeMillis()-lastProfile>8000||!session.getJSONObject("profile").has("scanner")||!session.getJSONObject("profile").optBoolean("active")){
    GateApi.Reply me=api.call("me",new JSONObject(),session.optString("token"));
    if(me.status==200&&me.body.optBoolean("ok")){JSONObject profile=new JSONObject(me.body.toString());profile.remove("ok");boolean changed=!profile.toString().equals(session.getJSONObject("profile").toString());if(!sessions.refreshIfCurrent(generation,session.optString("token"),profile))return;session=sessions.read();lastProfile=System.currentTimeMillis();if(changed)emit("profile",profile);}
-   if(me.status==401){sessions.clear();db.clearTemporary();emit("auth",new JSONObject());return;}
+   if(me.status==401){if(sessions.clearIfCurrent(generation,session.optString("token"))){db.clearTemporary();emit("auth",new JSONObject());}return;}
    if(session==null||!session.getJSONObject("profile").optBoolean("active"))return;
   }
   if(!GateSession.canScan(session)){db.clearTemporary();return;}
@@ -43,13 +43,14 @@ public final class GateRuntime {
  }
  public void drain(){
   if(!draining.compareAndSet(false,true))return;
-  entries.execute(()->{try{
+  entries.execute(()->{long drainGeneration=sessions.generation();try{
    for(int n=0;n<20;n++){long generation=sessions.generation();JSONObject auth=sessions.read();if(!GateSession.canScan(auth))break;String actor=GateSession.actor(auth);JSONObject job=db.pending(actor);if(job==null)break;
     GateApi.Reply r=api.call("checkin",job,auth.optString("token"));
+    if(generation!=sessions.generation()||!GateSession.canScan(sessions.read()))break;
     if(r.status==200&&r.body.optBoolean("ok")){if(generation!=sessions.generation()||!GateSession.canScan(sessions.read()))break;db.finish(job,r.body);online=true;emit("result",r.body);emit("sync",db.snapshot());}
     else{online=false;emit("result",new JSONObject().put("code","pending").put("id",job.optString("ticketId")).put("message",r.body.optString("error","Waiting for server. Your request is saved.")));break;}
    }
-  }catch(Exception e){online=false;emit("result",message("pending","Connection or device storage interrupted. Temporary request kept in memory for retry; entry is not confirmed."));}
+  }catch(Exception e){online=false;if(drainGeneration==sessions.generation()&&GateSession.canScan(sessions.read()))emit("result",message("pending","Connection or device storage interrupted. Temporary request kept in memory for retry; entry is not confirmed."));}
   finally{draining.set(false);}});
  }
  public boolean online(){return online;}

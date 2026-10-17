@@ -1,6 +1,6 @@
 {
   "name": "navrang-gate-tests",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "description": "Development checks only; no Node dependencies are shipped in the Android app.",
   "scripts": {

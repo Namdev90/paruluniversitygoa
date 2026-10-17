@@ -100,6 +100,8 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    if("logout".equals(action)){runtime.sessions.clear();runtime.db.clearTemporary();}
    runtime.requests.execute(()->{try{
     GateApi.Reply r=runtime.api.call(action,new JSONObject(value),token);
+    if(!changesIdentity&&generation!=runtime.sessions.generation())r=new GateApi.Reply(409,new JSONObject().put("ok",false).put("error","Sign-in changed while this request was running."));
+    if(!changesIdentity&&r.status==401&&runtime.sessions.clearIfCurrent(generation,token)){runtime.db.clearTemporary();runtime.emit("auth",new JSONObject());}
     if(r.status==200&&r.body.optBoolean("ok")){
      if(r.body.has("token")&&r.body.has("profile")){boolean saved=runtime.sessions.saveIfCurrent(generation,r.body.getString("token"),r.body.getJSONObject("profile"));r.body.remove("token");if(!saved)throw new IllegalStateException("Sign-in changed.");runtime.db.clearTemporary();runtime.refresh();}
      if("me".equals(action)&&auth!=null){JSONObject profile=new JSONObject(r.body.toString());profile.remove("ok");if(!runtime.sessions.refreshIfCurrent(generation,token,profile))throw new IllegalStateException("Sign-in changed.");}

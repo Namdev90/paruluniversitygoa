@@ -8,19 +8,24 @@
  function auth(){try{return JSON.parse(sessionStorage.getItem('navrang-session')||'null')}catch{return null}}
  function actor(p){return p?.role==='admin'?'admin':p?.checkerId||''}
  root.onApiResponse=raw=>{try{const r=JSON.parse(raw),cb=callbacks.get(r.id);if(cb){callbacks.delete(r.id);clearTimeout(cb.timer);r.body.ok?cb.resolve(r.body):cb.reject(fail(r.body.error||'Request failed.',r.status));}}catch{}};
- root.onGateEvent=raw=>{try{const e=JSON.parse(raw);emit(e.type,e.data)}catch{}};
+ root.onGateEvent=raw=>{try{const e=JSON.parse(raw);if(e.type==='auth')authGeneration++;emit(e.type,e.data)}catch{}};
  root.onNativeError=text=>emit('error',{message:text});
  root.onNativeSaved=name=>emit('notice',{message:'Saved '+name});
  async function api(action,payload={},sessionOverride){
-  if(native)return new Promise((resolve,reject)=>{const id=L.uuid(),timer=setTimeout(()=>{callbacks.delete(id);reject(fail('Server response timed out. Unconfirmed scans stay only in memory while the app is open.'));},25000);callbacks.set(id,{resolve,reject,timer});Native.api(action,JSON.stringify(payload),id);});
-  const a=sessionOverride||auth(),changesIdentity=['login','checker-login','google-login','logout'].includes(action),generation=changesIdentity?++authGeneration:authGeneration;
+  const changesIdentity=['login','checker-login','google-login','logout'].includes(action),generation=changesIdentity?++authGeneration:authGeneration;
+  if(native)return new Promise((resolve,reject)=>{const id=L.uuid(),timer=setTimeout(()=>{callbacks.delete(id);reject(fail('Server response timed out. Unconfirmed scans stay only in memory while the app is open.'));},25000);callbacks.set(id,{resolve:value=>generation===authGeneration?resolve(value):reject(fail('Sign-in changed while this request was running.',409)),reject,timer});Native.api(action,JSON.stringify(payload),id);});
+  const a=sessionOverride||auth();
   if(action==='logout')sessionStorage.removeItem('navrang-session');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
   let r,b;
   try{r=await fetch(config.api+(automaticRegion?'':'?forceFunctionRegion=ap-south-1'),{method:'POST',headers:{'Content-Type':'application/json',...(a?.token?{Authorization:'Bearer '+a.token}:{})},body:JSON.stringify({action,payload}),signal:controller.signal,cache:'no-store'});b=await r.json();}
   catch{automaticRegion=!automaticRegion;throw fail('Connection interrupted. Unconfirmed scans stay only in memory while the app is open.');}finally{clearTimeout(timer)}
   if(r.status>=500)automaticRegion=!automaticRegion;
-  if(!b.ok)throw fail(b.error||'Request failed.',r.status);
+  if(!b.ok){
+   if(r.status===401&&!changesIdentity&&a?.token&&generation===authGeneration&&auth()?.token===a.token){authGeneration++;resetMemory();sessionStorage.removeItem('navrang-session');emit('auth',null);}
+   throw fail(b.error||'Request failed.',r.status);
+  }
+  if(!changesIdentity&&a?.token&&(generation!==authGeneration||auth()?.token!==a.token))throw fail('Sign-in changed while this request was running.',409);
   if(b.token&&b.profile){if(generation!==authGeneration)throw fail('Sign-in changed while this request was running.',409);resetMemory();sessionStorage.setItem('navrang-session',JSON.stringify({token:b.token,profile:b.profile}));}
   if(action==='me'&&a){if(generation!==authGeneration||auth()?.token!==a.token)throw fail('Sign-in changed while this request was running.',409);if(b.role!=='admin'&&b.scanner===false)resetMemory();sessionStorage.setItem('navrang-session',JSON.stringify({token:a.token,profile:b}));}
   return b;
@@ -60,12 +65,12 @@
   const lookup=await local('lookup',{id});feedback('scan');emit('result',{code:'pending',id,record:lookup.record,message:'Awaiting server confirmation. Temporary request stays only while this app is open.'});drain();return job;
  }
  async function drain(){
-  if(native||draining)return;draining=true;
+  if(native||draining)return;draining=true;const drainGeneration=authGeneration;
   try{for(let i=0;i<20;i++){const a=auth(),who=actor(a?.profile),generation=authGeneration;if(!a)break;const pair=[...jobs].find(([,j])=>j.actor===who);if(!pair)break;const [key,job]=pair,r=await api('checkin',job,a);if(generation!==authGeneration||profile()?.role!=='admin'&&profile()?.scanner===false)break;L.confirm(job,r);memory=L.merge(memory,{dataRevision:memory.dataRevision,entries:r.entry?[r.entry]:[]});jobs.delete(key);emit('result',r);emit('sync',await local('snapshot'));}}
-  catch(e){emit('result',{code:'pending',message:e.message+' No universal entry is confirmed.'});}
+  catch(e){if(drainGeneration===authGeneration&&auth())emit('result',{code:'pending',message:e.message+' No universal entry is confirmed.'});}
   finally{draining=false}
  }
- async function signOut(){try{await api('logout')}finally{resetMemory();if(!native)sessionStorage.removeItem('navrang-session');emit('auth',profile())}}
+ async function signOut(){const request=api('logout');resetMemory();if(!native)sessionStorage.removeItem('navrang-session');emit('auth',profile());await request;}
  async function googleLogin(){
   if(native){Native.googleLogin();return}
   const cfg=await api('config');if(!cfg.googleEnabled)throw fail('Google sign-in awaits provider setup. Ask the admin for an assigned checker code.');
@@ -98,6 +103,6 @@
    sample(kind).then(buffer=>{if(kind==='intro'&&generation!==introGeneration)return;const source=audio.createBufferSource(),gain=audio.createGain();source.buffer=buffer;gain.gain.value=kind==='tap'?.7:1;source.connect(gain);gain.connect(audio.destination);if(kind==='intro'){introSources.add(source);source.onended=()=>introSources.delete(source)}source.start(audio.currentTime+delay)}).catch(()=>{});
   }catch{}
  }
- function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.0',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
+ function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.1',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
  root.GateClient={copy,feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);

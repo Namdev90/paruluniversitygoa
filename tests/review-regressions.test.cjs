@@ -57,3 +57,44 @@ test('an in-flight roster sync cannot restore student data after checker access 
   const pending=w.GateClient.sync();await until(()=>deliver);await w.GateClient.api('me');deliver();await assert.rejects(pending,/access changed/);assert.equal((await w.GateClient.local('snapshot')).localCount,0);
  }finally{dom.window.close()}
 });
+
+test('an expired current session clears temporary student data and returns to signed out',async()=>{
+ const {dom,w}=client();try{
+  w.sessionStorage.setItem('navrang-session',JSON.stringify(session('expired','Raju')));
+  w.fetch=async()=>reply({dataRevision:1,cursor:0,records:[{id:'DEMO0001',name:'Temporary student'}],entries:[],stats:{total:1}});
+  await w.GateClient.sync();assert.equal((await w.GateClient.local('snapshot')).localCount,1);
+  const events=[];w.GateClient.on(e=>events.push(e));
+  w.fetch=async()=>new Response(JSON.stringify({ok:false,error:'Session expired.'}),{status:401});
+  await assert.rejects(w.GateClient.api('me'),e=>e.status===401);
+  assert.equal(w.GateClient.profile(),null);assert.equal(w.sessionStorage.getItem('navrang-session'),null);
+  assert.equal((await w.GateClient.local('snapshot')).localCount,0);assert.equal(events.filter(e=>e.type==='auth'&&e.data===null).length,1);
+ }finally{dom.window.close()}
+});
+
+test('a delayed old-session denial or a failed login cannot sign out a newer valid session',async()=>{
+ const {dom,w}=client();let deliver;try{
+  w.sessionStorage.setItem('navrang-session',JSON.stringify(session('old','Old checker')));
+  w.fetch=async(_url,o)=>JSON.parse(o.body).action==='me'?new Promise(r=>deliver=()=>r(new Response(JSON.stringify({ok:false,error:'Expired'}),{status:401}))):reply(session('new','New checker'));
+  const old=w.GateClient.api('me').catch(()=>null);await w.GateClient.api('checker-login',{code:'test'});deliver();await old;
+  assert.equal(w.GateClient.profile().name,'New checker');
+  w.fetch=async()=>new Response(JSON.stringify({ok:false,error:'Wrong code'}),{status:401});
+  await assert.rejects(w.GateClient.api('checker-login',{code:'wrong'}));assert.equal(w.GateClient.profile().name,'New checker');
+ }finally{dom.window.close()}
+});
+
+test('a privileged API response cannot return private content after sign-out',async()=>{
+ const {dom,w}=client();let deliver;try{
+  w.sessionStorage.setItem('navrang-session',JSON.stringify(session('old','Raju')));
+  w.fetch=async(_url,o)=>JSON.parse(o.body).action==='helpdesk-export'?new Promise(r=>deliver=()=>r(reply({csv:'private test contact'}))):reply({signedOut:true});
+  const exportResult=w.GateClient.api('helpdesk-export');const denied=assert.rejects(exportResult,/Sign-in changed/);await w.GateClient.signOut();deliver();await denied;
+ }finally{dom.window.close()}
+});
+
+test('sign-out is immediate on a slow connection and its late receipt cannot erase a newer login',async()=>{
+ const {dom,w}=client();let deliver;try{
+  w.sessionStorage.setItem('navrang-session',JSON.stringify(session('old','Old checker')));
+  w.fetch=async(_url,o)=>JSON.parse(o.body).action==='logout'?new Promise(r=>deliver=()=>r(reply({signedOut:true}))):reply(session('new','New checker'));
+  const logout=w.GateClient.signOut();assert.equal(w.GateClient.profile(),null);
+  await w.GateClient.api('checker-login',{code:'test'});deliver();await logout;assert.equal(w.GateClient.profile().name,'New checker');
+ }finally{dom.window.close()}
+});

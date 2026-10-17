@@ -1,5 +1,5 @@
 {
-  "versionCode": 8,
-  "versionName": "0.7.0",
-  "notes": "Google sign-in retained. Save your real name, choose Checker or Help Desk, and use admin-assigned station permissions. Admin can manage names/access and generate role-specific staff codes. Separate server enforcement, temporary test-code expiry and live access updates."
+  "versionCode": 9,
+  "versionName": "0.7.1",
+  "notes": "Google sign-in and station access retained. Immediate sign-out, clean expired-session login, cleared temporary forms and hidden data after access changes, and protection against late private responses or exports."
 }

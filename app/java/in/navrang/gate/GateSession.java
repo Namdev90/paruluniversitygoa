@@ -18,6 +18,7 @@ public final class GateSession {
  public synchronized long beginChange(){generation++;prefs.edit().putLong("generation",generation).commit();return generation;}
  public synchronized boolean saveIfCurrent(long expected,String token,JSONObject profile)throws Exception{if(expected!=generation)return false;save(token,profile);return true;}
  public synchronized boolean refreshIfCurrent(long expected,String token,JSONObject profile)throws Exception{JSONObject current=read();if(expected!=generation||current==null||!token.equals(current.optString("token")))return false;save(token,profile);return true;}
+ public synchronized boolean clearIfCurrent(long expected,String token){JSONObject current=read();if(expected!=generation||current==null||!token.equals(current.optString("token")))return false;clear();return true;}
  public GateSession(Context context){prefs=context.getSharedPreferences("navrang-live-auth",Context.MODE_PRIVATE);generation=prefs.getLong("generation",0);}
  private SecretKey key() throws Exception{
   KeyStore store=KeyStore.getInstance("AndroidKeyStore");store.load(null);

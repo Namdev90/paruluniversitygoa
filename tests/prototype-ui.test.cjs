@@ -11,3 +11,28 @@ test('branded close dialog warns about unconfirmed scans and unsaved Help Desk d
  w.GateClient.local=async()=>({pending:0});w.NavrangDesk={hasDraft:()=>true};await w.onBackRequested();assert.match(w.document.getElementById('exit-message').textContent,/unsaved/);w.document.getElementById('exit-keep').click();
  w.NavrangDesk.hasDraft=()=>false;await w.onBackRequested();assert.match(w.document.getElementById('exit-message').textContent,/stored on the server/);
  }finally{await tick();dom.window.close()}});
+
+test('session expiry clears hidden admin rows, codes and dialogs and ignores late scan results',async()=>{
+ const {w,dom,event}=ui({role:'admin',name:'namdev',active:true});try{
+  await tick();await tick();const $=id=>w.document.getElementById(id);
+  for(const id of ['registration-rows','all-entry-rows','recent-entries','checker-list','dialog-details'])$(id).textContent='Private test contact';
+  for(const id of ['edit-name','staff-name','real-name','new-checker-name','admin-password','new-admin-password'])$(id).value='Private test contact';
+  $('new-checker-code').textContent='NG-PRIVATE';$('result-name').textContent='Private test contact';$('checker-name').textContent='Private test contact';
+  for(const id of ['staff-dialog','code-dialog','student-dialog','edit-dialog','password-dialog','result-popup'])$(id).setAttribute('open','');
+  let cleared=0;w.NavrangDesk={clear:()=>cleared++};w.GateClient.profile=()=>null;event({type:'auth',data:null});
+  for(const id of ['registration-rows','all-entry-rows','recent-entries','checker-list','dialog-details','new-checker-code','result-name','checker-name'])assert.equal($(id).textContent,'',id);
+  for(const id of ['edit-name','staff-name','real-name','new-checker-name','admin-password','new-admin-password'])assert.equal($(id).value,'',id);
+  assert.equal(w.document.querySelector('dialog[open]'),null);assert.equal($('view-login').hidden,false);assert.equal(cleared,1);
+  event({type:'result',data:{code:'blocked',id:'DEMO0001',record:{name:'Private test contact'},message:'Late response'}});
+  assert.equal($('result-popup').open,false);assert.equal($('result-name').textContent,'');
+ }finally{await tick();dom.window.close()}
+});
+
+test('a slow sign-out receipt cannot reset the station screen of a newer login',async()=>{
+ const {w,dom,event}=ui({role:'admin',name:'namdev',active:true});let deliver;try{
+  await tick();w.GateClient.signOut=()=>{w.GateClient.profile=()=>null;event({type:'auth',data:null});return new Promise(r=>deliver=r)};
+  w.document.getElementById('sign-out').click();assert.equal(w.document.getElementById('view-login').hidden,false);
+  w.GateClient.profile=()=>({role:'checker',checkerId:'new',name:'Raju',active:true,scanner:true});event({type:'auth'});
+  deliver();await tick();assert.equal(w.document.getElementById('view-station').hidden,false);assert.equal(w.document.getElementById('view-login').hidden,true);
+ }finally{await tick();dom.window.close()}
+});

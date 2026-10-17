@@ -21,3 +21,13 @@ test('scan audio plays a bundled sample even when an old caller passes mute fals
  for(const file of ['live-core.js','config.js','client.js'])w.eval(fs.readFileSync(root+'/app/assets/'+file,'utf8'));
  try{w.GateClient.feedback('scan',false);await new Promise(r=>setImmediate(r));assert.equal(started,1);assert.deepEqual(paths,['audio/scan.ogg']);w.GateClient.feedback('scan',false);await new Promise(r=>setImmediate(r));assert.equal(started,2);assert.equal(paths.length,1)}finally{w.close()}
 });
+
+test('the Android bridge rejects late private responses after its auth session changes',async()=>{
+ const dom=new JSDOM('',{url:'https://gate.test/',runScripts:'outside-only'}),w=dom.window;let request;
+ w.Native={local:()=>JSON.stringify({ok:true,data:{profile:{role:'admin',active:true}}}),api:(action,payload,id)=>request=id};
+ for(const file of ['live-core.js','config.js','client.js'])w.eval(fs.readFileSync(root+'/app/assets/'+file,'utf8'));
+ try{
+  const pending=w.GateClient.api('helpdesk-export'),denied=assert.rejects(pending,/Sign-in changed/);
+  w.onGateEvent(JSON.stringify({type:'auth',data:null}));w.onApiResponse(JSON.stringify({id:request,status:200,body:{ok:true,csv:'private test contact'}}));await denied;
+ }finally{w.close()}
+});

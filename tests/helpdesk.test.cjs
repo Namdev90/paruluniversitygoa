@@ -65,3 +65,36 @@ test('help desk exposes only four entry fields and updates the quantity fee prev
  for(let i=0;i<4;i++)w.document.getElementById('desk-quantity-down').click();assert.equal(w.document.getElementById('desk-quantity').value,'1');
  assert.deepEqual(Object.keys(D.normalize({...details,eligible:true,paymentStatus:'paid',amount:100})),['name','email','phone','quantity']);
  }finally{dom.window.close()}});
+
+test('revoking Help Desk access clears forms, pending saves and saved contacts from the screen',async()=>{
+ const t=desk(),{w,dom}=t;try{
+  t.setBehavior(async()=>{throw Error('Connection lost')});await w.document.getElementById('desk-form').onsubmit({preventDefault(){}});
+  assert.equal(w.NavrangDesk.hasDraft(),true);
+  w.document.getElementById('desk-records').textContent=details.email;w.document.getElementById('desk-search').value=details.phone;
+  t.setProfile({role:'checker',checkerId:'desk-1',name:'Raju',active:true,helpdesk:false});await w.NavrangDesk.refresh(true);
+  for(const key of ['name','email','phone'])assert.equal(w.document.getElementById('desk-'+key).value,'');
+  assert.equal(w.NavrangDesk.hasDraft(),false);assert.equal(w.document.getElementById('desk-form').dataset.pending,'false');assert.equal(w.document.getElementById('desk-records').textContent,'');assert.equal(w.document.getElementById('desk-search').value,'');assert.equal(w.document.getElementById('desk-workspace').hidden,true);
+ }finally{dom.window.close()}
+});
+
+test('an admin downgrade closes and scrubs the privileged Help Desk review',async()=>{
+ const t=desk({role:'admin',name:'namdev',active:true}),{w,dom}=t;
+ t.setBehavior(async()=>({records:[{id:'case-1',ticket_id:'HDABCDEF',created_by_name:'Raju',created_at:'2026-10-17T01:00:00Z',details,status:'pending',version:1}],total:1,stats:{total:1,pending:1,approved:0}}));
+ try{
+  await w.NavrangDesk.refresh(true);w.document.querySelector('#desk-records .button').click();w.document.getElementById('desk-confirm-existing').checked=true;
+  assert.equal(w.document.getElementById('desk-review-dialog').open,true);
+  t.setProfile({role:'checker',checkerId:'desk-1',name:'Raju',active:true,helpdesk:true});await w.NavrangDesk.refresh(true);
+  assert.equal(w.document.getElementById('desk-review-dialog').open,false);assert.equal(w.document.getElementById('desk-review-details').textContent,'');assert.equal(w.document.getElementById('desk-review-name').textContent,'');assert.equal(w.document.getElementById('desk-confirm-existing').checked,false);
+ }finally{dom.window.close()}
+});
+
+test('an export finishing after sign-out or admin downgrade cannot download contacts',async()=>{
+ for(const profile of [null,{role:'checker',checkerId:'desk-1',name:'Raju',active:true,helpdesk:true}]){
+  const t=desk({role:'admin',name:'namdev',active:true}),{w,dom,calls}=t;let deliver;
+  try{
+   t.setBehavior(async()=>new Promise(r=>deliver=()=>r({filename:'contacts.csv',csv:details.email,count:1})));
+   const download=w.document.getElementById('desk-export').onclick();t.setProfile(profile);w.NavrangDesk.clear();deliver();await download;
+   assert.ok(!calls.some(c=>c.a==='file-save'));assert.ok(!w.document.getElementById('desk-list-stats').textContent.includes('prepared'));
+  }finally{dom.window.close()}
+ }
+});
