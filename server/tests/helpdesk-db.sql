@@ -34,3 +34,24 @@ begin
  if (select count(*) from navrang_private.helpdesk_audit where registration_id=registration)<>3 then raise exception 'Audit trail incomplete';end if;
  raise notice 'PASS: Help Desk roles, contact isolation, retry recovery, pending payment, edit versioning, approval, single entry, file import preservation and audit';
 end $$;
+
+-- Current four-field form, email deduplication and explicit payment verification.
+do $$
+declare
+ ck uuid=gen_random_uuid(); rid uuid; req uuid=gen_random_uuid(); admin_token text=repeat('4',64); desk_token text=repeat('5',64);
+ d jsonb=jsonb_build_object('name','Synthetic Four Field Student','email',gen_random_uuid()::text||'@example.invalid','phone','9999999999','quantity',2);
+ r jsonb; ticket text;
+begin
+ insert into navrang_private.checkers(id,name,method,active,name_confirmed,helpdesk_enabled) values(ck,'Synthetic Desk V06','code',true,true,true);
+ insert into navrang_private.sessions(hash,role,checker_id,expires_at) values(admin_token,'admin',null,now()+interval '1 hour'),(desk_token,'checker',ck,now()+interval '1 hour');
+ r=public.navrang_gate('helpdesk-save',jsonb_build_object('requestId',req,'details',d),desk_token);rid=(r->'registration'->>'id')::uuid;ticket=r->'registration'->>'ticket_id';
+ if rid is null or exists(select 1 from navrang_private.tickets where id=ticket) then raise exception 'Four-field form did not save pending';end if;
+ r=public.navrang_gate('helpdesk-list',jsonb_build_object('offset',0,'limit',5,'search',d->>'email'),desk_token);if r->>'total'<>'1' then raise exception 'Four-field email search failed';end if;
+ r=public.navrang_gate('helpdesk-save',jsonb_build_object('requestId',gen_random_uuid(),'details',d||jsonb_build_object('email',upper(d->>'email'))),desk_token);if r->>'status'<>'409' then raise exception 'Case-insensitive duplicate email accepted';end if;
+ r=public.navrang_gate('helpdesk-review',jsonb_build_object('id',rid,'version',1,'status','approved','confirmPayment',true),admin_token);if r->>'status'<>'400' then raise exception 'Group ticket approved for one entry';end if;
+ d=d||'{"quantity":1}';r=public.navrang_gate('helpdesk-edit',jsonb_build_object('id',rid,'version',1,'details',d),admin_token);if r->'registration'->>'version'<>'2' then raise exception 'Four-field admin edit failed';end if;
+ r=public.navrang_gate('helpdesk-review',jsonb_build_object('id',rid,'version',2,'status','approved'),admin_token);if r->>'status'<>'400' then raise exception 'Approval without explicit payment confirmation accepted';end if;
+ r=public.navrang_gate('helpdesk-review',jsonb_build_object('id',rid,'version',2,'status','approved','confirmPayment',true),admin_token);if r->'registration'->>'status'<>'approved' or not exists(select 1 from navrang_private.tickets where id=ticket and eligible and amount=100 and quantity=1) then raise exception 'Verified four-field registration failed approval';end if;
+ r=public.navrang_gate('helpdesk-edit',jsonb_build_object('id',rid,'version',3,'details',d),admin_token);if r->>'status'<>'409' then raise exception 'Approved record was editable';end if;
+ raise notice 'PASS: four fields, email search/deduplication, single-person quantity, explicit payment approval and immutable approved record';
+end $$;

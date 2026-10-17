@@ -1,5 +1,5 @@
 {
-  "versionCode": 5,
-  "versionName": "0.5.0",
-  "notes": "Help Desk for Android and laptop: server-only registration records, admin approval and college CSV export. Student caches are temporary in memory. Startup sound, haptics, adaptive brightness and permission readiness."
+  "versionCode": 6,
+  "versionName": "0.6.0",
+  "notes": "Four-field Help Desk, always-on Kenney scan/result sounds, warm 3D controls without blue touch highlights, branded close screen, full individual dancers and clearer Google setup errors."
 }

@@ -2,18 +2,20 @@
 
 Android QR entry and embedded administration for Navrang 2026.
 
-[Download Android 0.5.0](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.5.0.apk)
+[Download Android 0.6.0](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.6.0.apk)
 
 Install over the existing signed app. Student records remain on the server; the current app keeps temporary copies in memory only. The private original signing key is retained outside this repository. Android 7+ and WebView/Chrome86+ are required. Version 0.4 introduces the update client; older APKs need this one manual installation.
 
 ## Current app
 
 - Official horizontal **Parul University Goa** wordmark throughout, including the horizontal branding in the Navrang icon. The separate wordmark is the original vector from the university website, not a recreated text label.
-- Dark interface with a longer, skippable 6.2-second opening: isolated garba dancer artwork arrives from opposite sides over a custom stage. The poster is not the opening background. Original local bell audio follows the reveal and stops when skipped. Reduced motion is respected.
+- Dark interface with a longer, skippable 6.2-second opening: isolated garba dancer artwork arrives from opposite sides over a custom stage. The poster is not the opening background. Kenney CC0 music/interface samples follow the reveal and stop when skipped. Sound is always enabled in the app; device policy still applies. Reduced motion is respected.
 - Refined controls and composited scan-line motion. Admin rows are retained when a two-second poll returns unchanged data, avoiding unnecessary list/button replacement.
 - Separate Google / assigned-code login and administrator login. Verified Google accounts activate automatically, then save a real name such as Raju. Repeated sign-in reuses the account. Display names can coincide; immutable internal account keys preserve unique attribution. Google email remains private from other checkers.
 - Admin username **namdev** with the privately supplied password. Admin-only registration edits, entry/stats pages, named checker-code creation, and one-tap Activate / Suspend. Re-login does not undo suspension.
 - Simulation has been removed. Sample QR assets and the rehearsal module are excluded from the app. Organizer files are supplied privately in the working chat and applied to the server. Help Desk has an explicitly requested admin-only college CSV export; ordinary checkers have no import, export or backup tools.
+
+Version 0.6 removes the mute button and blue WebView tap/selection wash, adds warm beveled controls and a branded close dialog that warns about RAM-only pending work, and replaces the clipped shared dancer image with separate complete figures. Ten distinct bundled CC0 cues cover reads, outcomes and controls. A QR read sounds immediately; confirmed admission, duplicate, invalid code, payment issue and delayed connection warning have different cues. Sound loading and playback do not block scanning.
 
 ## Gate operation
 
@@ -39,11 +41,11 @@ Foreground updates poll every two seconds; check-in validates directly at the se
 
 Open Help Desk on the login page, then sign in with Google or an assigned code. The administrator can use the same admin login. Namdev enables **Help Desk** for named staff in **Admin → Checkers → Enable desk**; Google auto-checker enrollment alone does not grant contact-data access.
 
-The three-step form captures full name, student/enrollment ID, college, course, year, phone, optional email, ticket/payment reference, reported payment/method/amount, reason and notes. Saving uses a UUID for safe same-request retries. The server records the staff identity, timestamps and a generated eight-character ticket ID when needed. Staff can read only their own saved cases. They cannot edit records, approve payment, authorize tickets or export contact details.
+The form captures only name, email, mobile number and quantity, matching the organizer’s reference. Email is required and prevents duplicate pending/approved Help Desk cases. The fee preview is ₹100 per person. Saving uses a UUID for safe same-request retries. The server records the staff identity, timestamps and a generated eight-character ticket ID when needed. Staff can read only their own saved cases. They cannot edit records, approve payment, authorize tickets or export contact details.
 
 Admin can view all cases, edit pending details, review or reject cases and download **Help Desk → Saved list → College CSV** for the college. The export includes all Help Desk records and attribution and protects spreadsheet formulas. Exporting is an explicit local download chosen by the admin; no file is sent to anyone automatically.
 
-A pending case does not authorize entry. Admin approval of a new paid registration publishes an eligible single-entry ticket and updates other stations. For an existing ticket, original payment/entry data is preserved; any payment issue must first be corrected in Admin → Students and the same-person link explicitly confirmed. Later organizer file imports preserve approved Help Desk tickets. Each create/edit/review has a private server audit record and optimistic edit version.
+A pending case does not authorize entry. Admin explicitly confirms the person and ₹100 payment before approval publishes an eligible single-entry ticket and updates other stations. Quantity must be one for admission; register other people separately rather than sharing one entry ticket. For an existing ticket, original payment/entry data is preserved; any payment issue must first be corrected in Admin → Students and the same-person link explicitly confirmed. Later organizer file imports preserve approved Help Desk tickets. Each create/edit/review has a private server audit record and optimistic edit version.
 
 Laptop portal: https://navrang-gate-admin.namubhai.chatgpt.site/#desk
 
@@ -65,7 +67,7 @@ See [app update publishing](docs/APP-UPDATES.md). Increase `release.json`, build
 
 Run `npm ci --ignore-scripts`, then `npm test`. Set `NAVRANG_TEST_XLSX` and `NAVRANG_LATEST_XLSX` to the private organizer files for real-file regressions. `python tests/sqlite-check.py` checks the in-memory schema, transaction failure and request deduplication. Native QR, camera-hint, latch/PKCE/platform and update-channel policy checks are in `tests/qr`.
 
-This iteration passed 53 unit/DOM/data checks including Help Desk retries, role controls, CSV formula protection and the actual workbook comparison. A rollback-only database suite verifies authorization, contact isolation, versioned edits, approval, duplicate prevention, import preservation and auditing; it leaves no attendee fixtures. Ten native update-policy cases cover the existing update channel. Previously established QR decoding coverage includes exact, rotated, inverted, low-contrast, landscape and blank frames. The signed APK and public manifest/hash are checked before handoff. No mutating hosted admission test is run against real attendees.
+This iteration passed 57 unit/DOM/data checks including Help Desk retries, role controls, CSV formula protection and the actual workbook comparison. A rollback-only database suite verifies authorization, contact isolation, versioned edits, approval, duplicate prevention, import preservation and auditing; it leaves no attendee fixtures. Ten new native OAuth callback cases cover query/fragment errors, state checks, duplicate parameters and credential-safe messages. Ten previously passed native update-policy cases cover the existing update channel. Previously established QR decoding coverage includes exact, rotated, inverted, low-contrast, landscape and blank frames. The signed APK and public manifest/hash are checked before handoff. No mutating hosted admission test is run against real attendees.
 
 The supported rendered preview could not start due to an environment mount-permission failure. No physical Android was attached; the new opening, install/notification flow, camera and frame smoothness still need phone verification. Unit/DOM tests do not establish visual frame-rate or end-to-end Android update behavior.
 

@@ -1,0 +1,62 @@
+{
+  "license": "CC0-1.0",
+  "provider": "Kenney",
+  "pages": [
+    "https://kenney.nl/assets/interface-sounds",
+    "https://kenney.nl/assets/ui-audio",
+    "https://kenney.nl/assets/music-jingles"
+  ],
+  "processing": "Loudness normalized to -14 LUFS / -1 dBTP, mono 44.1kHz; original stock recordings, no oscillator synthesis.",
+  "sounds": {
+    "intro": {
+      "source": "jingles/Audio/Steel jingles/jingles_STEEL16.ogg",
+      "sha256": "4c8f1667fcabb4caf2adcf00c2351209ea5fa4c6c2325915678542f44b52a0d3",
+      "bytes": 12027
+    },
+    "tap": {
+      "source": "organic/Audio/click3.ogg",
+      "sha256": "e976ea76c75018c3daeb709365024cad230621ca4c4f5d1d30d4f4530426d206",
+      "bytes": 5265
+    },
+    "scan": {
+      "source": "interface/Audio/confirmation_001.ogg",
+      "sha256": "c94046257a1bff3f57129407df62b93dec3750513da22778be9c9aa7ed5724f2",
+      "bytes": 5792
+    },
+    "success": {
+      "source": "interface/Audio/confirmation_004.ogg",
+      "sha256": "c5ef0b64852f98e5551b6d7d51802174279c47ea0d835f0510b9235ce61d233a",
+      "bytes": 7453
+    },
+    "duplicate": {
+      "source": "interface/Audio/error_003.ogg",
+      "sha256": "cd91f2871d5a1e1771572e6344e13790edf6b26d07574b76049968a3a69b9e89",
+      "bytes": 10902
+    },
+    "issue": {
+      "source": "interface/Audio/error_007.ogg",
+      "sha256": "47e0bf7dc3ca5e3b297ab88c6181b5fb4ca7610bf3a9b2b30d07da416d7b2c78",
+      "bytes": 6917
+    },
+    "invalid": {
+      "source": "interface/Audio/question_002.ogg",
+      "sha256": "8dc2afc858395b871476fcf51093a733d8fe6db726c6d79bcb71f638ab864d2e",
+      "bytes": 5881
+    },
+    "pending": {
+      "source": "interface/Audio/question_004.ogg",
+      "sha256": "98ceae9f7a8750a7711610ccfe2e4cbe9be0cfbc6e7a6ba211dd8ab61eaea603",
+      "bytes": 5953
+    },
+    "transition": {
+      "source": "interface/Audio/open_002.ogg",
+      "sha256": "d29ec6f0ede55f4d90a5459c2a756296632d2fdb3455ab5f286c704f8a5531ac",
+      "bytes": 8860
+    },
+    "close": {
+      "source": "interface/Audio/close_001.ogg",
+      "sha256": "cd97e3d5db1ce537fca58752cbd6ba3a0df3f9138f5bd404991f3efc6d78d956",
+      "bytes": 6924
+    }
+  }
+}

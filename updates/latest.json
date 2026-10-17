@@ -1,10 +1,10 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 5,
-  "versionName": "0.5.0",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.5.0.apk",
-  "size": 1710021,
-  "sha256": "e81b2efbe7c73b3e4048baa51a30a68ae6e04bc004c3383382ab9a4aca50d617",
-  "notes": "Help Desk for Android and laptop: server-only registration records, admin approval and college CSV export. Student caches are temporary in memory. Startup sound, haptics, adaptive brightness and permission readiness.",
-  "publishedAt": "2026-10-17T05:48:42.945901+00:00"
+  "versionCode": 6,
+  "versionName": "0.6.0",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.6.0.apk",
+  "size": 1891593,
+  "sha256": "d2d803ae06a297898d300fb3372e94d5c31dd60c5c3e61794800b930eab59f21",
+  "notes": "Four-field Help Desk, always-on Kenney scan/result sounds, warm 3D controls without blue touch highlights, branded close screen, full individual dancers and clearer Google setup errors.",
+  "publishedAt": "2026-10-17T06:46:20.530684+00:00"
 }

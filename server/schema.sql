@@ -78,6 +78,7 @@ create table if not exists navrang_private.helpdesk_registrations (
 );
 create index if not exists helpdesk_created on navrang_private.helpdesk_registrations(created_at desc,id);
 create index if not exists helpdesk_creator on navrang_private.helpdesk_registrations(created_by,created_at desc);
+create unique index if not exists helpdesk_email_unique on navrang_private.helpdesk_registrations(lower(trim(details->>'email'))) where status in ('pending','approved') and coalesce(trim(details->>'email'),'')<>'';
 create index if not exists helpdesk_ticket on navrang_private.helpdesk_registrations(ticket_id);
 create unique index if not exists helpdesk_student_unique on navrang_private.helpdesk_registrations(lower(trim(details->>'college')),lower(trim(details->>'studentId'))) where status in ('pending','approved');
 create table if not exists navrang_private.helpdesk_audit (
@@ -161,8 +162,8 @@ begin
    return jsonb_build_object('registration',to_jsonb(h),'saved',true,'replayed',true);
   end if;
   draft=p->'details';
-  perform pg_advisory_xact_lock(hashtextextended(lower(trim(draft->>'college'))||':'||lower(trim(draft->>'studentId')),3));
-  if exists(select 1 from navrang_private.helpdesk_registrations hd where hd.status in ('pending','approved') and lower(trim(hd.details->>'college'))=lower(trim(draft->>'college')) and lower(trim(hd.details->>'studentId'))=lower(trim(draft->>'studentId'))) then return jsonb_build_object('error','A Help Desk case already exists for this student ID and college. Ask admin to check the saved list.','status',409);end if;
+  perform pg_advisory_xact_lock(hashtextextended(coalesce(nullif(lower(trim(draft->>'email')),''),lower(trim(draft->>'college'))||':'||lower(trim(draft->>'studentId'))),3));
+  if exists(select 1 from navrang_private.helpdesk_registrations hd where hd.status in ('pending','approved') and ((coalesce(trim(draft->>'email'),'')<>'' and lower(trim(hd.details->>'email'))=lower(trim(draft->>'email'))) or (coalesce(trim(draft->>'studentId'),'')<>'' and lower(trim(hd.details->>'college'))=lower(trim(draft->>'college')) and lower(trim(hd.details->>'studentId'))=lower(trim(draft->>'studentId'))))) then return jsonb_build_object('error','A Help Desk case already exists for this email or student identity. Ask admin to check the saved list.','status',409);end if;
   ticket_key=nullif(draft->>'ticketId','');
   if ticket_key is null then
    loop
@@ -178,11 +179,11 @@ begin
  elsif p_action='helpdesk-list' then
   select count(*) into total_count from navrang_private.helpdesk_registrations hd
    where (s.role='admin' or hd.created_by=actor_key) and (coalesce(p->>'status','all')='all' or hd.status=p->>'status')
-   and (coalesce(p->>'search','')='' or position(lower(p->>'search') in lower((hd.details->>'name')||' '||(hd.details->>'studentId')||' '||hd.ticket_id))>0);
+   and (coalesce(p->>'search','')='' or position(lower(p->>'search') in lower(concat_ws(' ',hd.details->>'name',hd.details->>'email',hd.details->>'phone',hd.details->>'studentId',hd.ticket_id)))>0);
   select coalesce(jsonb_agg(to_jsonb(z) order by z.created_at desc,z.id),'[]') into records from (
    select hd.* from navrang_private.helpdesk_registrations hd where (s.role='admin' or hd.created_by=actor_key)
     and (coalesce(p->>'status','all')='all' or hd.status=p->>'status')
-    and (coalesce(p->>'search','')='' or position(lower(p->>'search') in lower((hd.details->>'name')||' '||(hd.details->>'studentId')||' '||hd.ticket_id))>0)
+    and (coalesce(p->>'search','')='' or position(lower(p->>'search') in lower(concat_ws(' ',hd.details->>'name',hd.details->>'email',hd.details->>'phone',hd.details->>'studentId',hd.ticket_id)))>0)
     order by hd.created_at desc,hd.id offset coalesce((p->>'offset')::integer,0) limit coalesce((p->>'limit')::integer,5)
   ) z;
   return jsonb_build_object('records',records,'total',total_count,'offset',coalesce((p->>'offset')::integer,0),'pageSize',coalesce((p->>'limit')::integer,5),
@@ -198,12 +199,14 @@ begin
   if p_action='helpdesk-edit' then
    if h.status<>'pending' then return jsonb_build_object('error','Only pending records can be edited. Entry history stays unchanged.','status',409);end if;
    draft=p->'details';ticket_key=coalesce(nullif(draft->>'ticketId',''),h.ticket_id);
-   perform pg_advisory_xact_lock(hashtextextended(lower(trim(draft->>'college'))||':'||lower(trim(draft->>'studentId')),3));
-   if exists(select 1 from navrang_private.helpdesk_registrations hd where hd.id<>h.id and hd.status in ('pending','approved') and lower(trim(hd.details->>'college'))=lower(trim(draft->>'college')) and lower(trim(hd.details->>'studentId'))=lower(trim(draft->>'studentId'))) then return jsonb_build_object('error','Another Help Desk case already uses this student ID and college.','status',409);end if;
-   update navrang_private.helpdesk_registrations set details=draft||jsonb_build_object('ticketId',ticket_key),ticket_id=ticket_key,version=version+1,updated_at=clock_timestamp() where id=h.id returning * into h;
+   perform pg_advisory_xact_lock(hashtextextended(coalesce(nullif(lower(trim(draft->>'email')),''),lower(trim(draft->>'college'))||':'||lower(trim(draft->>'studentId'))),3));
+   if exists(select 1 from navrang_private.helpdesk_registrations hd where hd.id<>h.id and hd.status in ('pending','approved') and ((coalesce(trim(draft->>'email'),'')<>'' and lower(trim(hd.details->>'email'))=lower(trim(draft->>'email'))) or (coalesce(trim(draft->>'studentId'),'')<>'' and lower(trim(hd.details->>'college'))=lower(trim(draft->>'college')) and lower(trim(hd.details->>'studentId'))=lower(trim(draft->>'studentId'))))) then return jsonb_build_object('error','Another Help Desk case already uses this email or student identity.','status',409);end if;
+   update navrang_private.helpdesk_registrations set details=h.details||draft||jsonb_build_object('ticketId',ticket_key),ticket_id=ticket_key,version=version+1,updated_at=clock_timestamp() where id=h.id returning * into h;
   else
    if h.status<>'pending' then return jsonb_build_object('error','This record was already reviewed. Refresh the list.','status',409);end if;
    if p->>'status'='approved' then
+    if coalesce((h.details->>'quantity')::integer,1)<>1 then return jsonb_build_object('error','One ticket admits one person. Set quantity to one and register each other person separately before approving.','status',400);end if;
+    if not coalesce((p->>'confirmPayment')::boolean,(p->>'confirmExisting')::boolean,false) then return jsonb_build_object('error','Verify this person and their payment, then confirm approval.','status',400);end if;
     -- The existing event lock also serializes check-in and file imports.
     perform 1 from navrang_private.event where id='O9KL3' for update;
     select * into t from navrang_private.tickets where id=h.ticket_id;
@@ -211,9 +214,9 @@ begin
      if not t.active or not t.eligible then return jsonb_build_object('error','This existing ticket still has an issue. Verify and correct it in Admin → Students before approving this case.','status',409);end if;
      if coalesce((p->>'confirmExisting')::boolean,false) is not true then return jsonb_build_object('error','Confirm that this existing ticket belongs to this student before linking it.','status',409);end if;
     else
-     if h.details->>'paymentStatus'<>'paid' or coalesce((h.details->>'amount')::numeric,0)<100 then return jsonb_build_object('error','Verify payment of at least ₹100 before approving a new entry ticket.','status',400);end if;
+     if not (h.details ? 'quantity') and (h.details->>'paymentStatus'<>'paid' or coalesce((h.details->>'amount')::numeric,0)<100) then return jsonb_build_object('error','Verify payment of at least ₹100 before approving a new entry ticket.','status',400);end if;
      insert into navrang_private.tickets(id,name,amount,quantity,refund,description,eligible,reason)
-      values(h.ticket_id,h.details->>'name',(h.details->>'amount')::numeric,1,0,'Transaction completed successfully',true,'Verified by admin at Help Desk');
+      values(h.ticket_id,h.details->>'name',case when h.details ? 'quantity' then 100 else (h.details->>'amount')::numeric end,1,0,'Transaction completed successfully',true,'Verified by admin at Help Desk');
      update navrang_private.event set data_revision=data_revision+1,updated_at=now() where id='O9KL3';
     end if;
    end if;

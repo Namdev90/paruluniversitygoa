@@ -1,15 +1,15 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{webcrypto}=require('node:crypto'),{JSDOM}=require('jsdom');
 const root=path.resolve(__dirname,'..'),asset=n=>fs.readFileSync(root+'/app/assets/'+n,'utf8'),D=require('../app/assets/desk-core.js');
-const details={name:'Test Student',studentId:'PG-1',college:'Test University',course:'Microbiology',year:'1',phone:'+91 9999999999',email:'test@example.invalid',ticketId:'',issue:'new_registration',paymentStatus:'pending',paymentMethod:'unknown',amount:null,paymentReference:'',notes:'Check payment'};
+const details={name:'Test Student',email:'test@example.invalid',phone:'+91 9999999999',quantity:1};
 const pause=()=>new Promise(r=>setImmediate(r));
-test('help desk validates full details and strips client-supplied privileges and payment authorization',()=>{
+test('help desk validates the four requested details and strips client-supplied privileges and payment authorization',()=>{
  const saved=D.normalize({...details,eligible:true,status:'approved',created_by_name:'namdev',email:'TEST@EXAMPLE.INVALID'});
  assert.equal(saved.email,'test@example.invalid');for(const key of ['eligible','status','created_by_name'])assert.equal(key in saved,false);
- for(const change of [{phone:'123'},{ticketId:'ABCD'},{amount:-1},{paymentStatus:'verified'},{name:''},{notes:'x'.repeat(1001)}])assert.throws(()=>D.normalize({...details,...change}));
+ for(const change of [{phone:'123'},{email:''},{email:'broken'},{quantity:0},{quantity:1.5},{quantity:21},{quantity:'1'},{name:''}])assert.throws(()=>D.normalize({...details,...change}));
 });
 test('college CSV preserves details, audit identity and review status and neutralizes spreadsheet formulas',()=>{
  const csv=D.csv([{id:'case-1',created_at:'2026-10-17T01:00:00Z',created_by_name:'Raju',status:'pending',details:{...details,name:'=1+1',notes:'Hello, "college"\nsecond line',phone:'+919999999999'}}]);
- assert.ok(csv.startsWith('\uFEFF'));assert.ok(csv.includes('"\'=1+1"'));assert.ok(csv.includes('"\'+919999999999"'));assert.ok(csv.includes('Hello, ""college""\nsecond line'));assert.ok(csv.includes('"Raju"'));assert.ok(csv.includes('"pending"'));assert.ok(csv.includes('"Student ID"'));
+ assert.ok(csv.startsWith('\uFEFF'));assert.ok(csv.includes('"\'=1+1"'));assert.ok(csv.includes('"\'+919999999999"'));assert.ok(csv.includes('"Quantity"'));assert.ok(!csv.includes('Hello, '));assert.ok(csv.includes('"Raju"'));assert.ok(csv.includes('"pending"'));assert.ok(csv.includes('"Mobile number"'));assert.ok(!csv.includes('"Student ID"'));
 });
 test('help desk handler blocks anonymous export and rejects malformed save before protected RPC',async()=>{
  const {createHandler}=await import('../server/functions/navrang-gate/handler.mjs');let called=[];
@@ -55,6 +55,13 @@ test('admin approval requires an explicit confirmation and posts the current ver
  t.setBehavior(async action=>action==='helpdesk-list'?{records:[record],total:1,stats:{total:1,pending:1,approved:0}}:{saved:true});
  try{
   await w.NavrangDesk.refresh(true);w.document.querySelector('#desk-records .button').click();w.document.getElementById('desk-approve').click();assert.ok(!calls.some(c=>c.a==='helpdesk-review'));
-  w.document.getElementById('desk-confirm-existing').checked=true;w.document.getElementById('desk-approve').click();await pause();assert.deepEqual(calls.find(c=>c.a==='helpdesk-review').p,{id:record.id,version:4,status:'approved',confirmExisting:true});
+  w.document.getElementById('desk-confirm-existing').checked=true;w.document.getElementById('desk-approve').click();await pause();assert.deepEqual(calls.find(c=>c.a==='helpdesk-review').p,{id:record.id,version:4,status:'approved',confirmExisting:true,confirmPayment:true});
  }finally{await pause();dom.window.close()}
 });
+
+test('help desk exposes only four entry fields and updates the quantity fee preview',()=>{const {w,dom}=desk();try{
+ const ids=[...w.document.querySelectorAll('#desk-fields input')].map(e=>e.id);assert.deepEqual(ids,['desk-name','desk-email','desk-phone','desk-quantity']);
+ assert.equal(w.document.getElementById('desk-email').required,true);w.document.getElementById('desk-quantity-up').click();assert.equal(w.document.getElementById('desk-quantity').value,'2');assert.match(w.document.getElementById('desk-bill').textContent,/₹200/);
+ for(let i=0;i<4;i++)w.document.getElementById('desk-quantity-down').click();assert.equal(w.document.getElementById('desk-quantity').value,'1');
+ assert.deepEqual(Object.keys(D.normalize({...details,eligible:true,paymentStatus:'paid',amount:100})),['name','email','phone','quantity']);
+ }finally{dom.window.close()}});

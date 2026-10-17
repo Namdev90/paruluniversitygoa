@@ -8,7 +8,7 @@
  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
  <uses-feature android:name="android.hardware.camera" android:required="false"/>
- <application android:label="Navrang Gate" android:icon="@drawable/app_icon" android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@android:style/Theme.Material.NoActionBar">
+ <application android:label="Navrang Gate" android:icon="@drawable/app_icon" android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@style/NavrangTheme">
   <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
    <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="navranggate" android:host="auth-callback"/></intent-filter>

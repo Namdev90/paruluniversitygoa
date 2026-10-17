@@ -27,6 +27,7 @@ assets.mkdir()
 for name in ['index.html','style.css','core.js','live-core.js','config.js','gate-config.json','client.js','desk-core.js','desk.js','gate.js','local-schema.sql']:
  shutil.copy2(ROOT/'app/assets'/name,assets/name)
 shutil.copytree(ROOT/'app/assets/art',assets/'art')
+shutil.copytree(ROOT/'app/assets/audio',assets/'audio')
 run(TOOLS/'aapt2','link','-o',BUILD/'unsigned.apk','--manifest',ROOT/'app/AndroidManifest.xml','-I',PLATFORM,'-A',assets,'--min-sdk-version','24','--target-sdk-version','35','--version-code',RELEASE['versionCode'],'--version-name',RELEASE['versionName'],BUILD/'resources.zip')
 with zipfile.ZipFile(BUILD/'unsigned.apk','a',zipfile.ZIP_DEFLATED) as z:
  for p in (BUILD/'dex').glob('*.dex'):z.write(p,p.name)

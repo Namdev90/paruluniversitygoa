@@ -57,7 +57,7 @@
   if(!/^[A-Z0-9]{8}$/.test(id))throw fail('Enter the exact eight-character transaction ID.');
   const a=actor(p),key=a+':'+id;let job=jobs.get(key);
   if(!job){job={requestId:L.uuid(),ticketId:id,actor:a,deviceId,createdAt:new Date().toISOString()};jobs.set(key,job)}
-  const lookup=await local('lookup',{id});emit('result',{code:'pending',id,record:lookup.record,message:'Awaiting server confirmation. Temporary request stays only while this app is open.'});drain();return job;
+  const lookup=await local('lookup',{id});feedback('scan');emit('result',{code:'pending',id,record:lookup.record,message:'Awaiting server confirmation. Temporary request stays only while this app is open.'});drain();return job;
  }
  async function drain(){
   if(native||draining)return;draining=true;
@@ -75,7 +75,9 @@
   location.assign(config.project+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(redirect)+'&code_challenge='+challenge+'&code_challenge_method=s256');
  }
  async function finishGoogle(){
-  if(native)return;const code=new URL(location.href).searchParams.get('code');if(!code)return;const verifier=sessionStorage.getItem('navrang-pkce');if(!verifier)throw fail('Google callback has no saved sign-in request.');
+  if(native)return;const url=new URL(location.href),fragment=new URLSearchParams(url.hash.slice(1)),error=url.searchParams.get('error')||fragment.get('error')||url.searchParams.get('error_code')||fragment.get('error_code');
+  if(error){const description=url.searchParams.get('error_description')||fragment.get('error_description')||'',cancel=/access_denied|cancel/i.test(error+' '+description);sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);throw fail(cancel?'Google sign-in was cancelled. Tap Continue with Google to try again.':'Google sign-in setup needs the organizer’s attention. Namdev must check the Google client ID and client secret in Supabase. Use an assigned checker code meanwhile.')}
+  const code=url.searchParams.get('code');if(!code)return;const verifier=sessionStorage.getItem('navrang-pkce');if(!verifier)throw fail('Google callback has no saved sign-in request.');
   const r=await fetch(config.project+'/auth/v1/token?grant_type=pkce',{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({auth_code:code,code_verifier:verifier})});const data=await r.json();if(!r.ok)throw fail('Google sign-in could not be exchanged. Try again.');await api('google-login',{accessToken:data.access_token});sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);emit('auth',profile());
  }
  function save(name,mime,content){
@@ -85,10 +87,16 @@
  function destination(value){if(native&&typeof Native.destination==='function')return Native.destination(value||'');if(value)sessionStorage.setItem('navrang-destination',value);return sessionStorage.getItem('navrang-destination')||'home'}
  function readiness(action='status'){if(native&&typeof Native.readiness==='function')return JSON.parse(Native.readiness(action));return{native:false,message:'Use the Android app for camera, volume, vibration and brightness controls.'}}
 
- let audio;function feedback(kind,enabled=true){
-  if(native&&typeof Native.feedback==='function'){Native.feedback(kind,enabled);return}
-  if(kind==='stop-intro'||!enabled)return;try{audio=audio||new (root.AudioContext||root.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const t=audio.currentTime,notes=kind==='intro'?[392,523,659]:kind==='success'?[659,880]:kind==='issue'?[220,165]:[kind==='tap'?420:330];for(let i=0;i<notes.length;i++){const o=audio.createOscillator(),g=audio.createGain(),at=t+i*.1;o.frequency.value=notes[i];g.gain.setValueAtTime(.0001,at);g.gain.exponentialRampToValueAtTime(kind==='tap'?.025:.09,at+.009);g.gain.exponentialRampToValueAtTime(.0001,at+(kind==='tap'?.035:.14));o.connect(g);g.connect(audio.destination);o.start(at);o.stop(at+.16)}}catch{}
+ let audio,lastScan=0,introGeneration=0;const sampleBuffers=new Map(),sampleLoads=new Map(),introSources=new Set();
+ const sampleKinds=new Set(['intro','tap','scan','success','issue','duplicate','invalid','pending','transition','close']);
+ function sample(kind){if(sampleBuffers.has(kind))return Promise.resolve(sampleBuffers.get(kind));if(!sampleLoads.has(kind))sampleLoads.set(kind,fetch('audio/'+kind+'.ogg').then(r=>{if(!r.ok)throw Error('Audio unavailable');return r.arrayBuffer()}).then(bytes=>audio.decodeAudioData(bytes)).then(buffer=>{sampleBuffers.set(kind,buffer);return buffer}).catch(e=>{sampleLoads.delete(kind);throw e}));return sampleLoads.get(kind)}
+ function feedback(kind,ignoredEnabled=true){
+  if(native&&typeof Native.feedback==='function'){Native.feedback(kind,true);return}
+  if(kind==='stop-intro'){introGeneration++;for(const source of introSources)try{source.stop()}catch{}introSources.clear();return}if(!sampleKinds.has(kind))return;
+  try{audio=audio||new (root.AudioContext||root.webkitAudioContext)();if(audio.state==='suspended')audio.resume().catch(()=>{});const generation=introGeneration,now=performance.now();if(kind==='scan')lastScan=now;const delay=['success','issue','duplicate','invalid'].includes(kind)?Math.max(0,330-(now-lastScan))/1000:0;
+   sample(kind).then(buffer=>{if(kind==='intro'&&generation!==introGeneration)return;const source=audio.createBufferSource(),gain=audio.createGain();source.buffer=buffer;gain.gain.value=kind==='tap'?.7:1;source.connect(gain);gain.connect(audio.destination);if(kind==='intro'){introSources.add(source);source.onended=()=>introSources.delete(source)}source.start(audio.currentTime+delay)}).catch(()=>{});
+  }catch{}
  }
- function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.5.0',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
+ function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.6.0',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
  root.GateClient={feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);

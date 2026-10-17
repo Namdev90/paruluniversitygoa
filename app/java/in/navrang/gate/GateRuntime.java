@@ -7,6 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public final class GateRuntime {
  public interface Listener {void event(JSONObject event);}
  private static GateRuntime instance;
+ private final Context app;
  public final GateDb db; public final GateSession sessions; public final GateApi api;
  private final ScheduledExecutorService sync=Executors.newSingleThreadScheduledExecutor();
  private final ExecutorService entries=Executors.newSingleThreadExecutor();
@@ -14,7 +15,7 @@ public final class GateRuntime {
  private final CopyOnWriteArrayList<Listener> listeners=new CopyOnWriteArrayList<>();
  private final AtomicBoolean draining=new AtomicBoolean();
  private int foreground=0;private volatile long lastSync=0;private volatile boolean online=false;
- private GateRuntime(Context c)throws Exception{db=new GateDb(c);sessions=new GateSession(c);api=new GateApi(c);sync.scheduleWithFixedDelay(()->tick(),500,2000,TimeUnit.MILLISECONDS);}
+ private GateRuntime(Context c)throws Exception{app=c.getApplicationContext();db=new GateDb(c);sessions=new GateSession(c);api=new GateApi(c);sync.scheduleWithFixedDelay(()->tick(),500,2000,TimeUnit.MILLISECONDS);}
  public static synchronized GateRuntime get(Context c)throws Exception{if(instance==null)instance=new GateRuntime(c.getApplicationContext());return instance;}
  public void add(Listener l){listeners.addIfAbsent(l);}public void remove(Listener l){listeners.remove(l);}
  public synchronized void resume(){foreground++;lastSync=0;}public synchronized void pause(){foreground=Math.max(0,foreground-1);}
@@ -35,7 +36,7 @@ public final class GateRuntime {
  private static JSONObject safe(String k,String v){try{return new JSONObject().put(k,v);}catch(Exception e){return new JSONObject();}}
  public void submit(String id){
   try{JSONObject auth=sessions.read();if(auth==null||!auth.getJSONObject("profile").optBoolean("active")||("google".equals(auth.getJSONObject("profile").optString("method"))&&!auth.getJSONObject("profile").optBoolean("nameConfirmed",true))){emit("result",safe("code","signed_out").put("message","Sign in with an approved checker account."));return;}
-   JSONObject job=db.queue(id,GateSession.actor(auth));JSONObject local=db.lookup(id);emit("result",new JSONObject().put("code","pending").put("id",id).put("record",local.opt("record")).put("message","Awaiting server confirmation. Temporary request stays in memory while this app is open."));drain();
+   JSONObject job=db.queue(id,GateSession.actor(auth));GateFeedback.play(app,"scan");JSONObject local=db.lookup(id);emit("result",new JSONObject().put("code","pending").put("id",id).put("record",local.opt("record")).put("message","Awaiting server confirmation. Temporary request stays in memory while this app is open."));drain();
   }catch(Exception e){emit("result",message("storage_error","Could not queue the scan in memory. Entry is NOT confirmed. Retry with the same ticket."));}
  }
  public void drain(){

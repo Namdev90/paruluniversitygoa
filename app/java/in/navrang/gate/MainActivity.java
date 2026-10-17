@@ -26,7 +26,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   if(!WebViewSupport.supported(web.getSettings().getUserAgentString())){web.destroy();web=null;showMessage("Update Android System WebView / Chrome to version 86 or newer, then reopen Navrang Gate. Your saved entries are kept.");return;}
   frame.addView(web);frame.setOnApplyWindowInsetsListener((v,i)->{v.setPadding(i.getSystemWindowInsetLeft(),i.getSystemWindowInsetTop(),i.getSystemWindowInsetRight(),i.getSystemWindowInsetBottom());return i.consumeSystemWindowInsets();});setContentView(frame);frame.requestApplyInsets();
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setAllowFileAccessFromFileURLs(false);s.setAllowUniversalAccessFromFileURLs(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-  s.setCacheMode(WebSettings.LOAD_NO_CACHE);web.clearCache(true);web.clearFormData();web.setSaveEnabled(false);
+  s.setCacheMode(WebSettings.LOAD_NO_CACHE);web.clearCache(true);web.clearFormData();web.setSaveEnabled(false);web.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);web.setLongClickable(false);web.setOnLongClickListener(v->true);
   WebView.setWebContentsDebuggingEnabled(false);web.addJavascriptInterface(new Bridge(),"Native");
   web.setWebViewClient(new WebViewClient(){
    private boolean allowed(String url){return url!=null&&url.startsWith("file:///android_asset/");}
@@ -67,11 +67,13 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   }catch(Exception e){error("Could not start Google sign-in. Check your connection.");}});
  }
  private void handleOAuth(Intent intent){
-  Uri u=intent==null?null:intent.getData();if(u==null||!"navranggate".equals(u.getScheme())||!"auth-callback".equals(u.getHost()))return;
+  Uri u=intent==null?null:intent.getData();if(u==null)return;
   android.content.SharedPreferences p=getSharedPreferences("navrang-pkce",MODE_PRIVATE);
   String verifier=p.getString("verifier",""),nonce=p.getString("nonce","");
-  if(verifier.isEmpty()||!nonce.equals(u.getQueryParameter("state"))||System.currentTimeMillis()-p.getLong("created",0)>10*60*1000)return;
-  final long generation=p.getLong("sessionGeneration",-1);String code=u.getQueryParameter("code");if(code==null){error("Google sign-in was cancelled or failed. Try again.");return;}
+  if(verifier.isEmpty()||System.currentTimeMillis()-p.getLong("created",0)>10*60*1000)return;
+  OAuthCallback callback=OAuthCallback.parse(u.toString(),nonce);if(callback==null)return;
+  final long generation=p.getLong("sessionGeneration",-1);p.edit().clear().commit();
+  if(callback.code.isEmpty()){error(callback.message);return;}final String code=callback.code;
   runtime.requests.execute(()->{try{
    GateApi.Reply exchange=runtime.api.exchange(code,verifier);if(exchange.status!=200)throw new IOException();
    GateApi.Reply r=runtime.api.call("google-login",new JSONObject().put("accessToken",exchange.body.getString("access_token")),"");
@@ -115,6 +117,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    else if("notifications".equals(action))runOnUiThread(()->{if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},UPDATE_NOTIFICATIONS);else startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()));});
    return GateUpdater.status(MainActivity.this).toString();
   }
+  @JavascriptInterface public void exit(){runOnUiThread(()->finishAndRemoveTask());}
   @JavascriptInterface public void submit(String id){runtime.submit(id);}
   @JavascriptInterface public String destination(String value){android.content.SharedPreferences p=getSharedPreferences("navrang-ui",MODE_PRIVATE);if("home".equals(value)||"desk".equals(value))p.edit().putString("destination",value).apply();return p.getString("destination","home");}
   @JavascriptInterface public String readiness(String action){if("startup".equals(action)||"permissions".equals(action))runOnUiThread(()->preparePermissions("startup".equals(action)));else if("settings".equals(action))runOnUiThread(()->startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()))));else if("volume".equals(action))runOnUiThread(()->GateReadiness.volume(MainActivity.this));return GateReadiness.status(MainActivity.this).toString();}
@@ -123,13 +126,13 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   @JavascriptInterface public void googleLogin(){googleLoginFromBridge();}
   private void googleLoginFromBridge(){MainActivity.this.googleLogin();}
   @JavascriptInterface public void feedback(String kind,boolean enabled){
-   if(!java.util.Arrays.asList("intro","stop-intro","tap","transition","success","pending","issue").contains(kind))return;
-   GateFeedback.setSound(MainActivity.this,enabled);GateFeedback.play(MainActivity.this,kind,enabled);
+   if(!java.util.Arrays.asList("intro","stop-intro","tap","transition","success","pending","issue","scan","duplicate","invalid","close").contains(kind))return;
+   GateFeedback.play(MainActivity.this,kind,true);
   }
 
  }
  @Override public void onResume(){super.onResume();if(readiness!=null)readiness.resume();if(web!=null)web.onResume();if(runtime!=null){runtime.add(this);runtime.resume();runtime.emit("readiness",GateReadiness.status(this));}GateUpdater.add(this);GateUpdater.publish(this);if(GateUpdater.automatic(this))GateUpdater.check(this,false,false);}
  @Override public void onPause(){if(readiness!=null)readiness.pause();GateUpdater.remove(this);if(runtime!=null){runtime.remove(this);runtime.pause();}if(web!=null)web.onPause();super.onPause();}
  @Override public void onDestroy(){if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}super.onDestroy();}
- @Override public void onBackPressed(){new android.app.AlertDialog.Builder(this).setTitle("Close Navrang Gate?").setMessage("Confirmed entries are saved on the server. Unconfirmed requests are temporary; keep this app open until they finish.").setNegativeButton("Keep open",null).setPositiveButton("Close",(d,w)->finish()).show();}
+ @Override public void onBackPressed(){if(web==null){finish();return;}web.evaluateJavascript("window.onBackRequested && window.onBackRequested();",null);}
 }
