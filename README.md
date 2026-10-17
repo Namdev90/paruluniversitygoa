@@ -2,7 +2,7 @@
 
 Android QR entry and embedded administration for Navrang 2026.
 
-[Download Android 0.7.3](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.3.apk)
+[Download Android 0.7.4](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.4.apk)
 
 Install over the existing signed app. Student records remain on the server; the current app keeps temporary copies in memory only. The private original signing key is retained outside this repository. Android 7+ and WebView/Chrome86+ are required. Version 0.4 introduces the update client; older APKs need this one manual installation.
 
@@ -24,6 +24,8 @@ Version 0.7.1 makes sign-out immediate, clears hidden forms, dialogs and tempora
 Version 0.7.2 locks the first station choice to the account and lets only admin reassign it. Ordinary staff receive only **My scans** (their own server-confirmed admissions) and **Total entries** (all confirmed admissions). Their sync response contains no roster, entry history, staff list, registration total, remaining count or payment statistics. The Android and browser clients discard previous bulk copies. Admin retains the full dashboard. Help Desk staff keep their own paged cases for the existing registration workflow.
 
 Version 0.7.3 fixes scanner pause/resume receipts and per-ticket pending deadlines, delayed account/permission responses, Help Desk search/save/review races and delayed CSV exports. It improves warm 3D controls, official Google sign-in artwork, touch targets, accessible dialogs and narrow-screen flow. Release tooling now refuses a missing/replaced signing identity, changed bytes under an existing APK version and update-channel rollback. See the [production review](docs/PRODUCTION-REVIEW-2026-10-17.md).
+
+Version 0.7.4 is a focused hotfix for name/station-save acknowledgements racing native profile refresh, admin station navigation, queued scanner issues and late-confirmed receipt cards. It restores opening-button centering and popup fallbacks for older Android WebViews. Combined client/UI callback regression checks were added; live registrations and entry data are unchanged.
 
 ## Gate operation
 

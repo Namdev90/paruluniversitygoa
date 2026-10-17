@@ -56,13 +56,23 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  @Override public void onDestroy(){if(runtime!=null)runtime.remove(this);backgroundResults.clear();pendingResults.clear();if(issueDialog!=null)issueDialog.dismiss();decoder.shutdownNow();super.onDestroy();}
  @Override public void event(JSONObject e){if(("profile".equals(e.optString("type"))||"auth".equals(e.optString("type")))&&!GateSession.canScan(runtime.sessions.read())){runOnUiThread(()->{Toast.makeText(this,"Checker access changed. Choose your approved station.",Toast.LENGTH_LONG).show();finish();});return;}if(!"result".equals(e.optString("type")))return;JSONObject data=e.optJSONObject("data");if(data!=null)runOnUiThread(()->showResult(data));}
  private void showResult(JSONObject r){
-  if(!active){if(!isFinishing()&&!isDestroyed())backgroundResults.add(r);return;}String code=r.optString("code"),id=r.optString("id");boolean admitted="admitted".equals(code),dup="duplicate".equals(code),pending="pending".equals(code);
+  if(!active){if(!isFinishing()&&!isDestroyed())backgroundResults.add(r);return;}String code=r.optString("code"),id=r.optString("id");boolean admitted="admitted".equals(code),pending="pending".equals(code);
   if(pending&&acknowledgedPending.contains(id))return;if(pending){pendingResults.put(id,r);pendingTimes.start(id,SystemClock.elapsedRealtime());}else{acknowledgedPending.remove(id);pendingResults.remove(id);pendingTimes.finish(id);}schedulePending();
   if(issueHeld){if(id.equals(heldResult.optString("id"))&&"pending".equals(heldResult.optString("code"))){heldResult=r;if(!pending)GateFeedback.play(this,resultSound(code));if(issueDialog!=null){issueDialog.setTitle(admitted?"Entry confirmed":"Help desk required");issueDialog.setMessage(message(r)+(admitted?"\n\nServer now confirms entry. Acknowledge to continue.":"\n\nPlease send this student to the help desk. Do not allow entry."));}}else if(!pending)deferred.add(r);return;}
-  int border=admitted?0xff68b98b:pending?0xffd4ac65:0xffdc738b;title.setTextColor(admitted?0xff9ae2b3:pending?0xffe5be7d:0xffffa9b8);resultCard.setBackground(box(0xff211925,border));
-  title.setText(admitted?"✓ Entry confirmed":dup?"Already entered":pending?"Awaiting confirmation":"Entry not allowed");JSONObject record=r.optJSONObject("record"),entry=r.optJSONObject("entry");String name=entry!=null?entry.optString("name"):record!=null?record.optString("name"):"";person.setText(name.isEmpty()?(id.isEmpty()?"Ticket issue":id):name);detail.setText(message(r));
+  paintReceipt(r);
   if(!(id+":"+code).equals(lastPaint)){lastPaint=id+":"+code;resultCard.animate().cancel();resultCard.setTranslationY(dp(5));resultCard.setAlpha(.92f);resultCard.animate().translationY(0).alpha(1).setDuration(170).start();if(!pending)GateFeedback.play(this,resultSound(code));}
   if(!pending){if(!admitted)holdIssue(r);else {lastRead=SystemClock.elapsedRealtime();quality.setText("Entry saved · ready for the next student");}}
+ }
+ private void paintReceipt(JSONObject r){
+  String code=r.optString("code"),id=r.optString("id");boolean admitted="admitted".equals(code),pending="pending".equals(code),duplicate="duplicate".equals(code);
+  int border=admitted?0xff68b98b:pending?0xffd4ac65:0xffdc738b;title.setTextColor(admitted?0xff9ae2b3:pending?0xffe5be7d:0xffffa9b8);resultCard.setBackground(box(0xff211925,border));
+  title.setText(admitted?"✓ Entry confirmed":duplicate?"Already entered":pending?"Awaiting confirmation":"Entry not allowed");JSONObject record=r.optJSONObject("record"),entry=r.optJSONObject("entry");String name=entry!=null?entry.optString("name"):record!=null?record.optString("name"):"";person.setText(name.isEmpty()?(id.isEmpty()?"Ticket issue":id):name);detail.setText(message(r));
+ }
+ private void acknowledgeIssue(){
+  if(heldResult!=null){String ticket=heldResult.optString("id");if("pending".equals(heldResult.optString("code")))acknowledgedPending.add(ticket);pendingResults.remove(ticket);pendingTimes.finish(ticket);paintReceipt(heldResult);}
+  issueHeld=false;heldResult=null;issueDialog=null;quality.setText("Ready · remove the old QR before scanning again");
+  while(active&&!issueHeld&&!deferred.isEmpty())showResult(deferred.remove());
+  schedulePending();
  }
  private void schedulePending(){handler.removeCallbacks(pendingWatch);if(active&&!issueHeld){long delay=pendingTimes.nextDelay(SystemClock.elapsedRealtime());if(delay>=0)handler.postDelayed(pendingWatch,delay);}}
  private void checkPending(){if(!active||issueHeld)return;String id=pendingTimes.expired(SystemClock.elapsedRealtime());if(id!=null){JSONObject r=pendingResults.get(id);if(r!=null)holdIssue(r);else pendingTimes.finish(id);}schedulePending();}
@@ -70,7 +80,7 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  private String localTime(String at){try{String clean=at.replaceFirst("\\.\\d+","");java.text.SimpleDateFormat p=new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",java.util.Locale.US);java.text.SimpleDateFormat f=new java.text.SimpleDateFormat("HH:mm:ss",java.util.Locale.US);f.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Kolkata"));return f.format(p.parse(clean));}catch(Exception e){return at;}}
  private void holdIssue(JSONObject r){
   if(!active||isFinishing())return;issueHeld=true;handler.removeCallbacks(pendingWatch);heldResult=r;String msg=message(r)+"\n\nPlease send this student to the help desk. Do not allow entry.\n\nScanning is paused until you acknowledge.";
-  issueDialog=new AlertDialog.Builder(this).setTitle("Help desk required").setMessage(msg).setCancelable(false).setPositiveButton("Acknowledge · next student",(d,w)->{if(heldResult!=null){String ticket=heldResult.optString("id");if("pending".equals(heldResult.optString("code")))acknowledgedPending.add(ticket);pendingResults.remove(ticket);pendingTimes.finish(ticket);}issueHeld=false;heldResult=null;issueDialog=null;quality.setText("Ready · remove the old QR before scanning again");if(!deferred.isEmpty())showResult(deferred.remove());schedulePending();}).create();issueDialog.show();if(issueDialog.getWindow()!=null)issueDialog.getWindow().setBackgroundDrawable(box(0xff261c2a,0xffae7c65));
+  issueDialog=new AlertDialog.Builder(this).setTitle("Help desk required").setMessage(msg).setCancelable(false).setPositiveButton("Acknowledge · next student",(d,w)->acknowledgeIssue()).create();issueDialog.show();if(issueDialog.getWindow()!=null)issueDialog.getWindow().setBackgroundDrawable(box(0xff261c2a,0xffae7c65));
   Button acknowledge=issueDialog.getButton(AlertDialog.BUTTON_POSITIVE);acknowledge.setTextColor(0xffffdfa7);acknowledge.setBackground(box(0xff58374b,0xffbc8e6c));acknowledge.setElevation(dp(4));acknowledge.setSoundEffectsEnabled(false);
   if("pending".equals(r.optString("code")))GateFeedback.play(this,"pending");
  }

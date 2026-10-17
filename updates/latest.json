@@ -1,10 +1,10 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 11,
-  "versionName": "0.7.3",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.3.apk",
+  "versionCode": 12,
+  "versionName": "0.7.4",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.4.apk",
   "size": 1936718,
-  "sha256": "9e786d14eaf6b180bff0beedd27d999a7d20c9017d6ec7059e0d531a2abd5baa",
-  "notes": "Production review: resilient scanner pause/resume and pending alerts; stronger account and export isolation; reliable Help Desk retries; responsive warm 3D interface and accessible transitions; verified original signing identity and immutable release safeguards.",
-  "publishedAt": "2026-10-17T10:48:44.492518+00:00"
+  "sha256": "6cfb7fde090ff17bd6e0957d7eaddd66cef2cfaca971d1c215bba79ff696eecc",
+  "notes": "Hotfix: successful name and station saves no longer get stuck after background profile refresh; admin station navigation repaired; queued scanner warnings and late confirmations display correctly; opening button and older Android popup placement corrected.",
+  "publishedAt": "2026-10-17T11:30:37.821946+00:00"
 }

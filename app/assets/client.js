@@ -14,8 +14,10 @@
  root.onNativeError=text=>emit('error',{message:text});
  root.onNativeSaved=name=>emit('notice',{message:'Saved '+name});
  async function api(action,payload={},sessionOverride){
-  const changesIdentity=['login','checker-login','google-login','logout'].includes(action),generation=changesIdentity?++authGeneration:authGeneration,scope=accessScope(profile()),profileRequest=action==='me'?++profileSequence:0;
-  if(native)return new Promise((resolve,reject)=>{const id=L.uuid(),timer=setTimeout(()=>{callbacks.delete(id);reject(fail('Server response timed out. Unconfirmed scans stay only in memory while the app is open.'));},25000);callbacks.set(id,{resolve:value=>generation!==authGeneration?reject(fail('Sign-in changed while this request was running.',409)):!changesIdentity&&action!=='me'&&scope!==accessScope(profile())?reject(fail('Your station access changed while this request was running.',403)):resolve(value),reject,timer});Native.api(action,JSON.stringify(payload),id);});
+  const changesIdentity=['login','checker-login','google-login','logout'].includes(action),changesOwnProfile=['checker-profile','staff-request'].includes(action),generation=changesIdentity?++authGeneration:authGeneration,scope=accessScope(profile()),profileRequest=action==='me'?++profileSequence:0;
+  // A name/station save can trigger the native profile refresh before its acknowledgement.
+  // These acknowledgements contain no student data; identity guards still apply.
+  if(native)return new Promise((resolve,reject)=>{const id=L.uuid(),timer=setTimeout(()=>{callbacks.delete(id);reject(fail('Server response timed out. Unconfirmed scans stay only in memory while the app is open.'));},25000);callbacks.set(id,{resolve:value=>generation!==authGeneration?reject(fail('Sign-in changed while this request was running.',409)):!changesIdentity&&!changesOwnProfile&&action!=='me'&&scope!==accessScope(profile())?reject(fail('Your station access changed while this request was running.',403)):resolve(value),reject,timer});Native.api(action,JSON.stringify(payload),id);});
   const a=sessionOverride||auth();
   if(action==='logout')sessionStorage.removeItem('navrang-session');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
@@ -28,7 +30,7 @@
    throw fail(b.error||'Request failed.',r.status);
   }
   if(!changesIdentity&&a?.token&&(generation!==authGeneration||auth()?.token!==a.token))throw fail('Sign-in changed while this request was running.',409);
-  if(!changesIdentity&&action!=='me'&&a?.token&&scope!==accessScope(profile()))throw fail('Your station access changed while this request was running.',403);
+  if(!changesIdentity&&!changesOwnProfile&&action!=='me'&&a?.token&&scope!==accessScope(profile()))throw fail('Your station access changed while this request was running.',403);
   if(b.token&&b.profile){if(generation!==authGeneration)throw fail('Sign-in changed while this request was running.',409);resetMemory();sessionStorage.setItem('navrang-session',JSON.stringify({token:b.token,profile:b.profile}));}
   if(action==='me'&&a){if(generation!==authGeneration||auth()?.token!==a.token)throw fail('Sign-in changed while this request was running.',409);if(profileRequest<appliedProfile)throw fail('A newer account refresh already arrived.',409);appliedProfile=profileRequest;if(b.role!=='admin'&&(!canScan(b)||a.profile?.role==='admin')){const old=memory;resetMemory();if(b.active){memory.stats={ownScans:old.stats.ownScans,totalEntries:old.stats.totalEntries};memory.lastSync=old.lastSync;}}sessionStorage.setItem('navrang-session',JSON.stringify({token:a.token,profile:b}));}
   return b;
@@ -110,6 +112,6 @@
    sample(kind).then(buffer=>{if(kind==='intro'&&generation!==introGeneration)return;const source=audio.createBufferSource(),gain=audio.createGain();source.buffer=buffer;gain.gain.value=kind==='tap'?.7:1;source.connect(gain);gain.connect(audio.destination);if(kind==='intro'){introSources.add(source);source.onended=()=>introSources.delete(source)}source.start(audio.currentTime+delay)}).catch(()=>{});
   }catch{}
  }
- function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.2',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
+ function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.4',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
  root.GateClient={copy,feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);

@@ -1,5 +1,5 @@
 {
-  "versionCode": 11,
-  "versionName": "0.7.3",
-  "notes": "Production review: resilient scanner pause/resume and pending alerts; stronger account and export isolation; reliable Help Desk retries; responsive warm 3D interface and accessible transitions; verified original signing identity and immutable release safeguards."
+  "versionCode": 12,
+  "versionName": "0.7.4",
+  "notes": "Hotfix: successful name and station saves no longer get stuck after background profile refresh; admin station navigation repaired; queued scanner warnings and late confirmations display correctly; opening button and older Android popup placement corrected."
 }
