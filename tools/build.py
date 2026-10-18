@@ -24,7 +24,7 @@ for d in ['classes','dex']:
 run('java','--module','jdk.compiler/com.sun.tools.javac.Main','-source','8','-target','8','-bootclasspath',str(PLATFORM)+os.pathsep+str(TOOLS/'core-lambda-stubs.jar'),'-classpath',ZXING,'-d',BUILD/'classes',*sorted((ROOT/'app/java').rglob('*.java')))
 with zipfile.ZipFile(BUILD/'classes.jar','w',zipfile.ZIP_DEFLATED) as z:
  for p in (BUILD/'classes').rglob('*.class'):z.write(p,p.relative_to(BUILD/'classes'))
-run(TOOLS/'d8','--release','--lib',PLATFORM,'--min-api','24','--output',BUILD/'dex',BUILD/'classes.jar,ZXING)
+run(TOOLS/'d8','--release','--lib',PLATFORM,'--min-api','24','--output',BUILD/'dex',BUILD/'classes.jar',ZXING)
 run(TOOLS/'aapt2','compile','--dir',ROOT/'app/res','-o',BUILD/'resources.zip')
 assets=BUILD/'assets'
 if assets.exists():shutil.rmtree(assets)
