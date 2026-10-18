@@ -1,6 +1,6 @@
 # App updates from 0.4 onward
 
-Install the signed 0.4 APK manually once. Earlier APKs have no app-update client and cannot discover this bootstrap update automatically. Dataset updates already sync independently from the event server.
+The current signed download is [0.7.8](../downloads/Navrang-Gate-0.7.8.apk). Install it over the existing app without uninstalling. Versions before 0.4 have no app-update client and need a manual upgrade to the current release; there is no need to install each intermediate version. Dataset updates already sync independently from the event server.
 
 The APK checks this repository's `updates/latest.json` on startup/resume (five-minute throttle), while foregrounded every five minutes, and through Android's periodic network job (minimum 15 minutes; device power/network policy can delay it). Automatic checks/downloads can be disabled in Account. Notification permission is optional; the Account screen also shows update status. The scanner takes priority: automatic update work waits/yields while it is open.
 
@@ -24,13 +24,18 @@ References:
 
 ## Publishing the next app version
 
-1. Increase `versionCode` and `versionName` in `release.json`. Keep the original private signing key; a new test key cannot update existing installations.
-2. Run `python tools/build.py` using the established Android SDK/JDK setup. It refuses to generate a replacement key, verifies the original signer certificate and exact package/version, then signs/verifies the APK and invokes `tools/prepare-release.py` to create `downloads/Navrang-Gate-<version>.apk`, `updates/latest.json` and the checksum line.
-3. Commit and push those release files along with the source. Installed 0.4+ clients can then discover/download that release. A source-only Git push does not build or distribute a new APK by itself; no secret-bearing GitHub signing workflow has been configured.
-4. Check the public manifest and APK hash after pushing. Test a real upgrade on the intended Android phone before relying on it at the venue.
+1. Coordinate an unused `versionName` and strictly higher `versionCode` in `release.json`; obtain matching final-source approval and device evidence or a genuinely applicable waiver. Keep the original private signing key in its retained environment.
+2. Run `python3 tools/build.py` using that environment's verified Android SDK/JDK and privately configured `NAVRANG_SIGNING_KEY`. The default delegates to `tools/build-native.py`, which builds, signs and verifies a candidate in `dist/`. **The default build does not call `prepare-release.py` and does not publish an update.**
+3. Independently inspect the actual candidate package/version, original signer certificate, source assets, byte length and SHA-256. After artifact/publication approval, set `NAVRANG_BUILD_TOOLS` to the verified SDK build-tools directory (or correctly configure `NAVRANG_ANDROID_SDK`), then separately run `python3 tools/prepare-release.py`. `ANDROID_HOME` alone is not this script's build-tools override. This step prepares `downloads/Navrang-Gate-<version>.apk`, `updates/latest.json` and the checksum line, with no overwrite/rollback allowed.
+4. Review and commit the exact source/artifact/manifest/checksum through the normal authorized repository process. A source-only push, unsigned assembly or local candidate does not create an installable update. No signing key belongs in GitHub or CI.
+5. Re-download the public manifest/APK/checksum, verify exact identity and original signature, and check every historical APK is unchanged. Installed upgrade/reboot/phone acceptance must be verified or explicitly reported as unverified. See [the current release procedure](RELEASE-PROCEDURE.md).
 
 Official references:
 - https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams#setRequireUserAction(int)
 - https://developer.android.com/guide/playcore/in-app-updates (the separate Google Play distribution workflow)
 
 Release preparation refuses changed bytes for an existing downloadable version and refuses older/reused update version codes. An identical rerun is allowed. Keep the original signing key in a private backup; it must never enter this public repository.
+
+## Historical GitHub Releases
+
+The additive [archive migration](history/GITHUB-RELEASES.md) attaches the already-published APK bytes to versioned GitHub Releases. It does not rebuild/sign APKs or change `updates/latest.json`. Original archive commit dates remain in release notes; GitHub records the actual migration publication time.

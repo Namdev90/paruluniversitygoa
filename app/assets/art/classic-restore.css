@@ -153,3 +153,9 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
  #admin-checkers>#open-code{font-size:11px;max-width:150px}
  .list-status{padding-top:4px;min-height:22px}
 }
+
+#recent-entries td,#all-entry-rows td,#recent-entries .cell-text,#all-entry-rows .cell-text{font-size:12px;line-height:1.45}
+
+/* A footer never borrows space from beneath navigation on small phones. */
+#admin-console .rows-scroll,#view-entries .rows-scroll{min-height:112px}
+@media(max-width:480px){#admin-checkers>#open-code{max-width:132px;font-size:12px}}

@@ -44,6 +44,6 @@
 
 ## Evidence and release discipline
 
-The [machine-readable archive inventory](docs/history/apk-inventory.json) records the exact package name, embedded version, byte size, SHA-256 and first archive commit for all fourteen retained APKs. It does not claim that every historical signature or phone upgrade has been retested.
+The [machine-readable archive inventory](docs/history/apk-inventory.json) records the exact package name, embedded version, byte size, SHA-256 and first archive commit for all sixteen retained APKs through 0.7.8. Original archive commit dates are provenance, not GitHub Release publication timestamps. The [historical-release migration](docs/history/GITHUB-RELEASES.md) preserves this distinction. It does not claim that every historical signature or phone upgrade has been retested.
 
 The public updater uses [`updates/latest.json`](updates/latest.json), not this document. A source commit, passing CI, merged PR, or proposed version name does not publish an installable update. Never overwrite an existing APK version or reset its version code. Keep earlier artifacts intact for history; distribute the current verified release through the main download link.

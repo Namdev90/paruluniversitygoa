@@ -1,12 +1,14 @@
 # Feature catalogue
 
-This is a capability inventory, not a claim that every source change has shipped. **Public APK baseline: 0.7.6 / Android code 14.** Teacher Reports, the refreshed brand shell and responsive refinements are coordinated **unreleased 0.7.7 candidate** work. Installer lifecycle PR #3 is merged source, but is not contained in the archived 0.7.6 APK.
+**Published Android baseline: 0.7.8 / versionCode 16.** This release restores the original burgundy/gold interface and exact original Navrang logo while retaining native Credential Manager/PKCE sign-in, CameraX scanning, native imports, report exports, encrypted sessions and installer recovery. See the [signed release record](RESTORATION-RELEASE-0.7.8.md).
 
-The native Compose implementation is an isolated, unreleased source checkpoint. Its complete workflow mapping and evidence are in [NATIVE-PARITY.md](NATIVE-PARITY.md); implementation does not imply device verification or shipped availability.
+This inventory describes the published app and its implemented source contracts. It is not a claim that every matching backend route is deployed. Backend and laptop-portal deployment are separate: a merged Android/source release does not prove either hosted service was updated. Real-device, upgrade/reboot, performance and hosted acceptance remain unverified under the owner's version-scoped 0.7.8 waiver. The historical [native parity record](NATIVE-PARITY.md) describes the earlier Compose checkpoint; the owner's original-design restoration supersedes its presentation direction.
+
+The next requested work is tracked separately in [the upgrade checklist](NEXT-STEPS.md). Unpublished requests and test plans are not shipped capabilities.
 
 ## Four clearly separated responsibilities
 
-| Capability | Checker | Help Desk | Faculty (candidate) | Administrator |
+| Capability | Checker | Help Desk | Faculty | Administrator |
 |---|:---:|:---:|:---:|:---:|
 | Google sign-in and saved real name | Yes | Yes | Yes | Separate administrator credentials |
 | Assigned random staff code | Yes | Yes | No | Creates codes |
@@ -20,7 +22,7 @@ The native Compose implementation is an isolated, unreleased source checkpoint. 
 
 A button or station choice expresses intent. It never grants authority. Existing server permissions remain authoritative, including expiry and suspension. Faculty permissions are mutually exclusive with scanner/Help Desk permissions; the administrator retains the full set.
 
-## Scanner and gate operation — available by 0.7.6
+## Scanner and gate operation
 
 | Area | Integrated behaviour |
 |---|---|
@@ -38,7 +40,7 @@ A button or station choice expresses intent. It never grants authority. Existing
 | Session safety | Revoked or expired scanner access closes/disables the scanning path. Old-session responses cannot authorize a new identity. |
 | Attribution | Immutable account keys, saved checker names, device/request identifiers, server timestamps and admission sequence numbers. |
 
-## Help Desk and administration — available by 0.7.6
+## Help Desk and administration
 
 The current Help Desk form collects name, email, mobile and quantity. The fee preview is ₹100 per person. The server assigns a ticket ID when required and records who saved the case and when. Email-based duplicate-case checks and UUID retries protect repeated submissions. Staff can read their own saved cases, not other staff members' contact lists.
 
@@ -48,7 +50,9 @@ Admin-only College CSV exports include Help Desk attribution. Ordinary staff can
 
 Admin registration and entry lists support search, filtering and pagination. Account management includes real-name changes, named random staff codes, access enable/suspend, first-station locking and administrator reassignment. Re-login does not undo suspension. Google email addresses remain private from ordinary checkers. Administrator password changes invalidate other administrator sessions.
 
-## Faculty reports — unreleased app candidate
+## Faculty reports
+
+**Implementation versus live availability:** the following report workflows and datasets are present in the published client and repository source. Production reporting readiness remains unverified; service compatibility and authenticated hosted acceptance must be confirmed before advertising these workflows as live. See [the portal publication checklist](PORTAL-DEPLOYMENT.md).
 
 Teachers sign in with Google, save their real name and request report access. An administrator reviews the account and can grant/revoke read-only reporting without giving the teacher registration-edit, Help Desk or scanner privileges. The administration entry is visually separate and includes every reporting feature.
 
@@ -81,12 +85,12 @@ The historical missing-data correction is narrowly scoped to event-day not-found
 
 ## Branding, interface and accessibility
 
-| Area | Candidate refinement |
+| Area | Published 0.7.8 behaviour |
 |---|---|
-| Original event mark | Exact cropped pixels from the verified organizer brochure; used by the opening/header and generated native launcher/scanner branding. |
+| Owner-approved app mark | The exact original gold Navrang app artwork is restored in the opening, web interface and manifest-resolved Android launcher. Asset SHA-256: `b3c9bec6b50d466c244e5b127b87cace038a16d3a236303f4b141e5ea285de9a`. This baseline mark is owner-approved historical generated/edited artwork, not a newly independently authenticated official brochure logo. The organizer-supplied poster and officially sourced university vector have distinct provenance; see [asset notes](../app/assets/art/ASSET-NOTES.md). |
 | University wordmark | Original institutional vector, with its white lettering on a dark field instead of an unreadable pale chip. No generated seal or retyped replacement. |
 | Entry choices | Checker, Help Desk and Faculty appear once as peers; Administration has a separate, more prominent full-access entry. |
-| Visual hierarchy | Restrained charcoal/green surfaces, cream text, original burgundy/gold event accents, consistent controls and fewer decorative effects. |
+| Visual hierarchy | Original burgundy/gold identity, dimensional controls, cream text and clear role/action hierarchy. The owner rejected a Material-style restyle; the next visual pass deepens the existing identity rather than replacing it. |
 | Motion | Transform-only dancer entrances and gentle weight shifts; logos are not morphed. Opening is skippable; reduced motion and page-hidden pausing are respected. |
 | Screen sizes | Adaptive branding, flexible toolbars, wrapping long labels, compact navigation, scrollable content and small-height dialog/layout rules. Wide reporting views use a two-column arrangement. |
 | Input and feedback | Visible focus, readable field labels, keyboard-safe scrolling and large core tap targets. No accessibility certification or universal device-performance claim. |
@@ -98,7 +102,7 @@ From 0.4 onward, the app checks a repository update manifest on startup/resume, 
 
 Automatic update work yields to scanning. Installation waits for unresolved check-ins, rechecks before committing/opening Android confirmation, and blocks new scans while installation is unresolved. Android may require permission to install from this app and requires its installation confirmation. The workflow is not a promise of silent forced installation.
 
-Merged-source PR #3 adds recovery from Android-owned installer sessions after process recreation and reboot. Account recovery does not depend on a surviving cached APK or update manifest. Scans resume only after Android confirms completion/removal; uncertain installer state remains guarded. This still needs actual-device validation in the final signed release.
+The published app includes PR #3 recovery from Android-owned installer sessions after process recreation and reboot. Account recovery does not depend on a surviving cached APK or update manifest. Scans resume only after Android confirms completion/removal; uncertain installer state remains guarded. Physical-device process-kill, reboot and installed-upgrade acceptance remains unverified; host-side regression results are not a substitute.
 
 The original signing key stays only in the original build environment. Release tooling refuses a missing/replaced signing identity, changed bytes under an existing version and channel rollback. A source push does not automatically create a signed release.
 
@@ -110,4 +114,4 @@ Bundled licensed CC0 cues distinguish reading, success, pending, duplicate/inval
 
 Node tests cover parsing, eligibility, request/receipt handling, API validation, staff flows, Help Desk privacy, report outputs, branding, packaging and release policy. Java harnesses exercise the actual session, runtime, scanner and updater classes with controlled Android substitutes; they are not phone installations. SQL/SQLite tests verify transaction and deduplication behaviour. The render harness exercises source DOM/CSS/JS with intercepted synthetic transport; it does not authenticate against production.
 
-The full [Changelog](../CHANGELOG.md) documents all fourteen retained APK versions. The preserved [Operations reference](OPERATIONS.md) retains earlier detailed notes. Rehearsal/simulation, older offline storage and early broad Google access are historical states, not features to re-enable in the current release.
+The full [Changelog](../CHANGELOG.md) documents all sixteen retained APK versions through 0.7.8. The preserved [Operations reference](OPERATIONS.md) retains earlier detailed notes. Rehearsal/simulation, older offline storage and early broad Google access are historical states, not features to re-enable in the current release.

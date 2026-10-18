@@ -1,0 +1,43 @@
+name: Archive existing Navrang releases
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Leave empty to verify only; type PUBLISH_VERIFIED_HISTORY to publish the existing 16 APKs.'
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: navrang-historical-release-migration
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.repository == 'Namdev90/paruluniversitygoa' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - run: python3 tests/history-release-check.py
+      - run: python3 tools/publish-history.py
+  publish:
+    needs: verify
+    if: github.repository == 'Namdev90/paruluniversitygoa' && github.ref == 'refs/heads/main' && inputs.confirmation == 'PUBLISH_VERIFIED_HISTORY'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify and archive existing signed bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/publish-history.py --publish --confirm PUBLISH_VERIFIED_HISTORY

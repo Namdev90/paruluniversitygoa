@@ -129,6 +129,8 @@ class ClassicScannerUiTest {
         val verified = mutableListOf<String>()
         compose.setContent { CameraFixture({ verified += it }) }
         compose.onNodeWithTag("scanner-frame").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Camera zoom").assertExists()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "1.0×"))
         screenshot("classic-scanner-camera-layout")
         compose.onNodeWithText("Find ID").performClick()
         compose.onNodeWithTag("scanner-exact-id").performScrollTo().performTextInput("TEST0001")

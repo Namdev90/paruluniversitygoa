@@ -23,6 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -386,6 +389,10 @@ internal fun ClassicScannerCameraLayout(
                         value = zoom,
                         onValueChange = onZoom,
                         valueRange = 1f..minOf(maxZoom, 5f),
+                        modifier = Modifier.semantics {
+                            contentDescription = "Camera zoom"
+                            stateDescription = String.format(java.util.Locale.ROOT, "%.1f×", zoom)
+                        },
                     )
                 Text(
                     "${s.pending} pending · ${if(s.online)"Connected"else"Offline — wait for confirmation"}",

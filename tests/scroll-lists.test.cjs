@@ -76,3 +76,11 @@ test('list search caches sorted normalized data and clears that cache with acces
  const source=asset('gate.js');assert.match(source,/searchIndex\('students',m.records/);assert.match(source,/searchIndex\('entries',model.entries/);assert.match(source,/function clearLists\(\)\{searchIndexes.clear\(\)/);
  assert.match(source,/cached.source!==source/);
 });
+
+
+test('scan results display optional returned payment facts and actor ID without inventing empty receipt metadata',async()=>{
+ const t=setup();try{await tick();t.event({type:'result',data:{code:'duplicate',id:'DEMO0000',record:{name:'Student',paymentAt:'2026-10-17T10:30:00Z',paymentMethod:'Synthetic method',paymentReference:'SYNTHETIC-REF',source:'Synthetic source'},entry:{checkerId:'synthetic-checker'}}});
+  const text=t.$('result-details').textContent;for(const value of ['Payment date and time:','Payment method: Synthetic method','Payment reference: SYNTHETIC-REF','Registration source: Synthetic source','Checker ID: synthetic-checker'])assert.ok(text.includes(value),value);
+ }finally{await tick();t.dom.window.close()}
+ const empty=setup();try{await tick();empty.event({type:'result',data:{code:'not_found',id:'DEMO0000',record:{},entry:{}}});assert.ok(!empty.$('result-details').textContent.includes('Entry basis:'));assert.ok(!empty.$('result-details').textContent.includes('Payment method:'))}finally{await tick();empty.dom.window.close()}
+});
