@@ -78,6 +78,6 @@
  }
  $('report-refresh').onclick=refresh;
  for(const format of ['csv','xlsx','pdf'])$('report-'+format).onclick=()=>download(format);
- C.on(e=>{if(e.type==='auth'||e.type==='profile')clear();});
+ C.on(e=>{if((e.type==='auth'||e.type==='profile')&&loadedBy&&loadedBy!==identity())clear();});
  root.NavrangReports={refresh,clear};
 })(globalThis);
