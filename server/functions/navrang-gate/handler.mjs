@@ -28,7 +28,7 @@ export function createHandler({rpc,googleUser,googleEnabled}){
     const all=await rpc('budget',{key:await sha256(scope+':global'),limit:scope==='admin'?50:500},'');
     return one.allowed&&all.allowed;
    }
-   async function session(role,checkerId){const value=token();const profile=await rpc('session-create',{hash:await sha256(value),role,checkerId},'');if(profile.error)return json({ok:false,error:profile.error},profile.status||403);return json({ok:true,token:value,profile});}
+   async function session(role,checkerId){const value=token();const profile=await rpc('session-create',{hash:await sha256(value),role,checkerId},'');if(profile.error)return json({ok:false,error:profile.error},profile.status||403);const access=await rpc('reports-access',{},await sha256(value));return json({ok:true,token:value,profile:{...profile,reports:access.allowed===true}});}
    if(action==='config')return json({ok:true,...await rpc('config',{},''),googleEnabled:await googleEnabled()});
    if(action==='login'){
     if(!await budget('admin'))return json({ok:false,error:'Too many sign-in attempts. Try again in five minutes.'},429);
@@ -77,6 +77,10 @@ export function createHandler({rpc,googleUser,googleEnabled}){
    }
    const result=await rpc(action,p,hash);
    if(result.error)return json({ok:false,error:result.error},result.status||400);
+   if(action==='me'){
+    const access=await rpc('reports-access',{},hash);
+    return json({ok:true,...result,reports:access.allowed===true});
+   }
    if(action==='helpdesk-export'){
     if(result.records.length>10000)return json({ok:false,error:'Export exceeds 10,000 records. Ask the organizer for a server export.'},413);
     return json({ok:true,csv:D.csv(result.records),count:result.records.length,filename:'Navrang-Help-Desk-'+new Date().toISOString().slice(0,10)+'.csv'});
