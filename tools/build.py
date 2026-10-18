@@ -27,7 +27,7 @@ run(TOOLS/'aapt2','compile','--dir',ROOT/'app/res','-o',BUILD/'resources.zip')
 assets=BUILD/'assets'
 if assets.exists():shutil.rmtree(assets)
 assets.mkdir()
-for name in ['index.html','style.css','core.js','live-core.js','config.js','gate-config.json','client.js','desk-core.js','desk.js','gate.js','local-schema.sql']:
+for name in ['index.html','style.css','core.js','live-core.js','config.js','gate-config.json','client.js','desk-core.js','desk.js','report-export.js','reports.js','gate.js','local-schema.sql']:
  shutil.copy2(ROOT/'app/assets'/name,assets/name)
 shutil.copytree(ROOT/'app/assets/art',assets/'art')
 shutil.copytree(ROOT/'app/assets/audio',assets/'audio')
