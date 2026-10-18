@@ -1,0 +1,37 @@
+/* Owner-requested restoration: the original burgundy/gold design and original logo.
+   New role/report controls and bounded table scrolling remain functional. */
+:root{--bg:#100d15;--paper:#211923;--raised:#2b202d;--ink:#f9e9dc;--muted:#b9a2af;--gold:#e5be7d;--wine:#702449;--line:#ffffff17;--radius:18px;color-scheme:dark}
+html,body{background:#100d15}
+.app-shell{background:radial-gradient(ellipse at 50% 0,#69203b30,transparent 65%);max-width:1320px}
+.panel,.scanner-panel,dialog{background:linear-gradient(145deg,#2c1e2d,#19141f);border-color:#ffffff17;border-radius:18px;box-shadow:inset 0 1px #ffffff08,0 8px 24px #0003}
+.stats article{background:linear-gradient(150deg,#2b202d,#1c1722);border-radius:14px;box-shadow:inset 0 1px #ffffff06}
+.stats strong{color:var(--gold)}
+input,select{background:#17121b;border-color:#6f465c;border-radius:12px;color:var(--ink)}
+.button{border-radius:12px;font-weight:650}
+.primary{color:#201219;background:linear-gradient(160deg,#ffe0a9,#dcb071);border-color:#ffdf9f;box-shadow:0 4px 0 #7f573a,0 8px 18px #0004}
+.secondary,.admin-tab .table-action{background:linear-gradient(155deg,#3b2638,#291e2d);color:#f5d4a3;border-color:#8f5d7170;box-shadow:0 3px 0 #100c14}
+.quiet{background:#ffffff05;color:var(--muted)}
+.mobile-nav button.selected,.admin-tabs button.selected{background:#5e253a40;color:var(--gold)}
+.login-role{background:#211923;border:1px solid #6f465c;border-radius:12px}
+.login-role.selected{background:#5e253a60;border-color:#dbad75;color:var(--gold)}
+.administrator-entry{background:#411b2e55;border-color:#b88056}
+.administrator-button{color:var(--gold)}
+.crafted-login{padding:22px;background:linear-gradient(145deg,#2c1e2d,#19141f);border:1px solid var(--line);border-radius:18px}
+.google-button{border-radius:13px;background:#f6eee1;color:#211720;box-shadow:0 4px 0 #9f9384}
+.brand.official-header{gap:12px}
+.brand.official-header>.classic-header-logo{width:52px;height:52px;border-radius:14px;object-fit:contain;flex:0 0 auto}
+.classic-event-logo{display:block;object-fit:contain;max-width:100%;width:100%;height:100%}
+.event-wordmark.classic-event-mark{background:none;overflow:visible;height:auto;aspect-ratio:1}
+.event-wordmark.classic-event-mark .event-wordmark-frame{display:none}
+.event-wordmark-hero.classic-event-mark{width:min(250px,45vw);max-height:36vh;aspect-ratio:1}
+.event-wordmark-small.classic-event-mark{width:36px}
+.intro-content{gap:10px}.intro{background:radial-gradient(ellipse at 50% 35%,#70244980,transparent 65%),#100d15}
+.rows-scroll thead{background:#211923}
+.classic-signout-pending{position:fixed;inset:0;z-index:20000;background:#100d15fa;display:grid;place-items:center;padding:24px}
+.classic-signout-pending[hidden]{display:none}
+.classic-signout-pending>section{max-width:420px;width:100%;padding:24px;text-align:center}
+@media(max-width:480px){.crafted-login{padding:18px 14px}.brand.official-header>.classic-header-logo{width:42px;height:42px}.brand.official-header .header-logo{width:clamp(110px,32vw,164px)}.intro-content{margin-top:18px}}
+@media(max-height:480px){.intro-content .event-wordmark-hero{width:110px;max-height:30vh}.intro-content{gap:5px;margin-top:8px}}
+
+.station-card,.faculty-station{background:linear-gradient(145deg,#2c1e2d,#19141f);border-color:#744659;color:var(--ink)}
+.station-card .station-action{color:var(--gold)}

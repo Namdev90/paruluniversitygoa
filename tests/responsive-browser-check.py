@@ -97,6 +97,9 @@ def run():
      page=ctx.new_page();page.set_default_timeout(4000);page.on('pageerror',lambda e:errors.append(str(e)));open_source(page,role);page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
      measure(page,role,view,width,height)
+     if role=='login':
+      page.evaluate("document.getElementById('google-browser-signin').hidden=false")
+      measure(page,role,'login-native-browser-fallback',width,height)
      if width in (390,1366) and role in ('login','admin','faculty'):
       page.screenshot(path=str(out/f'{role}-{width}.png'))
      if role=='admin':
@@ -109,6 +112,11 @@ def run():
        if target=='entries':measure_scroll(page,'entries')
       for tab in ('registrations','admissions','checkers','updates'):
        page.locator('#admin-nav').click();page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
+       if tab=='updates':
+        # The Android bridge exposes this same control. Exercise its layout
+        # without opening a real device picker or sending an import request.
+        page.evaluate("document.getElementById('import-registration').hidden=false")
+        measure(page,role,'admin-updates-native-import',width,height)
      unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
    browser.close()
  finally:pass

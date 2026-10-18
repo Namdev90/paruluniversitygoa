@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.8 — original design restored · Android code 16 · 18 October 2026
+
+- Restored the original burgundy/gold screens and exact gold Navrang logo, including the launcher.
+- Retained current Credential Manager/PKCE sign-in, CameraX, encrypted sessions, RAM-only private records, staff authorization, Help Desk, reports/exports and updater recovery.
+- Kept bounded row scrolling with stable controls, native CSV/XLSX imports, both staff grants, durable sign-out/retry and fresh document-save authorization.
+- Preserved an explicit native browser/PKCE sign-in fallback when Credential Manager cannot complete, with internal-build isolation.
+- Fixed import refresh coalescing and scanner/update coordination across pause/resume. Verify the manifest-resolved launcher PNG as well as the web logo; generated back-navigation hooks fail closed if their source patterns change.
+- Original-key-signed APK: 21,176,693 bytes; SHA-256 `b72cd7bdc99883cd9052f3873885073a153f8cb8c83293ffe7191040e415fc60`. All fifteen previous APK hashes are unchanged.
+- Verified 179 Node passes (3 skips), 313 Java checks, 55 Android host tests, 136 synthetic visual cases, release assembly/lint (0 errors/36 warnings), publication and source/waiver gates.
+- The owner explicitly approved 0.7.8 publication and bypassed remaining handoff acceptance holds at 21:37:24 IST. Unperformed device/upgrade/performance/hosted checks remain skipped, not passed. Production data, backend/portal deployment, OAuth configuration, saved-station authorization and paid services are unchanged.
+- [Signed artifact, approval and verification record](docs/RESTORATION-RELEASE-0.7.8.md).
+
 ## 0.7.7 — native Compose release · Android code 15 · 18 October 2026
 
 - Rebuilt N01–N18 workflows with native Compose/Material 3, CameraX scanning, Credential Manager and secure session exchange.

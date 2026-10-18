@@ -3,7 +3,7 @@ const root=path.resolve(__dirname,'..'),asset=n=>fs.readFileSync(root+'/app/asse
 function setup(initial,{native=false,crew=[]}={}){
  let profile=initial,listener,destination='home';const calls=[],dom=new JSDOM(asset('index.html'),{url:'https://gate.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
  w.matchMedia=()=>({matches:true});w.eval(asset('live-core.js'));w.NavrangDesk={refresh:()=>{},clear:()=>{},hasDraft:()=>false};
- w.GateClient={native,profile:()=>profile,on:f=>listener=f,finishGoogle:async()=>{},feedback:()=>{},destination:value=>value?(destination=value):destination,local:async()=>({entries:[],stats:{},pending:0,localCount:0}),update:()=>({}),scan:()=>calls.push({action:'camera'}),submit:()=>calls.push({action:'checkin'}),googleLogin:async()=>calls.push({action:'google-browser'}),signOut:async()=>{profile=null},copy:async text=>calls.push({action:'copy',text}),sync:async()=>{calls.push({action:'sync'});return{dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:crew}},api:async(action,payload={})=>{calls.push({action,payload});if(action==='config')return{googleEnabled:true};if(action==='checker-profile'){profile={...profile,name:payload.name,nameConfirmed:true};return{saved:true}}if(action==='staff-request'){profile={...profile,station:payload.station,requestedRole:profile.active?'':payload.station};return{requested:payload.station}}if(action==='me')return profile;if(action==='staff-create')return{code:'NG-SYNTHETIC-CODE'};return{saved:true}}};
+ w.GateClient={native,profile:()=>profile,on:f=>listener=f,finishGoogle:async()=>{},feedback:()=>{},destination:value=>value?(destination=value):destination,local:async()=>({entries:[],stats:{},pending:0,localCount:0}),update:()=>({}),scan:()=>calls.push({action:'camera'}),submit:()=>calls.push({action:'checkin'}),googleLogin:async()=>calls.push({action:'google-browser'}),googleBrowserLogin:async()=>calls.push({action:'google-browser-fallback'}),signOut:async()=>{calls.push({action:'logout'});profile=null;listener?.({type:'auth',data:null})},copy:async text=>calls.push({action:'copy',text}),sync:async()=>{calls.push({action:'sync'});return{dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:crew}},api:async(action,payload={})=>{calls.push({action,payload});if(action==='config')return{googleEnabled:true};if(action==='checker-profile'){profile={...profile,name:payload.name,nameConfirmed:true};return{saved:true}}if(action==='staff-request'){profile={...profile,station:payload.station,requestedRole:profile.active?'':payload.station};return{requested:payload.station}}if(action==='me')return profile;if(action==='staff-create')return{code:'NG-SYNTHETIC-CODE'};return{saved:true}}};
  w.eval(asset('gate.js'));return{w,dom,calls,setProfile:p=>profile=p,event:e=>listener(e),click:id=>w.document.getElementById(id).click(),$:(id)=>w.document.getElementById(id)};
 }
 test('Google stays available; the first station choice is saved and staff cannot choose again',async()=>{
@@ -48,4 +48,63 @@ test('admin assigns a requested station, saves the real name and creates a role-
  const saved=calls.find(c=>c.action==='staff-update');assert.equal(saved.payload.name,'Raju Naik');assert.equal(saved.payload.active,true);assert.equal(saved.payload.scanner,false);assert.equal(saved.payload.helpdesk,true);
  t.click('open-code');$('new-checker-name').value='Raju';$('new-checker-role').value='helpdesk';$('create-checker-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();const created=calls.find(c=>c.action==='staff-create');assert.equal(created.payload.scanner,false);assert.equal(created.payload.helpdesk,true);assert.equal($('new-checker-code').textContent,'NG-SYNTHETIC-CODE');t.click('copy-code');await tick();assert.ok(calls.some(c=>c.action==='copy'&&c.text==='NG-SYNTHETIC-CODE'));
  }finally{dom.window.close()}
+});
+
+test('editing dual-station staff preserves both grants and new codes can grant both stations',async()=>{
+ const crew=[{id:'12345678-1234-4234-9234-123456789abc',name:'Synthetic Staff',method:'google',active:true,scanner:true,helpdesk:true,station:'checker',entries:0}];
+ const t=setup({role:'admin',name:'Synthetic Administrator',active:true},{crew}),{w,dom,calls,$}=t;
+ try{await tick();w.document.querySelector('#checker-list button').click();assert.equal($('staff-role').value,'both');
+  $('staff-name').value='Renamed Staff';$('staff-access-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
+  const saved=calls.find(c=>c.action==='staff-update');assert.equal(saved.payload.scanner,true);assert.equal(saved.payload.helpdesk,true);assert.equal(saved.payload.name,'Renamed Staff');
+  t.click('open-code');$('new-checker-name').value='New Staff';$('new-checker-role').value='both';$('create-checker-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
+  const created=calls.find(c=>c.action==='staff-create');assert.equal(created.payload.scanner,true);assert.equal(created.payload.helpdesk,true);
+ }finally{dom.window.close()}
+});
+
+test('original admin control opens the native importer and refreshes after completion; staff cannot invoke it',async()=>{
+ const t=setup({role:'admin',name:'Synthetic Administrator',active:true},{native:true}),{w,dom,calls,$}=t;let opened=0;
+ w.Native={importRegistrations:()=>opened++};
+ try{await tick();assert.equal($('import-registration').hidden,false);t.click('import-registration');assert.equal(opened,1);
+  const before=calls.filter(c=>c.action==='sync').length;t.event({type:'registrations-imported',data:{}});await tick();assert.equal(calls.filter(c=>c.action==='sync').length,before+1);
+  t.setProfile({role:'checker',checkerId:'synthetic',name:'Synthetic Staff',active:true,scanner:true,station:'checker'});t.event({type:'profile'});t.click('import-registration');assert.equal(opened,1);
+ }finally{dom.window.close()}
+});
+
+test('manual registration rejects invalid numeric values before saving and accepts valid values',async()=>{
+ const t=setup({role:'admin',name:'Synthetic Administrator',active:true}),{w,dom,calls,$}=t;
+ try{await tick();t.click('add-registration');$('edit-id').value='DEMO0001';$('edit-name').value='Synthetic Student';
+  const submit=async()=>{$('ticket-editor').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick()};
+  for(const invalid of [{amount:'-1'},{quantity:'0'},{quantity:'1.5'},{refund:'-1'}]){
+   $('edit-amount').value=invalid.amount??'100';$('edit-quantity').value=invalid.quantity??'1';$('edit-refund').value=invalid.refund??'0';await submit();assert.ok(!calls.some(c=>c.action==='upsert'));
+  }
+  $('edit-amount').value='100.50';$('edit-quantity').value='2';$('edit-refund').value='0';await submit();
+  const saved=calls.find(c=>c.action==='upsert');assert.equal(saved.payload.records[0].amount,100.5);assert.equal(saved.payload.records[0].quantity,2);assert.equal(saved.payload.records[0].refund,0);
+ }finally{dom.window.close()}
+});
+
+test('restored screens clear private rows when account or session access expires without a server reply',async()=>{
+ for(const field of ['accessExpiresAt','expiresAt']){
+  const profile={role:'admin',name:'Synthetic Administrator',active:true,[field]:new Date(Date.now()+60000).toISOString()};
+  const t=setup(profile),{w,dom,calls,$}=t;
+  try{await tick();$('registration-rows').textContent='Synthetic private registration';t.setProfile({...profile,[field]:new Date(Date.now()-1000).toISOString()});
+   for(let i=0;i<20&&!calls.some(c=>c.action==='logout');i++)await new Promise(r=>setTimeout(r,20));
+   assert.ok(calls.some(c=>c.action==='logout'));assert.equal($('registration-rows').textContent,'');assert.equal($('view-login').hidden,false);assert.equal(w.GateClient.profile(),null);
+  }finally{dom.window.close()}
+ }
+});
+
+test('an import completed during an active poll queues one immediate forced registration refresh',async()=>{
+ const t=setup({role:'admin',name:'Synthetic Administrator',active:true},{native:true}),{w,dom,$}=t;
+ try{await tick();let finish,requests=[];
+  w.GateClient.sync=async options=>{requests.push(options);if(requests.length===1)return await new Promise(resolve=>finish=resolve);return{dataRevision:2,cursor:0,records:[{id:'DEMO0002',name:'Imported Synthetic Student',amount:100,quantity:1,refund:0,description:'Transaction completed successfully',eligible:true}],entries:[],stats:{},checkers:[]}};
+  t.click('admin-refresh');await tick();t.event({type:'registrations-imported',data:{}});t.event({type:'registrations-imported',data:{}});await tick();assert.equal(requests.length,1);
+  finish({dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:[]});
+  for(let i=0;i<25&&!$('registration-rows').textContent.includes('Imported Synthetic Student');i++)await tick();
+  assert.equal(requests.length,2);assert.equal(requests[1].dataRevision,-1);assert.match($('registration-rows').textContent,/Imported Synthetic Student/);
+ }finally{dom.window.close()}
+});
+
+test('native login keeps an explicit browser fallback independent of Credential Manager',async()=>{
+ const t=setup(null,{native:true});try{await tick();assert.equal(t.$('google-browser-signin').hidden,false);t.click('google-browser-signin');await tick();assert.equal(t.calls.filter(c=>c.action==='google-browser-fallback').length,1);assert.equal(t.calls.filter(c=>c.action==='google-browser').length,0);}finally{t.dom.window.close()}
+ const web=setup(null);try{await tick();assert.equal(web.$('google-browser-signin').hidden,true)}finally{await tick();web.dom.window.close()}
 });

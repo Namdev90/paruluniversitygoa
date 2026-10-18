@@ -93,6 +93,10 @@
   sessionStorage.setItem('navrang-pkce',verifier);const redirect=location.origin+location.pathname;
   location.assign(config.project+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(redirect)+'&code_challenge='+challenge+'&code_challenge_method=s256');
  }
+ async function googleBrowserLogin(){
+  if(native){if(typeof Native.googleBrowserLogin!=='function')throw fail('Update the Android app to use browser sign-in.');Native.googleBrowserLogin();return}
+  return googleLogin();
+ }
  async function finishGoogle(){
   if(native)return;const url=new URL(location.href),fragment=new URLSearchParams(url.hash.slice(1)),error=url.searchParams.get('error')||fragment.get('error')||url.searchParams.get('error_code')||fragment.get('error_code');
   if(error){const description=url.searchParams.get('error_description')||fragment.get('error_description')||'',cancel=/access_denied|cancel/i.test(error+' '+description);sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);throw fail(cancel?'Google sign-in was cancelled. Tap Continue with Google to try again.':'Google sign-in setup needs the organizer’s attention. Namdev must check the Google client ID and client secret in Supabase. Use an assigned checker code meanwhile.')}
@@ -131,5 +135,5 @@
   }catch{}
  }
  function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.6',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
- root.GateClient={copy,feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,saveReport,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
+ root.GateClient={copy,feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,googleBrowserLogin,finishGoogle,save,saveReport,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);

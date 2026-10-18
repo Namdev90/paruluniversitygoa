@@ -11,12 +11,27 @@ import os
 from pathlib import Path
 import subprocess
 from native_release_gate import require_native_ready
+from restoration_release_gate import require_restoration_ready, ORIGINAL_LOGO_SHA256
 from release_policy import require_signing_key, verify_apk, check_publication, SIGNER_SHA256
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def verify_restored_artwork(archive, badging):
+    # AGP may shorten resource filenames. Follow the manifest's actual icon
+    # paths from aapt, rather than assuming the source resource path survives.
+    launchers = set(re.findall(r"^application-icon-\d+:'([^']+)'$", badging, re.M))
+    if not launchers:
+        raise SystemExit('Could not resolve the packaged launcher artwork.')
+    for logo in {'assets/art/app-icon.png', *launchers}:
+        if logo not in archive.namelist() or hashlib.sha256(archive.read(logo)).hexdigest() != ORIGINAL_LOGO_SHA256:
+            raise SystemExit('APK does not contain the original Navrang logo in ' + logo)
+
+
 def main():
-    require_native_ready(ROOT)
     release = json.loads((ROOT / 'release.json').read_text())
+    original = release.get('interface') == 'original'
+    (require_restoration_ready if original else require_native_ready)(ROOT)
     latest = json.loads((ROOT / 'updates/latest.json').read_text())
     if release['versionCode'] <= latest['versionCode']:
         raise SystemExit('Select a coordinated unused version with a strictly higher versionCode before release.')
@@ -43,8 +58,15 @@ def main():
     if not re.search(r"^(?:minSdkVersion|sdkVersion):'24'$", metadata, re.M):
         raise SystemExit('The native APK must preserve minimum API 24.')
     with zipfile.ZipFile(candidate) as archive:
-        if any(name.startswith('assets/') and name.endswith(('.html', '.js')) for name in archive.namelist()):
+        if original:
+            required = {'assets/index.html', 'assets/client.js', 'assets/reports.js', 'assets/report-export.js', 'assets/workbook.js', 'assets/art/classic-restore.css'}
+            if not required.issubset(archive.namelist()):
+                raise SystemExit('The restored interface is missing a required feature asset.')
+            verify_restored_artwork(archive, metadata)
+        elif any(name.startswith('assets/') and name.endswith(('.html', '.js')) for name in archive.namelist()):
             raise SystemExit('Operational web assets must not be packaged into the native APK.')
+    if candidate.stat().st_size > 25 * 1024 * 1024:
+        raise SystemExit('Candidate exceeds the existing updater size limit.')
     check_publication(release, candidate, ROOT / 'downloads' / candidate.name, latest)
     print('Signed candidate verified. Publication remains a separate reviewed operation.')
 

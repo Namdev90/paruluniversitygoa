@@ -27,12 +27,12 @@ test('login presents three staff routes and a separate admin route',()=>{
  assert.equal(w.document.getElementById('show-admin-login').textContent.includes('Administrator'),true);
  dom.window.close();
 });
-test('visual brand marks use the supplied poster and official university asset',()=>{
+test('visual brand marks restore the original Navrang logo and retain the university asset',()=>{
  const {dom,w}=fixture();
  const event=w.document.querySelector('.intro-content .event-wordmark');
  assert.ok(event,'Intro needs the official Navrang artwork');
  assert.equal(event.getAttribute('aria-label'),'Navrang');
- assert.ok(event.querySelector('img').getAttribute('src').endsWith('event-poster.jpg'));
+ assert.ok(event.querySelector('img').getAttribute('src').endsWith('app-icon.png'));
  assert.ok(w.document.querySelector('.app-footer img[src="art/parul-goa.svg"]'));
  assert.equal(w.document.querySelector('.intro-content h1')?.textContent,'Navrang');
  dom.window.close();
