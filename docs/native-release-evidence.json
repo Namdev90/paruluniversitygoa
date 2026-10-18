@@ -77,8 +77,9 @@
   },
   "gates": {
     "google_branding": {
-      "status": "BLOCKED",
-      "evidence": ""
+      "status": "DEFERRED_BY_USER",
+      "evidence": "docs/NATIVE-IMPLEMENTATION-2026-10-18.md#google-branding-deferral",
+      "note": "Owner explicitly requested skipping Google branding on 2026-10-18. Not verified; Credential Manager/OAuth device verification and all original-key/release/paid-domain approvals remain required."
     },
     "credential_manager_device": {
       "status": "PENDING",

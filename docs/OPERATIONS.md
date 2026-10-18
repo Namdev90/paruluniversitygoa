@@ -2,6 +2,8 @@
 
 Preserved from the pre-refresh README. Version-specific historical paragraphs remain; consult the root README and Changelog for shipped versus unreleased status.
 
+The historical `server/reconcile-missing-registration-v077.sql` is retired and refuses execution before any database access. The master handoff records its 18 organizer-confirmed corrections as already applied. Do not remove the guard or replay it; future corrections require separately reviewed identities and explicit approval. Existing admissions and original scan outcomes remain unchanged.
+
 # Navrang Gate · Parul University Goa
 
 Android QR entry and embedded administration for Navrang 2026.

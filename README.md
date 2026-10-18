@@ -13,7 +13,7 @@
 
 ## Native Compose migration — source only
 
-The isolated native rebuild is in `native-app/`. [Implementation and history audit](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) · [N01–N18 parity and verification](docs/NATIVE-PARITY.md). Credential Manager, native workflows and independently scrollable lists are implemented in source. Google branding, device acceptance and production publication remain gated; no native APK has been released. The candidate previews below document the retained browser/legacy presentation.
+The isolated native rebuild is in `native-app/`. [Implementation and history audit](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) · [N01–N18 parity and verification](docs/NATIVE-PARITY.md). Credential Manager, native workflows and independently scrollable lists are implemented in source. The owner deferred Google branding on 18 October; actual sign-in/device acceptance and production publication remain gated. No native APK has been released. The candidate previews below document the retained browser/legacy presentation.
 
 ## A look at the work
 

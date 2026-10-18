@@ -1,8 +1,11 @@
--- Organizer instruction: 2026-10-18T05:20:46Z.
+-- RETIRED: historical evidence only. The 18 corrections are already recorded.
+-- This block deliberately refuses execution before any database read or write.
+-- Any future correction needs a new, separately approved identity-bound workflow.
+-- Original organizer instruction: 2026-10-18T05:20:46Z.
 -- These event-day scans were physically admitted despite management's missing data.
 -- One-time, idempotent reconciliation, NOT a future entry-policy change.
 -- No names or payments are invented, and original scan outcomes remain immutable.
--- Run in a transaction; first validate with ROLLBACK, then explicitly COMMIT.
+-- Original implementation retained below the unconditional replay guard for audit.
 DO $reconcile$
 declare
  scan_row navrang_private.attempts%rowtype;
@@ -16,6 +19,7 @@ declare
  recorded_at timestamptz := clock_timestamp();
  evidence_ref constant text := 'organizer-confirmation-2026-10-18T05:20:46Z';
 begin
+ raise exception 'Historical organizer reconciliation is retired; do not replay the 18 recorded corrections.';
  perform 1 from navrang_private.event where id='O9KL3' for update;
  select count(distinct ticket_id) into candidate_count from navrang_private.attempts
  where not test_fixture and response->>'code'='not_found'

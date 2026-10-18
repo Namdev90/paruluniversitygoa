@@ -189,6 +189,23 @@ class NativeDomainTest {
     }
 
     @Test
+    fun directoryEntriesCannotBypassExpansionLimits() {
+        val zip = java.io.ByteArrayOutputStream()
+        java.util.zip.ZipOutputStream(zip).use { z ->
+            // Streaming ZIP entries omit their size until the data descriptor.
+            z.putNextEntry(java.util.zip.ZipEntry("unused/"))
+            z.write(ByteArray(32768))
+            z.closeEntry()
+        }
+        val failure =
+            assertThrows(IllegalArgumentException::class.java) {
+                RegistrationImport.parse(zip.toByteArray())
+            }
+        // Reject directory data immediately, before nextEntry can silently drain it.
+        assertEquals("File exceeds the safe import size.", failure.message)
+    }
+
+    @Test
     fun xlsxImportPreservesLiteralUnicode() {
         val rows =
             listOf(
@@ -214,6 +231,25 @@ class NativeDomainTest {
         assertEquals(
             "Synthetic Unicode चाचणी",
             RegistrationImport.parse(ReportEncoder.xlsx(rows)).getJSONObject(0).getString("name"),
+        )
+        val withDirectory = java.io.ByteArrayOutputStream()
+        java.util.zip.ZipOutputStream(withDirectory).use { out ->
+            out.putNextEntry(java.util.zip.ZipEntry("xl/"))
+            out.closeEntry()
+            ZipInputStream(ByteArrayInputStream(ReportEncoder.xlsx(rows))).use { input ->
+                while (true) {
+                    val entry = input.nextEntry ?: break
+                    out.putNextEntry(java.util.zip.ZipEntry(entry.name))
+                    input.copyTo(out)
+                    out.closeEntry()
+                }
+            }
+        }
+        assertEquals(
+            "Synthetic Unicode चाचणी",
+            RegistrationImport.parse(withDirectory.toByteArray())
+                .getJSONObject(0)
+                .getString("name"),
         )
     }
 

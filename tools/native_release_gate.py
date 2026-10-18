@@ -4,7 +4,9 @@ import pathlib
 import subprocess
 
 REQUIRED = {f'N{i:02d}' for i in range(1, 19)}
-EXTERNAL = {'google_branding', 'credential_manager_device', 'api24_device',
+# Google branding was explicitly deferred by the owner on 2026-10-18. This
+# does not waive real Credential Manager/OAuth verification or release approval.
+EXTERNAL = {'credential_manager_device', 'api24_device',
             'current_android_device', 'original_key_upgrade', 'installer_reboot',
             'performance_measurements', 'portal_hosted', 'backend_review'}
 

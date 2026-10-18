@@ -153,13 +153,16 @@ object RegistrationImport {
                 ) {
                     "Invalid workbook member."
                 }
-                if (e.isDirectory) continue
                 require(e.size <= MAX_MEMBER) { "Workbook member exceeds safe expansion size." }
-                val data = readBounded(z, minOf(MAX_MEMBER, MAX_EXPANDED - total))
+                // nextEntry/closeEntry drain unread data. Even directory entries can carry
+                // compressed bytes, so reject their payload through the same bounded reader.
+                val limit = if (e.isDirectory) 0 else minOf(MAX_MEMBER, MAX_EXPANDED - total)
+                val data = readBounded(z, limit)
+                z.closeEntry()
+                if (e.isDirectory) continue
                 total += data.size
                 require(!members.containsKey(e.name)) { "Duplicate workbook member." }
                 members[e.name] = data
-                z.closeEntry()
             }
         }
         require(

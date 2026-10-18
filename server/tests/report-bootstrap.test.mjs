@@ -8,8 +8,9 @@ test('fresh-install schema includes the exact separately deployable report migra
  assert.ok(schema.includes(marker),'fresh install needs the reporting RPC as well as the gate RPC');
  assert.equal(schema.split(marker)[1].split('-- END GENERATED TEACHER REPORTS')[0].trim(),reports.trim());
 });
-test('historical correction refuses newly matched registrations before creating any receipt',()=>{
+test('retired historical correction refuses execution before database access and retains prior evidence guards',()=>{
  const sql=read('reconcile-missing-registration-v077.sql');
+ assert.match(sql,/begin\s+raise exception 'Historical organizer reconciliation is retired; do not replay the 18 recorded corrections\.';\s+perform/);
  assert.match(sql,/Canonical registration now exists for a missing-data candidate/);
  assert.ok(sql.indexOf('Canonical registration now exists for a missing-data candidate')<sql.indexOf('for scan_row in'));
 });
