@@ -22,7 +22,7 @@ public final class GateBrandingApplication extends Application {
    @Override public void onActivityCreated(Activity activity,Bundle state){
     if(!"in.navrang.gate.ScanActivity".equals(activity.getClass().getName()))return;
     View root=activity.findViewById(android.R.id.content);
-    try{styleScanner(activity,root);}catch(RuntimeException error){android.util.Log.w("NavrangBranding","Scanner branding could not be applied; gate controls preserved.");}
+    root.post(()->{if(activity.isFinishing()||activity.isDestroyed())return;try{styleScanner(activity,root);}catch(RuntimeException error){android.util.Log.w("NavrangBranding","Scanner branding could not be applied; gate controls preserved.");}});
    }
    @Override public void onActivityStarted(Activity activity){}
    @Override public void onActivityResumed(Activity activity){}

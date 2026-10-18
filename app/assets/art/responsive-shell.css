@@ -78,3 +78,39 @@ dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);oversc
  .dancer-stage{height:80vh;bottom:0;width:30vw}.dancer-stage-left{left:0}.dancer-stage-right{right:0}
  .intro .intro-skip{bottom:12px;min-height:44px}
 }
+
+/* Stable controls: only bounded rows scroll. Data pages do not depend on height. */
+#view-admin,#view-entries{overflow:hidden;display:flex;flex-direction:column;min-height:0;height:100%}
+#view-admin[hidden],#view-entries[hidden]{display:none}
+#view-admin>.section-title,#view-entries>.section-title,.admin-tabs,.table-toolbar,.pager,#registration-count{flex-shrink:0}
+#admin-console{flex:1 1 0;min-height:0;overflow:hidden}
+#admin-console>.admin-tab{flex:1 1 0;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+#admin-console>.admin-tab[hidden]{display:none}
+.rows-scroll{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.rows-scroll thead{position:sticky;top:0;background:var(--panel,#20241f);z-index:1}
+#view-entries>.table-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#checker-list{flex:1 1 0;min-height:0;overflow:auto}
+#view-entries .pager{flex-wrap:wrap;min-height:60px}
+#entry-coverage{width:100%;text-align:center}
+#admin-registrations .table-link{min-height:44px}
+#view-entries .pager{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:4px 12px;padding-top:4px}
+#view-entries #recent-prev{grid-column:1;grid-row:1}
+#view-entries #recent-page{grid-column:2;grid-row:1;text-align:center}
+#view-entries #recent-next{grid-column:3;grid-row:1}
+#view-entries #entry-coverage{grid-column:1/-1;grid-row:2}
+@media(max-height:720px){
+ #admin-console>.namu-guide{display:none}
+ #admin-console{gap:6px}
+ #admin-console>.admin-stats{margin-block:4px}
+}
+@media(max-height:500px){
+ #admin-console>.admin-stats,#admin-console>.panel-heading{display:none}
+ #admin-console{gap:4px}
+ #admin-console .admin-tabs{margin:0}
+ #admin-console>.admin-tab{padding:6px}
+ #admin-console .table-toolbar{margin-bottom:4px}
+ #admin-console .pager{padding-top:4px}
+ #view-entries>.section-title .eyebrow,#view-entries>.section-title .micro-note{display:none}
+ #view-entries>.table-panel{padding:6px}
+ #view-entries{gap:4px}
+}

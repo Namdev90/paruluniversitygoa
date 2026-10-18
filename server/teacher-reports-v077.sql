@@ -65,6 +65,7 @@ begin
   select * into c from navrang_private.checkers where id=(p->>'checkerId')::uuid for update;
   if not found or c.method<>'google' or c.google_id is null then return jsonb_build_object('error','Teacher must first sign in with a verified Google account.','status',400);end if;
   if (p->>'enabled')::boolean then
+   if c.access_expires_at is not null and c.access_expires_at<=now() then return jsonb_build_object('error','Account access has expired. Renew it before granting reports.','status',409);end if;
    if not c.name_confirmed then return jsonb_build_object('error','Teacher must save their real name first.','status',409);end if;
    if c.scanner_enabled or c.helpdesk_enabled then return jsonb_build_object('error','Disable this account’s Checker/Help Desk access before granting teacher-only reports.','status',409);end if;
    update navrang_private.checkers set active=true,selected_station='',requested_role='' where id=c.id;
@@ -78,7 +79,7 @@ begin
  if not permitted then return jsonb_build_object('error','Teacher reports permission required.','status',403);end if;
  if p_action='summary' then
   select jsonb_build_object('registered',count(*),'eligible',count(*) filter(where t.eligible),'blocked',count(*) filter(where not t.eligible),
-   'registeredAttended',count(*) filter(where exists(select 1 from navrang_private.admissions a where a.event_id='O9KL3' and a.ticket_id=t.id and not a.test_fixture)),
+   'registeredAttended',(select count(*) from navrang_private.admissions a where a.event_id='O9KL3' and not a.test_fixture and (a.receipt#>>'{entry,admissionBasis}') is distinct from 'organizer_confirmed' and exists(select 1 from navrang_private.tickets known where known.id=a.ticket_id)),
    'eligibleRegisteredAttended',count(*) filter(where t.eligible and exists(select 1 from navrang_private.admissions a where a.event_id='O9KL3' and a.ticket_id=t.id and not a.test_fixture)),
    'noShow',count(*) filter(where t.eligible and not exists(select 1 from navrang_private.admissions a where a.event_id='O9KL3' and a.ticket_id=t.id and not a.test_fixture)))
   into totals from navrang_private.tickets t where t.active;
@@ -99,7 +100,7 @@ begin
  if kind is null or kind not in ('all','attended','absent','blocked','issues','resolved','unresolved','duplicates','activity','helpdesk','pending','corrections') then return jsonb_build_object('error','Unknown report dataset.','status',400);end if;
  if kind in ('all','attended','absent','blocked','corrections') then
   with x as (
-   select coalesce(t.id,a.ticket_id) id,t.id is not null registered,
+   select coalesce(t.id,a.ticket_id) id,coalesce(t.active,false) registered,t.id is not null registration_retained,
     coalesce(nullif(t.name,''),case when a.receipt#>>'{entry,nameStatus}'='not_supplied' then null else a.receipt#>>'{entry,name}' end) name,
     t.eligible,t.reason,t.description,t.amount,a.ticket_id is not null admitted,a.at recorded_time,
     case when a.receipt#>>'{entry,admissionBasis}'='organizer_confirmed' then null else a.at end entry_time,
@@ -108,11 +109,12 @@ begin
     a.receipt#>>'{entry,note}' note,a.receipt#>>'{entry,confirmationInstructionAt}' confirmation_time,
     (select count(*) from navrang_private.attempts z where not z.test_fixture and z.ticket_id=coalesce(t.id,a.ticket_id) and z.response->>'code' in ('blocked','not_found')) issue_attempts,
     (select count(*) from navrang_private.attempts z where not z.test_fixture and z.ticket_id=coalesce(t.id,a.ticket_id) and z.response->>'code'='duplicate') duplicate_attempts
-   from (select * from navrang_private.tickets where active) t full outer join
+   from navrang_private.tickets t full outer join
     (select * from navrang_private.admissions where event_id='O9KL3' and not test_fixture) a on a.ticket_id=t.id
+   where coalesce(t.active,false) or a.ticket_id is not null
   )
   select coalesce(jsonb_agg(jsonb_build_object('Ticket ID',id,'Name',name,'Name status',case when name is null then 'Not supplied' else 'Recorded' end,
-   'In registration master',registered,'Eligible',eligible,'Eligibility issue',reason,'Payment result',description,'Amount INR',amount,
+   'In registration master',registered,'Registration retained',registration_retained,'Eligible',eligible,'Eligibility issue',reason,'Payment result',description,'Amount INR',amount,
    'Attendance',case when admitted then 'Admitted' when eligible then 'No verified entry' else 'Not eligible' end,
    'Admission basis',basis,'Note',note,'Verified entry UTC',entry_time,'Original scan UTC',observed_scan,'Record created UTC',recorded_time,
    'Organizer confirmation UTC',confirmation_time,'Checker / record source',checker,'Server issue attempts',issue_attempts,'Duplicate attempts',duplicate_attempts)
