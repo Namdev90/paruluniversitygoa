@@ -1,0 +1,49 @@
+name: Transfer verified signed restoration 0.7.8
+on:
+  pull_request:
+    branches: [codex/restore-original-design]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [codex/stage-original-0.7.8]
+    paths: ['.github/workflows/navrang-signed-transfer.yml']
+permissions:
+  contents: read
+jobs:
+  transfer:
+    if: github.repository == 'Namdev90/paruluniversitygoa' && (github.ref == 'refs/heads/codex/stage-original-0.7.8' || (github.head_ref == 'codex/stage-original-0.7.8' && github.event.pull_request.head.repo.full_name == 'Namdev90/paruluniversitygoa'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Assemble exact previously signed APK bytes into a Git blob
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,json,os,urllib.request
+          repo="Namdev90/paruluniversitygoa"
+          expected={"size":21176693,"sha256":"62e6b292fc5e223c1ed11a5ef8aae0eacc8d2dd408c77556d791435c8ed10db3","blob":"f677a67d2254f6b9250753beb231f809841d97d6","chunks":[{"sha":"350937fe257ce564fd6632f3328a17d1b2d7e8be","size":9000000},{"sha":"28ce9e983fc9664d6e683da73887c9fa3b03dabd","size":9000000},{"sha":"cc84fb1f2c0589698eb7e38bd8ba0133191ed73e","size":3176693}]}
+          def api(path,data=None):
+              headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"Navrang-signed-artifact-transfer"}
+              body=None if data is None else json.dumps(data).encode()
+              if body is not None: headers["Content-Type"]="application/json"
+              request=urllib.request.Request("https://api.github.com/repos/"+repo+path,data=body,headers=headers)
+              with urllib.request.urlopen(request,timeout=180) as response: return json.load(response)
+          def blob_sha(data):
+              return hashlib.sha1(("blob "+str(len(data))+"\0").encode()+data).hexdigest()
+          parts=[]
+          for chunk in expected["chunks"]:
+              result=api("/git/blobs/"+chunk["sha"])
+              data=base64.b64decode(result["content"],validate=False)
+              assert len(data)==chunk["size"] and blob_sha(data)==chunk["sha"]
+              parts.append(data)
+          data=b"".join(parts)
+          assert len(data)==expected["size"]
+          assert hashlib.sha256(data).hexdigest()==expected["sha256"]
+          assert blob_sha(data)==expected["blob"]
+          result=api("/git/blobs",{"encoding":"base64","content":base64.b64encode(data).decode()})
+          assert result["sha"]==expected["blob"]
+          print(json.dumps({"verifiedSignedApkBlob":result["sha"],"sha256":expected["sha256"],"size":len(data)}))
+          PY
