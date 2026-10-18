@@ -1,0 +1,56 @@
+name: Navrang responsive review
+on:
+  push:
+    branches: [feature/navrang-responsive-handoff]
+  pull_request:
+    paths:
+      - 'app/assets/art/brand-shell*'
+      - 'server/tests/responsive*'
+      - 'docs/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - '.github/workflows/navrang-responsive-review.yml'
+permissions:
+  contents: read
+concurrency:
+  group: navrang-responsive-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
+      - name: Public source review bundle
+        run: |
+          mkdir -p review-artifacts
+          git bundle create review-artifacts/navrang-public-history.bundle --all
+          tar -czf review-artifacts/test-dependencies.tar.gz node_modules
+          git rev-parse HEAD > review-artifacts/source-head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: navrang-public-source-${{ github.sha }}
+          path: review-artifacts/
+          retention-days: 3
+      - name: Regression tests (no live admission writes)
+        run: npm test
+      - name: Native harnesses
+        run: npm run test:native
+      - name: SQLite checks
+        run: python3 tests/sqlite-check.py
