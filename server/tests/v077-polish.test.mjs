@@ -27,13 +27,14 @@ test('login presents three staff routes and a separate admin route',()=>{
  assert.equal(w.document.getElementById('show-admin-login').textContent.includes('Administrator'),true);
  dom.window.close();
 });
-test('visual brand marks restore the original Navrang logo and retain the university asset',()=>{
+test('visual brand marks use the approved combined artwork and a concise footer',()=>{
  const {dom,w}=fixture();
- const event=w.document.querySelector('.intro-content .event-wordmark');
- assert.ok(event,'Intro needs the official Navrang artwork');
- assert.equal(event.getAttribute('aria-label'),'Navrang');
- assert.ok(event.querySelector('img').getAttribute('src').endsWith('navrang-transparent.png'));
- assert.ok(w.document.querySelector('.app-footer img[src="art/parul-goa.svg"]'));
+ const event=w.document.querySelector('.intro-content .combined-brand-mark');
+ assert.ok(event,'Intro needs the approved combined artwork');
+ assert.equal(event.getAttribute('aria-label'),'Navrang · Parul University Goa');
+ assert.ok(event.querySelector('img').getAttribute('src').endsWith('navrang-parul-combined.png'));
+ assert.match(w.document.querySelector('.app-footer').textContent,/Navrang · Parul University Goa/);
+ assert.equal(w.document.querySelector('.app-footer img'),null);
  assert.equal(w.document.querySelector('.intro-content h1')?.textContent,'Navrang');
  dom.window.close();
 });

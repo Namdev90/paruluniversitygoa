@@ -217,3 +217,18 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
  #view-reports>#report-downloads{grid-column:2;grid-row:2}
  #report-downloads .report-actions{display:flex}
 }
+
+/* Approved combined Navrang + horizontal Parul lockup. Keep the whole 15:8 canvas.
+   Full branding belongs on opening/sign-in; compact operational chrome stays legible. */
+.combined-brand-mark{display:block;flex:none;width:100%;max-width:100%;aspect-ratio:15/8;line-height:0}
+.combined-brand-mark>img{display:block;width:100%;height:100%;max-width:100%;object-fit:contain;object-position:center;filter:none;transform:none;border:0;border-radius:0;box-shadow:none}
+.intro{background:radial-gradient(ellipse at center,#680724 0%,#260919 100%)}
+.intro-content>.combined-brand-hero{width:min(560px,92vw,58vh);margin:0 auto;animation:none;opacity:1}
+.crafted-login{background:radial-gradient(ellipse at 50% 18%,#680724 0%,#260919 100%)}
+.crafted-login>.combined-brand-login{width:min(360px,100%);margin:0 auto 20px}
+.topbar{background:radial-gradient(ellipse at 40% 0,#68072480,transparent 80%)}
+.brand.official-header h1{margin-top:0}
+.compact-brand-copy{color:#d9bdc8;font-size:10px;line-height:1.4;letter-spacing:.04em}
+.login-foot.official-brand-line{margin-top:16px;padding-top:12px}
+@media(max-height:560px) and (min-width:520px){.intro-content>.combined-brand-hero{width:min(320px,42vw);max-width:100%}.intro-content{gap:6px}}
+@media(max-height:600px) and (max-width:519px){.intro-content>.combined-brand-hero{width:min(340px,88vw,55vh)}}

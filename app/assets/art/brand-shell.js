@@ -13,11 +13,11 @@
   const image=el('img');image.src='art/navrang-transparent.png';image.alt='Navrang';image.className='classic-event-logo';image.draggable=false;mark.append(image);return mark;
  }
  function universityMark(){const image=el('img');image.src='art/parul-goa.svg';image.alt='Parul University Goa';image.className='institution-wordmark';return image;}
- function brandLine(target){if(!target)return;target.replaceChildren(universityMark(),eventMark('event-wordmark-small'));target.classList.add('official-brand-line');}
+ function brandLine(target){if(!target)return;target.replaceChildren(el('span','Navrang · Parul University Goa','compact-brand-copy'));target.classList.add('official-brand-line');}
  const intro=document.querySelector('.intro-content'),heading=intro?.querySelector('h1');
- if(heading){heading.hidden=true;heading.before(eventMark('event-wordmark-hero'));}
- // The owner-supplied transparent wordmark sits below the university mark.
- // Supporting copy stays in normal flow; no lettering is redrawn or overlaid.
+ if(heading)heading.hidden=true;
+ // The approved combined artwork is present in static HTML before first paint.
+ // Supporting copy stays in normal flow; no extra university mark or lettering is overlaid.
  const dancerRow=el('div',null,'intro-dancers');dancerRow.setAttribute('aria-hidden','true');document.querySelector('.intro-content')?.after(dancerRow);
  for(const side of ['left','right']){
   const dancer=document.querySelector('.intro>.dancer-'+side);if(!dancer)continue;
