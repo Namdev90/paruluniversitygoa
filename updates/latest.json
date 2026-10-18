@@ -1,10 +1,10 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 13,
-  "versionName": "0.7.5",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.5.apk",
-  "size": 1936718,
-  "sha256": "5bdbf9ca0852488ab7ae51153a389215f05ad727b9b5b92b37f4dd840b36345b",
-  "notes": "Includes merged PR #1 (734bb60): pending scan warnings recover when final server results arrive; pending receipts remain visible until acknowledged or resolved; Android update installation waits for pending entry requests. Existing permissions, checker approvals and server behavior are preserved.",
-  "publishedAt": "2026-10-17T13:54:49.487891+00:00"
+  "versionCode": 14,
+  "versionName": "0.7.6",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.6.apk",
+  "size": 1940814,
+  "sha256": "a3502d76c94655c3b47daf79aeab220d19d692818eb12e6a06d366ff2b5c80f2",
+  "notes": "Fixes slow button response by reusing isolated session snapshots instead of repeatedly reading and decrypting secure storage. Camera startup, configuration and cleanup run off the interface thread, with safe cancellation when leaving the scanner. Preserves checker approvals, server authorization, pending-scan recovery and update-installation safeguards.",
+  "publishedAt": "2026-10-18T04:00:40.452664+00:00"
 }

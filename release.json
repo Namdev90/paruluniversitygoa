@@ -1,5 +1,5 @@
 {
-  "versionCode": 13,
-  "versionName": "0.7.5",
-  "notes": "Includes merged PR #1 (734bb60): pending scan warnings recover when final server results arrive; pending receipts remain visible until acknowledged or resolved; Android update installation waits for pending entry requests. Existing permissions, checker approvals and server behavior are preserved."
+  "versionCode": 14,
+  "versionName": "0.7.6",
+  "notes": "Fixes slow button response by reusing isolated session snapshots instead of repeatedly reading and decrypting secure storage. Camera startup, configuration and cleanup run off the interface thread, with safe cancellation when leaving the scanner. Preserves checker approvals, server authorization, pending-scan recovery and update-installation safeguards."
 }
