@@ -4,7 +4,8 @@ import os,pathlib,shutil,subprocess,zipfile,json,runpy,sys
 from release_policy import require_signing_key
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
-# The master handoff makes the native release the default; a legacy hotfix is a separate approval.
+# The owner-restored interface keeps the current AndroidX/signing pipeline.
+# A separately approved historical raw-Java hotfix remains an explicit option.
 if '--legacy-approved-hotfix' not in sys.argv:
  runpy.run_path(str(ROOT/'tools/build-native.py'),run_name='__main__')
  raise SystemExit(0)

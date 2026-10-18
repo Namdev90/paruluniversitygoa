@@ -159,7 +159,13 @@
   $('cache-count').textContent=$('pending-count').textContent='0';$('sync-time').textContent='Awaiting shared update';$('station-title').textContent='Choose your station';$('registration-count').textContent='0 results';
   $('new-code-panel').hidden=true;$('notice').hidden=true;$('signin-panel').hidden=false;$('admin-signin').hidden=true;globalThis.NavrangDesk?.clear();setView('login');connection(false,'Sign in');
  }
- async function signOut(){close('name-dialog');await C.signOut().catch(()=>{})}
+ async function signOut(){
+  close('name-dialog');const pending=$('classic-signout-pending'),retry=$('classic-signout-retry'),message=$('classic-signout-message');
+  if(C.native&&pending){pending.hidden=false;retry.hidden=true;message.textContent='Clearing this device’s private session.';}
+  try{await C.signOut();if(pending)pending.hidden=true;}
+  catch(e){if(C.native&&pending){message.textContent='Sign-out could not be saved. Private access is blocked. Retry before signing in again.';retry.hidden=false;}else notice(e.message||'Sign-out could not complete.');}
+ }
+ if($('classic-signout-retry'))$('classic-signout-retry').onclick=signOut;
  $('sign-out').onclick=()=>busy($('sign-out'),signOut);$('name-signout').onclick=signOut;
  $('change-name').onclick=()=>{$('real-name').value=C.profile()?.name||'';show('name-dialog')};$('name-dialog').addEventListener('cancel',e=>{if(needsName(C.profile()))e.preventDefault()});
  $('name-form').onsubmit=e=>{e.preventDefault();busy(e.submitter||$('name-form').querySelector('button'),async()=>{const name=$('real-name').value.trim().replace(/\s+/g,' ');if(!/^[\p{L}\p{M}][\p{L}\p{M} .'-]{0,39}$/u.test(name))throw Error('Enter your real name using letters, up to 40 characters.');await C.api('checker-profile',{name});await C.api('me');close('name-dialog');renderAuth();setView(assignedView());feedback('success');poll(true)})};

@@ -54,3 +54,30 @@ jobs:
         run: npm run test:native
       - name: SQLite checks
         run: python3 tests/sqlite-check.py
+
+  classic-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts
+      - run: python -m pip install playwright==1.64.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Render all roles with synthetic transport only
+        run: |
+          NAVRANG_CHROMIUM="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')" python tests/responsive-browser-check.py --output .build/classic-visual
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: classic-synthetic-visual-review
+          path: .build/classic-visual/
+          retention-days: 7

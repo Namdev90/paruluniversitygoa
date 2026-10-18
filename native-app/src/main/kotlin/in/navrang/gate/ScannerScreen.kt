@@ -29,7 +29,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
-internal fun ScannerScreen(s: GateState, vm: GateViewModel) {
+internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = { vm.navigate(Destination.Checker) }) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     var permission by remember {
@@ -48,7 +48,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel) {
             Button(onClick = { request.launch(Manifest.permission.CAMERA) }) {
                 Text("Allow camera")
             }
-            OutlinedButton(onClick = { vm.navigate(Destination.Checker) }) {
+            OutlinedButton(onClick = exit) {
                 Text("Use exact ticket ID")
             }
         }
@@ -293,7 +293,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel) {
                     ) {
                         Text("Reset zoom")
                     }
-                    TextButton(onClick = { vm.navigate(Destination.Checker) }) { Text("Exact ID") }
+                    TextButton(onClick = exit) { Text("Exact ID") }
                 }
                 if (maxZoom > 1f)
                     Slider(

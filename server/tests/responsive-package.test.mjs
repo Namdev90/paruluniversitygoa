@@ -13,7 +13,7 @@ test('web companion includes every referenced script and stylesheet',()=>{
   const document=new JSDOM(fs.readFileSync(path.join(dest,'index.html'),'utf8')).window.document;
   const refs=[...document.querySelectorAll('script[src],link[rel="stylesheet"]')].map(e=>e.getAttribute('src')||e.getAttribute('href'));
   for(const file of refs)assert.ok(fs.existsSync(path.join(dest,file)),`Missing packaged browser dependency: ${file}`);
-  assert.ok(fs.existsSync(path.join(dest,'art/navrang-wordmark.png')),'web branding must include the verified official crop');
+  assert.deepEqual(fs.readFileSync(path.join(dest,'art/app-icon.png')),fs.readFileSync(path.join(root,'app/assets/art/app-icon.png')),'web packaging must preserve the original logo bytes');
   for(const forbidden of ['signing','server','downloads','node_modules','app'])assert.ok(!fs.existsSync(path.join(dest,forbidden)));
  }finally{fs.rmSync(dest,{recursive:true,force:true});}
 });

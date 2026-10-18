@@ -9,9 +9,8 @@
  let role='checker',requestBusy=false,requestGeneration=0,lastIdentity=identity(),requestedFor='';
  try{const saved=sessionStorage.getItem('navrang-login-intent');if(['checker','helpdesk','faculty'].includes(saved))role=saved;}catch{}
  function eventMark(size){
-  const mark=el('span',null,'event-wordmark '+(size||''));mark.setAttribute('role','img');mark.setAttribute('aria-label','Navrang');
-  const frame=el('span',null,'event-wordmark-frame'),image=el('img');image.src='art/event-poster.jpg';image.alt='';image.draggable=false;image.setAttribute('aria-hidden','true');
-  frame.append(image);mark.append(frame);return mark;
+  const mark=el('span',null,'event-wordmark classic-event-mark '+(size||''));mark.setAttribute('role','img');mark.setAttribute('aria-label','Navrang');
+  const image=el('img');image.src='art/app-icon.png';image.alt='Navrang';image.className='classic-event-logo';image.draggable=false;mark.append(image);return mark;
  }
  function universityMark(){const image=el('img');image.src='art/parul-goa.svg';image.alt='Parul University Goa';image.className='institution-wordmark';return image;}
  function brandLine(target){if(!target)return;target.replaceChildren(universityMark(),eventMark('event-wordmark-small'));target.classList.add('official-brand-line');}
@@ -22,7 +21,7 @@
   const stage=el('div',null,'dancer-stage dancer-stage-'+side);dancer.before(stage);stage.append(dancer);
  }
  const header=document.querySelector('.brand'),oldIcon=header?.querySelector(':scope>img');
- if(oldIcon){oldIcon.replaceWith(eventMark('event-wordmark-header'));header.classList.add('official-header');}
+ if(oldIcon){oldIcon.classList.add('classic-header-logo');header.classList.add('official-header');}
  for(const target of document.querySelectorAll('.app-footer,.login-foot'))brandLine(target);
  for(const target of document.querySelectorAll('.section-title>.eyebrow,.station-heading>.eyebrow,#view-desk>.panel-heading>div>.eyebrow')){
   if(/PARUL UNIVERSITY GOA/i.test(target.textContent)){const title=el('span',null,'institution-label');title.append(universityMark());target.replaceChildren(title);}
@@ -75,7 +74,7 @@
  }
  faculty.onclick=accountReports.onclick=openFaculty;
  const title=$('page-title');
- function paintPageTitle(){if(title&&/^Navrang Gate$/.test(title.textContent))title.textContent='Gate';}
+ function paintPageTitle(){/* Original page titles are retained. */}
  if(title&&root.MutationObserver)new MutationObserver(paintPageTitle).observe(title,{childList:true,characterData:true,subtree:true});
  const docVisibility=()=>document.body.classList.toggle('motion-paused',document.hidden);
  document.addEventListener('visibilitychange',docVisibility);docVisibility();

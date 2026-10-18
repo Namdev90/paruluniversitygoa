@@ -6,33 +6,17 @@ plugins {
 }
 
 val published = JsonSlurper().parse(rootProject.file("release.json")) as Map<*, *>
-val prepareNativeAssets =
-    tasks.register<Exec>("prepareNativeAssets") {
-        inputs.file(rootProject.file("tools/PrepareBrands.java"))
-        inputs.dir(rootProject.file("app/assets/art"))
-        outputs.dir(layout.buildDirectory.dir("generated/branding"))
-        commandLine(
-            "java",
-            "-Djava.awt.headless=true",
-            rootProject.file("tools/PrepareBrands.java"),
-            rootDir,
-            layout.buildDirectory.dir("generated/branding").get().asFile,
-        )
-    }
-val copyNativeAssets =
-    tasks.register<Sync>("copyNativeAssets") {
-        dependsOn(prepareNativeAssets)
-        from(rootProject.file("app/assets")) {
-            include(
-                "gate-config.json",
-                "local-schema.sql",
-                "audio/**",
-                "art/*.webp",
-                "art/google-g.png",
-            )
-        }
-        into(layout.buildDirectory.dir("generated/assets"))
-    }
+val prepareNativeAssets = tasks.register<Exec>("prepareNativeAssets") {
+    inputs.file(rootProject.file("tools/prepare-classic-host.py"))
+    inputs.file(rootProject.file("app/java/in/navrang/gate/MainActivity.java"))
+    outputs.dir(layout.buildDirectory.dir("generated/classicJava"))
+    commandLine("python3", rootProject.file("tools/prepare-classic-host.py"), layout.buildDirectory.dir("generated/classicJava").get().asFile)
+}
+val copyNativeAssets = tasks.register<Sync>("copyNativeAssets") {
+    from(rootProject.file("app/assets")) { exclude("legacy.html") }
+    into(layout.buildDirectory.dir("generated/assets"))
+}
+
 val sharedJava =
     tasks.register<Sync>("sharedJava") {
         from(rootProject.file("app/java")) {
@@ -40,23 +24,19 @@ val sharedJava =
                 "**/MainActivity.java",
                 "**/ScanActivity.java",
                 "**/GateBrandingApplication.java",
-                "**/WebViewSupport.java",
             )
         }
         into(layout.buildDirectory.dir("generated/java"))
     }
-val sharedResources =
-    tasks.register<Sync>("sharedResources") {
-        dependsOn(prepareNativeAssets)
-        from(rootProject.file("app/res")) { exclude("drawable/app_icon.png", "values/styles.xml") }
-        from(layout.buildDirectory.dir("generated/branding/app/res"))
-        from(rootProject.file("app/assets/art")) {
-            include("dancer-*.webp", "google-g.png")
-            into("drawable")
-            rename { it.replace('-', '_') }
-        }
-        into(layout.buildDirectory.dir("generated/sharedResources"))
+val sharedResources = tasks.register<Sync>("sharedResources") {
+    from(rootProject.file("app/res"))
+    from(rootProject.file("app/assets/art")) {
+        include("dancer-*.webp", "google-g.png")
+        into("drawable")
+        rename { it.replace('-', '_') }
     }
+    into(layout.buildDirectory.dir("generated/sharedResources"))
+}
 
 android {
     namespace = "in.navrang.gate"
@@ -89,6 +69,7 @@ android {
     }
     sourceSets.getByName("main") {
         java.directories.add(layout.buildDirectory.dir("generated/java").get().asFile.path)
+        java.directories.add(layout.buildDirectory.dir("generated/classicJava").get().asFile.path)
         assets.directories.add(layout.buildDirectory.dir("generated/assets").get().asFile.path)
         res.directories.add(
             layout.buildDirectory.dir("generated/sharedResources").get().asFile.path
@@ -102,7 +83,7 @@ android {
     packaging { resources.excludes += setOf("META-INF/AL2.0", "META-INF/LGPL2.1") }
 }
 
-tasks.named("preBuild").configure { dependsOn(copyNativeAssets, sharedJava, sharedResources) }
+tasks.named("preBuild").configure { dependsOn(prepareNativeAssets, copyNativeAssets, sharedJava, sharedResources) }
 
 dependencies {
     implementation(platform(libs.compose.bom))
