@@ -22,3 +22,10 @@ test('recent throughput never counts correction creation as scanner admission ti
   assert.match(expression.slice(0,250),/receipt#>>'\{entry,admissionBasis\}'\) is distinct from 'organizer_confirmed'/);
  }
 });
+
+test('eligible registered attendance also excludes organizer corrections',()=>{
+ for (const sql of [reports,schema]) {
+  const expression=sql.match(/'eligibleRegisteredAttended',([^\n]+)/)[1];
+  assert.match(expression,/is distinct from 'organizer_confirmed'/);
+ }
+});

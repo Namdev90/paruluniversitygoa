@@ -29,6 +29,14 @@ def require_native_ready(root: pathlib.Path):
         waived_gates = set(waiver.get('gates', []))
         if not waived_screens <= REQUIRED or not waived_gates <= EXTERNAL:
             raise SystemExit('Native release held: waiver contains an unknown verification gate.')
+    approval = evidence.get('releaseApproval', {})
+    release = json.loads((root / 'release.json').read_text())
+    if evidence.get('releaseApproved') is True and (
+            not evidence.get('verifiedSourceCommit')
+            or approval.get('approvedSourceCommit') != evidence['verifiedSourceCommit']
+            or approval.get('versionName') != release.get('versionName')
+            or approval.get('versionCode') != release.get('versionCode')):
+        raise SystemExit('Native release held: release approval is not bound to this verified source/version.')
     rows = evidence.get('screens', {})
     if set(rows) != REQUIRED or any(
             not row.get('evidence') or not (

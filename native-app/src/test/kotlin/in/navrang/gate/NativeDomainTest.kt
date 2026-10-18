@@ -14,6 +14,28 @@ class NativeDomainTest {
     private fun result(id: String, code: String) = ScanResult(id, code, "Synthetic fixture", "")
 
     @Test
+    fun registrationEditsRejectMalformedFinancialValues() {
+        val ticket = Ticket("TEST0001", "Synthetic", true, "", "100", "1", "0", "")
+        assertEquals(100.0, ticket.registrationPayload().getDouble("amount"), 0.0)
+        for (invalid in
+            listOf(
+                ticket.copy(amount = "1O0"),
+                ticket.copy(amount = "NaN"),
+                ticket.copy(amount = "Infinity"),
+                ticket.copy(amount = "-1"),
+                ticket.copy(quantity = "1.5"),
+                ticket.copy(quantity = "0"),
+                ticket.copy(refund = "invalid"),
+                ticket.copy(refund = "-1"),
+            )) {
+            try {
+                invalid.registrationPayload()
+                fail("Malformed financial value was accepted")
+            } catch (_: IllegalArgumentException) {}
+        }
+    }
+
+    @Test
     fun pendingRetriesDoNotResetDeadline() {
         val q = ScanOutcomes()
         q.receive(result("TEST0001", "pending"), 0)

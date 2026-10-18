@@ -86,6 +86,19 @@ fun GateApp(
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
+                else if (s.signOutPending)
+                    Column(
+                        Modifier.fillMaxSize().padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("Signing out…")
+                        if (s.busy) CircularProgressIndicator()
+                        else {
+                            Text(s.message)
+                            Button(onClick = vm::signOut) { Text("Retry sign out") }
+                        }
+                    }
                 else if (s.intro) Intro(s.appearance.reducedMotion, vm::endIntro)
                 else {
                     LaunchedEffect(s.exportReady) { if (s.exportReady) pickExport() }

@@ -146,7 +146,7 @@ class GateRepository private constructor(val runtime: GateRuntime) {
     suspend fun clearSession(): String? =
         withContext(Dispatchers.IO) {
             val token = runtime.sessions.read()?.text("token")
-            runtime.sessions.clear()
+            check(runtime.sessions.clearDurably()) { "Could not persist sign-out." }
             runtime.db.clearTemporary()
             runtime.emit("auth", JSONObject())
             token

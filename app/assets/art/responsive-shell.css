@@ -86,6 +86,7 @@ dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);oversc
 #admin-console{flex:1 1 0;min-height:0;overflow:hidden}
 #admin-console>.admin-tab{flex:1 1 0;min-height:0;overflow:hidden;display:flex;flex-direction:column}
 #admin-console>.admin-tab[hidden]{display:none}
+#admin-console>#admin-updates:not([hidden]){overflow:auto;display:block;overscroll-behavior:contain}
 .rows-scroll{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 .rows-scroll thead{position:sticky;top:0;background:var(--panel,#20241f);z-index:1}
 #view-entries>.table-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden}

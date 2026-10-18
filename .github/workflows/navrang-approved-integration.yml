@@ -21,6 +21,7 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -81,6 +82,8 @@ jobs:
           print('Fourteen original archived APK sizes/hashes are unchanged.')
           PY
       - name: Commit only reviewed source and synthetic documentation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git rm .github/approved-responsive.py
@@ -95,7 +98,7 @@ jobs:
           current="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)"
           test "$current" = "$GITHUB_SHA"
           git commit -m 'Preserve installer lifecycle and finalize tested responsive reporting source [skip ci]'
-          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin "HEAD:refs/heads/$TARGET_BRANCH"
           git rev-parse HEAD > .build/responsive-review/final-source-head.txt
       - name: Public source and verification receipt
         if: success()

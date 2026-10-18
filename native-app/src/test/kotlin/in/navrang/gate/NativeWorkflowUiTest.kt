@@ -368,7 +368,11 @@ class NativeWorkflowUiTest {
             assertEquals(0, s.pending)
         }
         compose.onNodeWithTag("student-list").assertDoesNotExist()
-        button("Continue with Google").performScrollTo().assertExists()
+        // This fixture has no repository: durable sign-out cannot complete.
+        // Never show a successful signed-out/login screen on that failure.
+        compose.onNodeWithText("Signing out…").assertExists()
+        button("Retry sign out").assertExists()
+        compose.onNodeWithText("Continue with Google").assertDoesNotExist()
     }
 
     @Test

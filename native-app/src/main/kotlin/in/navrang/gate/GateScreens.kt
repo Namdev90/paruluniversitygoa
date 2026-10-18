@@ -21,6 +21,9 @@ import androidx.compose.ui.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
 internal fun Pager(
@@ -561,10 +564,19 @@ internal fun SettingsScreen(s: GateState, vm: GateViewModel, update: (String) ->
             )
         }
     val activity = LocalActivity.current
-    val readiness =
-        remember(activity, s.destination) {
-            activity?.let { GateReadiness.status(it).fields() } ?: emptyMap()
+    var readiness by
+        remember(activity) {
+            mutableStateOf(activity?.let { GateReadiness.status(it).fields() } ?: emptyMap())
         }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(activity, lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME)
+                readiness = activity?.let { GateReadiness.status(it).fields() } ?: emptyMap()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),

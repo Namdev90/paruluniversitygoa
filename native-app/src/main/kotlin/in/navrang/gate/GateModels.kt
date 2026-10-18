@@ -113,6 +113,23 @@ data class Ticket(
     }
 }
 
+internal fun Ticket.registrationPayload(): JSONObject {
+    val amountValue = amount.trim().toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 }
+    val quantityValue = quantity.trim().toIntOrNull()?.takeIf { it > 0 }
+    val refundValue = refund.trim().toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 }
+    require(amountValue != null && quantityValue != null && refundValue != null) {
+        "Enter numeric non-negative amount/refund and a positive whole quantity."
+    }
+    return json(
+        "id" to id,
+        "name" to name,
+        "amount" to amountValue,
+        "quantity" to quantityValue,
+        "refund" to refundValue,
+        "description" to description,
+    )
+}
+
 data class Receipt(
     val id: String,
     val seq: Long,
@@ -341,6 +358,7 @@ data class Appearance(
 )
 
 data class GateState(
+    val signOutPending: Boolean = false,
     val ready: Boolean = false,
     val profile: Profile? = null,
     val destination: Destination = Destination.Station,

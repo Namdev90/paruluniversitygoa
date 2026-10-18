@@ -29,6 +29,7 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
     private var sessionScope = ""
     private var epoch = 0L
     private var resumed = false
+    private var runtimeResumed = false
     private val outcomes = ScanOutcomes()
     private var saveRequest: Pair<String, JSONObject>? = null
     private var importRows: JSONArray? = null
@@ -65,11 +66,8 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
                             intro = it.profile == null && !prefs.getBoolean("introSeen", false),
                         )
                     }
-                    if (resumed)
-                        withContext(Dispatchers.IO) {
-                            repo.runtime.resume()
-                            GateUpdater.publish(app)
-                        }
+                    applyForeground()
+                    if (resumed) withContext(Dispatchers.IO) { GateUpdater.publish(app) }
                     loadLocal()
                 } catch (_: Exception) {
                     mutable.update {
@@ -101,20 +99,26 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
 
     private fun repo() = repository ?: throw IllegalStateException("App is starting.")
 
+    // Runtime resume/pause only update a synchronized counter. Apply them on the
+    // main thread in lifecycle order; slower updater work remains on IO.
+    private fun applyForeground() {
+        val runtime = repository?.runtime ?: return
+        if (runtimeResumed == resumed) return
+        if (resumed) runtime.resume() else runtime.pause()
+        runtimeResumed = resumed
+    }
+
     fun foreground(active: Boolean) {
         if (resumed == active) return
         resumed = active
+        applyForeground()
         GateUpdater.scanActive = active && mutable.value.destination == Destination.Scanner
-        viewModelScope.launch(Dispatchers.IO) {
-            repository?.runtime?.let {
-                if (active) {
-                    it.resume()
-                    GateUpdater.publish(getApplication())
-                    if (!BuildConfig.DEBUG && GateUpdater.automatic(getApplication()))
-                        GateUpdater.check(getApplication(), false, false)
-                } else it.pause()
+        if (active)
+            viewModelScope.launch(Dispatchers.IO) {
+                GateUpdater.publish(getApplication())
+                if (!BuildConfig.DEBUG && GateUpdater.automatic(getApplication()))
+                    GateUpdater.check(getApplication(), false, false)
             }
-        }
     }
 
     private fun permitted(d: Destination, p: Profile?) =
@@ -163,7 +167,7 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
                     appearance = old.appearance,
                     update = old.update,
                     destination = home(p),
-                    busy = old.busy,
+                    busy = old.busy && !old.exportPreparing,
                     intro = old.intro,
                 )
         } else mutable.update { it.copy(profile = p) }
@@ -232,28 +236,40 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
         localJob = viewModelScope.launch {
             val repo = repository ?: return@launch
             try {
-                val data = repo.local()
+                val admin = mutable.value.profile?.admin == true
+                val snapshot =
+                    withContext(Dispatchers.Default) {
+                        val data = repo.local()
+                        GateState(
+                            online = repo.runtime.online(),
+                            stats = data.optJSONObject("stats")?.fields() ?: emptyMap(),
+                            pending = data.optInt("pending"),
+                            tickets =
+                                if (admin)
+                                    data.optJSONArray("records")?.objects()?.map(Ticket::from)
+                                        ?: emptyList()
+                                else emptyList(),
+                            entries =
+                                if (admin)
+                                    data.optJSONArray("allEntries")?.objects()?.map(Receipt::from)
+                                        ?: emptyList()
+                                else emptyList(),
+                            staff =
+                                if (admin)
+                                    data.optJSONArray("checkers")?.objects()?.map(Staff::from)
+                                        ?: emptyList()
+                                else emptyList(),
+                        )
+                    }
                 if (expected != epoch) return@launch
                 mutable.update { s ->
                     s.copy(
-                        online = repo.runtime.online(),
-                        stats = data.optJSONObject("stats")?.fields() ?: emptyMap(),
-                        pending = data.optInt("pending"),
-                        tickets =
-                            if (s.profile?.admin == true)
-                                data.optJSONArray("records")?.objects()?.map(Ticket::from)
-                                    ?: emptyList()
-                            else emptyList(),
-                        entries =
-                            if (s.profile?.admin == true)
-                                data.optJSONArray("allEntries")?.objects()?.map(Receipt::from)
-                                    ?: emptyList()
-                            else emptyList(),
-                        staff =
-                            if (s.profile?.admin == true)
-                                data.optJSONArray("checkers")?.objects()?.map(Staff::from)
-                                    ?: emptyList()
-                            else emptyList(),
+                        online = snapshot.online,
+                        stats = snapshot.stats,
+                        pending = snapshot.pending,
+                        tickets = snapshot.tickets,
+                        entries = snapshot.entries,
+                        staff = snapshot.staff,
                     )
                 }
             } catch (_: Exception) {
@@ -350,18 +366,25 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
         GateUpdater.scanActive = false
         val s = mutable.value
         mutable.value =
-            GateState(ready = true, busy = true, appearance = s.appearance, update = s.update)
+            GateState(
+                ready = true,
+                busy = true,
+                signOutPending = true,
+                appearance = s.appearance,
+                update = s.update,
+            )
         viewModelScope.launch {
             var oldToken: String? = null
             try {
-                oldToken = repository?.clearSession()
-                withContext(Dispatchers.IO) {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    oldToken = repo().clearSession()
                     getApplication<Application>()
                         .getSharedPreferences("navrang-pkce", 0)
                         .edit()
                         .clear()
                         .commit()
                 }
+                mutable.update { it.copy(signOutPending = false) }
                 try {
                     androidx.credentials.CredentialManager.create(getApplication())
                         .clearCredentialState(androidx.credentials.ClearCredentialStateRequest())
@@ -372,6 +395,10 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
                         "Signed out locally. Google account selection may need to be reset in Android settings."
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                message("Sign-out could not be saved. Retry before closing the app.")
             } finally {
                 signingOut = false
                 mutable.update { it.copy(busy = false) }
@@ -541,15 +568,7 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
         require(Regex("[A-Z0-9]{8}").matches(ticket.id)) {
             "Enter an exact eight-character ticket ID."
         }
-        val row =
-            json(
-                "id" to ticket.id,
-                "name" to ticket.name,
-                "amount" to ticket.amount.toDoubleOrNull(),
-                "quantity" to ticket.quantity.toIntOrNull(),
-                "refund" to ticket.refund.toDoubleOrNull(),
-                "description" to ticket.description,
-            )
+        val row = ticket.registrationPayload()
         repo()
             .call(
                 "upsert",
@@ -850,6 +869,7 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
     fun prepareExport(format: String, contacts: Boolean = false) {
         if (exportJob?.isActive == true || export != null) return
         val expected = epoch
+        val sequence = ++actionSequence
         val generation = repo().runtime.sessions.generation()
         val kind = mutable.value.reportKind
         mutable.update { it.copy(busy = true, exportPreparing = true) }
@@ -891,7 +911,7 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
                 if (expected == epoch)
                     message("Export could not be prepared. Refresh access and retry.")
             } finally {
-                if (expected == epoch)
+                if (sequence == actionSequence)
                     mutable.update { it.copy(busy = false, exportPreparing = false) }
             }
         }
@@ -947,7 +967,8 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
     override fun onCleared() {
         repository?.runtime?.remove(this)
         GateUpdater.remove(this)
-        if (resumed) repository?.runtime?.pause()
+        resumed = false
+        applyForeground()
         GateUpdater.scanActive = false
         export?.clear()
         saveRequest = null

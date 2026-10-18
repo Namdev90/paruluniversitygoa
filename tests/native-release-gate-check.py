@@ -27,6 +27,7 @@ class NativeGateTest(unittest.TestCase):
                       'google_branding': {'status': 'DEFERRED_BY_USER', 'evidence': 'owner instruction'}},
             'verifiedSourceCommit': 'a' * 40,
             'releaseApproved': True,
+            'releaseApproval': {**self.release, 'approvedSourceCommit': 'a' * 40},
         }
 
     def check(self):
@@ -84,6 +85,11 @@ class NativeGateTest(unittest.TestCase):
                 self.evidence['verificationWaiver'][field] = value
                 with self.assertRaisesRegex(SystemExit, 'scoped'):
                     self.check()
+
+    def test_normal_approval_cannot_follow_new_source_automatically(self):
+        self.evidence['verifiedSourceCommit'] = 'b' * 40
+        with self.assertRaisesRegex(SystemExit, 'bound'):
+            self.check()
 
     def test_waiver_requires_owner_approval(self):
         self.waive()

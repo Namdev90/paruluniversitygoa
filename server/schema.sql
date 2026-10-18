@@ -394,7 +394,7 @@ begin
  if p_action='summary' then
   select jsonb_build_object('registered',count(*),'eligible',count(*) filter(where t.eligible),'blocked',count(*) filter(where not t.eligible),
    'registeredAttended',(select count(*) from navrang_private.admissions a where a.event_id='O9KL3' and not a.test_fixture and (a.receipt#>>'{entry,admissionBasis}') is distinct from 'organizer_confirmed' and exists(select 1 from navrang_private.tickets known where known.id=a.ticket_id)),
-   'eligibleRegisteredAttended',count(*) filter(where t.eligible and exists(select 1 from navrang_private.admissions a where a.event_id='O9KL3' and a.ticket_id=t.id and not a.test_fixture)),
+   'eligibleRegisteredAttended',count(*) filter(where t.eligible and exists(select 1 from navrang_private.admissions a where a.event_id='O9KL3' and a.ticket_id=t.id and not a.test_fixture and (a.receipt#>>'{entry,admissionBasis}') is distinct from 'organizer_confirmed')),
    'noShow',count(*) filter(where t.eligible and not exists(select 1 from navrang_private.admissions a where a.event_id='O9KL3' and a.ticket_id=t.id and not a.test_fixture)))
   into totals from navrang_private.tickets t where t.active;
   totals:=totals||jsonb_build_object(

@@ -59,6 +59,11 @@ public class SessionCacheCheck {
   session.save("new-token",profile(true));check(!session.clearIfCurrent(generation,"synthetic-token"),"old denial cannot clear the new login");check(GateSession.canScan(session.read()),"new identity remains usable");
   context.prefs.fail=true;try{session.save("failed-token",profile(false));throw new AssertionError("failed persistence was accepted");}catch(IOException expected){}context.prefs.fail=false;
   check("new-token".equals(session.read().optString("token")),"failed save cannot publish new cached identity");
+  context.prefs.fail=true;check(!session.clearDurably(),"failed durable sign-out is reported");
+  check(session.read()==null,"failed durable sign-out still clears current-process access");
+  check(!session.saveIfCurrent(generation,"old-token",profile(true)),"late auth cannot undo a failed clear");
+  context.prefs.fail=false;check(session.clearDurably(),"sign-out can be retried durably");
+  check(new GateSession(context).read()==null,"new process remains signed out after confirmed clear");
   System.out.println("PASS actual GateSession: "+checks+" checks for one-time decryption, isolated snapshots, invalidation, profile ordering and failed saves.");
  }
 }''',

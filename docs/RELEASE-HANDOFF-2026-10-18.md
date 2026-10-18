@@ -52,7 +52,7 @@ The reporting RPC was already present in production, with anonymous/authenticate
 
 - Fresh environments: `server/schema.sql` now contains the exact report definition as well as the gate schema; the regression test detects drift.
 - Existing production: **do not rerun the fresh schema**. Apply only reviewed additive changes through the appropriate migration workflow and deploy their matching Edge files.
-- Historical correction script: `server/reconcile-missing-registration-v077.sql` is a guarded, idempotent one-time operation, not part of routine app installation. The existing 18 corrections normally require no replay.
+- Historical correction script: `server/reconcile-missing-registration-v077.sql` is retired and raises an unconditional exception before any database access. The 18 corrections are already applied and must never be replayed. Future corrections require a new, separately approved identity-bound workflow.
 - Back up/review current definitions privately, retain grants/RLS/session rules, and validate authorized admin/faculty and denied/revoked accounts with dedicated synthetic fixtures. Do not use real attendees as test admissions or grant every Google account faculty access.
 
 ## Test the actual final release head
@@ -74,7 +74,7 @@ The integration checkpoint had 154 Node passes (3 skips), 308 native checks and 
 
 1. Safely reconcile/review the integration and active PRs; retain PR #3. Complete backend coordination separately from the client release.
 2. Set the coordinated unused `versionName`/`versionCode` consistently, including user-visible version strings and package metadata where required by the established release process.
-3. Run `python3 tools/build.py` with the original local key and established SDK/JDK. Do not bypass `require_signing_key`, signer checks, anti-rollback or publication checks. Original brand assets are prepared from the verified brochure before packaging.
+3. For this native release, run `python3 tools/build-native.py` with `NAVRANG_SIGNING_KEY` pointing to the original local key and the established SDK/JDK. `tools/build.py` defaults to the same native path. The separate legacy path (`python3 tools/build.py --legacy-approved-hotfix`) requires its own explicit hotfix approval and is not this release. Do not bypass `require_signing_key`, signer checks, anti-rollback or publication checks. Original brand assets are prepared from the verified brochure before packaging.
 4. Verify actual APK package/version, installed/public signing certificate fingerprint, byte size and SHA-256. Verify generated `updates/latest.json`, checksum and release metadata describe those exact bytes.
 5. Stage only reviewed source/documentation and intended release files. Scan the staged paths/diff for key files, passwords, service credentials, private workbooks, roster data or real QR records. None may be staged.
 6. Re-read remote main immediately before pushing; preserve concurrent work and use normal fast-forward/merge protections, never force.
