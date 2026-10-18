@@ -14,6 +14,9 @@ db_source = (root / "app/java/in/navrang/gate/GateDb.java").read_text()
 count_start = db_source.index(" public synchronized int pendingCount(){")
 count_end = db_source.index(" public synchronized JSONObject snapshot()", count_start)
 pending_count = db_source[count_start:count_end]
+constructor_start = db_source.index(" public GateDb(Context c)")
+constructor_end = db_source.index("\n", constructor_start)
+db_constructor = db_source[constructor_start:constructor_end].replace("super(c,null,null,1);", "")
 queue_start = db_source.index(" public synchronized JSONObject queue(")
 queue_end = db_source.index(" public synchronized JSONObject pending(", queue_start)
 queue_method = db_source[queue_start:queue_end]
@@ -73,14 +76,22 @@ public class Context {public static final String NOTIFICATION_SERVICE="notificat
  public PackageManager(){installed.versionCode=1;archive.versionCode=2;}public PackageInfo getPackageInfo(String name,int flags){return installed;}
  public PackageInfo getPackageArchiveInfo(String path,int flags){return archive;}public boolean canRequestPackageInstalls(){return allowed;}public PackageInstaller getPackageInstaller(){return installer;}
 }''',
-"android/content/pm/PackageInstaller.java": '''package android.content.pm;import java.io.*;import android.content.IntentSender;
+"android/content/pm/PackageInstaller.java": '''package android.content.pm;import java.io.*;import java.util.*;import android.content.IntentSender;
 public class PackageInstaller {
  public static final String EXTRA_STATUS="status",EXTRA_SESSION_ID="session";public static final int STATUS_FAILURE=1,STATUS_PENDING_USER_ACTION=-1,STATUS_SUCCESS=0;
- public int created;public SessionParams params;public final Session session=new Session();public int createSession(SessionParams p){created++;params=p;return created;}public Session openSession(int id){return session;}
+ public int created;public boolean failList,failQuery,failOpen;public SessionParams params;public final Session session=new Session(this);private final Map<Integer,Session> sessions=new HashMap<>();
+ public int createSession(SessionParams p){created++;params=p;Session next=created==1?session:new Session(this);next.id=created;next.packageName=p.packageName;sessions.put(created,next);return created;}
+ public Session openSession(int id){if(failOpen)throw new IllegalStateException("storage unavailable");Session found=sessions.get(id);if(found==null)throw new IllegalStateException("missing session");return found;}
+ public List<SessionInfo> getMySessions(){if(failList)throw new IllegalStateException("installer unavailable");List<SessionInfo> out=new ArrayList<>();for(Session value:sessions.values())out.add(new SessionInfo(value));return out;}
+ public SessionInfo getSessionInfo(int id){if(failQuery)throw new IllegalStateException("installer unavailable");return sessions.containsKey(id)?new SessionInfo(sessions.get(id)):null;}
+ public void abandonSession(int id){Session found=sessions.get(id);if(found==null)throw new IllegalStateException("missing session");found.abandon();}public void finish(int id){sessions.remove(id);}
+ public static class SessionInfo {private final Session session;public SessionInfo(Session value){session=value;}public int getSessionId(){return session.id;}public String getAppPackageName(){return session.packageName;}public boolean isActive(){return false;}public boolean isSealed(){return session.committed>0;}}
  public static class SessionParams {public static final int MODE_FULL_INSTALL=1,USER_ACTION_REQUIRED=1;public String packageName;public int requireUserAction;
   public SessionParams(int mode){}public void setAppPackageName(String name){packageName=name;}public void setSize(long size){}public void setRequireUserAction(int value){requireUserAction=value;}}
- public static class Session {public int committed,abandoned,closed;public boolean failCommit;public Runnable afterWrite=()->{};public OutputStream openWrite(String name,long offset,long length){return new ByteArrayOutputStream();}
-  public void fsync(OutputStream out){afterWrite.run();}public void commit(IntentSender sender){if(failCommit)throw new IllegalStateException("commit failed");committed++;}public void abandon(){abandoned++;}public void close(){closed++;}}
+ public static class Session implements AutoCloseable {private final PackageInstaller installer;public int id,committed,abandoned,closed;public String packageName;public boolean failCommit,failAbandon,deferAbandon;public Runnable afterWrite=()->{};
+  public Session(PackageInstaller value){installer=value;}public OutputStream openWrite(String name,long offset,long length){return new ByteArrayOutputStream();}
+  public void fsync(OutputStream out){afterWrite.run();}public void commit(IntentSender sender){if(failCommit)throw new IllegalStateException("commit failed");committed++;}
+  public void abandon(){abandoned++;if(failAbandon)throw new IllegalStateException("abandon failed");if(!deferAbandon)installer.finish(id);}public void close(){closed++;}}
 }''',
 "android/app/Activity.java": '''package android.app;import java.util.*;import android.content.*;public class Activity extends Context {
  public Runnable bridgeSubmission;public Thread bridgeThread;public boolean finishing,destroyed,focused=true,failLaunch;public final List<Intent> launched=new ArrayList<>();public boolean isFinishing(){return finishing;}public boolean isDestroyed(){return destroyed;}public boolean hasWindowFocus(){return focused;}public void startActivity(Intent intent){if(failLaunch)throw new IllegalStateException("launch failed");launched.add(intent);if(bridgeSubmission!=null){bridgeThread=new Thread(bridgeSubmission);bridgeThread.start();long deadline=System.nanoTime()+2000000000L;while(bridgeThread.getState()!=Thread.State.BLOCKED&&System.nanoTime()<deadline)Thread.yield();if(bridgeThread.getState()!=Thread.State.BLOCKED)throw new AssertionError("bridge submission must overlap the held DB monitor");}}
@@ -110,7 +121,10 @@ public class PackageInstaller {
 "in/navrang/gate/MainActivity.java": "package in.navrang.gate;public class MainActivity {}",
 "in/navrang/gate/UpdateJob.java": "package in.navrang.gate;public class UpdateJob {}",
 "in/navrang/gate/UpdateReceiver.java": "package in.navrang.gate;public class UpdateReceiver {}",
-"in/navrang/gate/GateDb.java": '''package in.navrang.gate;import org.json.*;import java.util.*;public class GateDb {
+"in/navrang/gate/GateDb.java": '''package in.navrang.gate;import org.json.*;import java.util.*;import android.content.Context;import android.content.pm.PackageInstaller;public class GateDb {
+ private final Context context;
+ __CONSTRUCTOR__
+ private void retireDiskCache(){}
  public int pending;public boolean unreadable;private int count(String table){if(!"outbox".equals(table))throw new AssertionError("pending guard must count the whole outbox");if(unreadable)throw new IllegalStateException("cannot read outbox");return pending;}
  __PENDING_COUNT__
  private String meta(String key,String fallback){return "test-device";}public static String now(){return "test-time";}
@@ -120,9 +134,9 @@ public class PackageInstaller {
  class SQLiteDatabase {void beginTransaction(){}void setTransactionSuccessful(){}void endTransaction(){}Cursor rawQuery(String query,String[] arguments){return new Cursor();}void insertOrThrow(String table,String nullable,ContentValues values){pending++;}}
  __QUEUE_METHOD__
  public synchronized JSONObject snapshot(){return new JSONObject().put("pending",pendingCount());}
-}'''.replace("__PENDING_COUNT__", pending_count).replace("__QUEUE_METHOD__", queue_method),
+}'''.replace("__CONSTRUCTOR__", db_constructor).replace("__PENDING_COUNT__", pending_count).replace("__QUEUE_METHOD__", queue_method),
 "in/navrang/gate/GateRuntime.java": '''package in.navrang.gate;import android.content.Context;public class GateRuntime {
- public static GateRuntime instance=new GateRuntime();public static boolean unavailable;public final GateDb db=new GateDb();
+ public static GateRuntime instance;public static boolean unavailable;public final GateDb db;public GateRuntime(Context c){db=new GateDb(c);}
  public static GateRuntime get(Context c)throws Exception{if(unavailable)throw new Exception("cannot open runtime");return instance;}
 }''',
 "NativeUpdaterPendingCheck.java": r'''import in.navrang.gate.*;import android.app.*;import android.content.*;import android.content.pm.*;import android.os.Handler;
@@ -134,11 +148,13 @@ public class NativeUpdaterPendingCheck {
  static ExecutorService worker()throws Exception{return (ExecutorService)field("work").get(null);}
  static void settle()throws Exception{worker().submit(()->{}).get(3,TimeUnit.SECONDS);Handler.drain();}
  static Activity fixture()throws Exception {
-  settle();GateRuntime.instance=new GateRuntime();GateRuntime.unavailable=false;GateUpdater.scanActive=false;field("confirmation").set(null,null);field("message").set(null,"");field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(null));
+  settle();GateRuntime.instance=null;GateRuntime.unavailable=false;GateUpdater.scanActive=false;field("confirmation").set(null,null);field("confirmationSession").set(null,-1);field("message").set(null,"");field("installationMessage").set(null,"");field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(null));
   Activity a=new Activity();a.files=Files.createTempDirectory("updater-fixture-").toFile();a.files.deleteOnExit();File apk=new File(a.files,"navrang-update.apk");Files.write(apk.toPath(),new byte[100000]);apk.deleteOnExit();
   JSONObject release=new JSONObject().put("packageName",UpdatePolicy.APP_ID).put("versionCode",2).put("versionName","1.0.1").put("apkUrl",UpdatePolicy.ROOT+"downloads/Navrang-Gate-1.0.1.apk").put("size",100000L).put("sha256",UpdatePolicy.hash(apk));
-  a.getSharedPreferences("navrang-updates",0).edit().putString("release",release.toString()).putInt("readyCode",2).apply();return a;
+  a.getSharedPreferences("navrang-updates",0).edit().putString("release",release.toString()).putInt("readyCode",2).apply();GateRuntime.instance=new GateRuntime(a);return a;
  }
+ static void restart(Activity a)throws Exception{settle();field("message").set(null,"");field("installationMessage").set(null,"");GateRuntime.instance=new GateRuntime(a);GateUpdater.scanActive=false;field("confirmation").set(null,null);field("confirmationSession").set(null,-1);field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(null));}
+ static int staged(Activity a,String target)throws Exception{PackageInstaller.SessionParams p=new PackageInstaller.SessionParams(1);p.setAppPackageName(target);return a.packages.installer.createSession(p);}
  static String message(Activity a){return GateUpdater.status(a).optString("message");}
  static Intent confirmation(){Intent i=new Intent();i.action="android-install-confirmation";return i;}
  static Intent callback(){return new Intent().putExtra(PackageInstaller.EXTRA_SESSION_ID,1).putExtra(PackageInstaller.EXTRA_STATUS,PackageInstaller.STATUS_PENDING_USER_ACTION).putExtra(Intent.EXTRA_INTENT,confirmation());}
@@ -177,8 +193,51 @@ public class NativeUpdaterPendingCheck {
   a=fixture();a.packages.installer.session.failCommit=true;GateUpdater.install(a);settle();check(!queueRejected()&&GateRuntime.instance.db.pending==1,"failed commit must release its admission fence");
   a=fixture();GateUpdater.install(a);settle();a.failLaunch=true;GateUpdater.installationResult(a,callback());Handler.drain();check(queueRejected()&&field("confirmation").get(null)!=null,"failed confirmation launch must keep the committed session fenced and retryable");a.failLaunch=false;GateUpdater.install(a);settle();check(a.launched.size()==1,"Android confirmation can be retried after launch failure");
   a=fixture();GateUpdater.install(a);settle();GateUpdater.installationResult(a,callback());Handler.drain();check(field("confirmation").get(null)!=null,"keep active Android confirmation available until a terminal result");GateUpdater.install(a);settle();check(a.launched.size()==2,"returning without finishing must allow reopening the same confirmation");
+  // Android owns durable installer state. Each restart discards GateDb and updater statics only.
+  for(int sdk:new int[]{24,26,28,29,35}){
+   android.os.Build.VERSION.SDK_INT=sdk;
+   a=fixture();GateUpdater.install(a);settle();restart(a);
+   check(queueRejected()&&GateRuntime.instance.db.pending==0,"API "+sdk+" process recreation must fence new RAM-only admissions while Android retains the committed session");
+   GateUpdater.installationResult(a,callback());Handler.drain();check(field("confirmation").get(null)!=null,"API "+sdk+" callback must match the recovered session");
+   GateUpdater.install(a);settle();check(a.launched.size()==1&&a.packages.installer.session.committed==1,"API "+sdk+" recovered callback reopens Android confirmation without recommitting");
+   a.packages.installer.finish(1);GateUpdater.installationResult(a,terminal(1,PackageInstaller.STATUS_FAILURE));Handler.drain();check(!queueRejected(),"API "+sdk+" recovered cancellation must resume admissions");
+  }
+  android.os.Build.VERSION.SDK_INT=35;
+  a=fixture();GateUpdater.install(a);settle();GateUpdater.installationResult(a,callback());Handler.drain();restart(a);
+  check(queueRejected(),"recreation while Android confirmation is open must remain fenced");GateUpdater.install(a);settle();check(a.packages.installer.session.abandoned==1&&a.packages.installer.session.committed==1,"lost confirmation must cancel the recovered attempt without duplicate commit");check(a.packages.installer.created==1&&!queueRejected(),"removed recovered attempt permits scanning without implicitly starting another update");
+  a=fixture();GateUpdater.install(a);settle();restart(a);a.packages.installer.session.deferAbandon=true;GateUpdater.install(a);settle();
+  check(queueRejected()&&a.packages.installer.created==1,"asynchronous or ignored abandonment must retain recovered fence");check(message(a).contains("still finishing"),"unfinished abandonment needs an honest wait message");
+  a.packages.installer.finish(1);check(!queueRejected(),"dropped terminal callback must recover once Android reports actual absence");GateUpdater.install(a);settle();check(a.packages.installer.created==1,"a queued request after cancellation still blocks fresh installation");
+  a=fixture();GateUpdater.install(a);settle();restart(a);a.packages.installer.session.failAbandon=true;GateUpdater.install(a);settle();check(queueRejected(),"failed cancellation must never release a recovered fence");
+  a=fixture();GateUpdater.install(a);settle();restart(a);a.packages.installer.failQuery=true;check(queueRejected(),"session query failure must fail closed");GateUpdater.install(a);settle();check(a.packages.installer.created==1,"query failure must not start another installer session");a.packages.installer.failQuery=false;check(queueRejected(),"query recovery must keep an extant idle session fenced");
+  a=fixture();GateUpdater.install(a);settle();a.packages.installer.failList=true;restart(a);check(queueRejected(),"initial session enumeration failure must block admissions");a.packages.installer.failList=false;check(queueRejected(),"retrying enumeration must recover existing sessions");
+  a=fixture();a.packages.installer.failList=true;restart(a);check(queueRejected(),"unknown installer state must block even without a known session id");a.packages.installer.failList=false;check(!queueRejected(),"successful empty enumeration must reopen admissions");
+  a=fixture();staged(a,UpdatePolicy.APP_ID);restart(a);check(queueRejected(),"legacy unsealed staging session without app metadata must be recovered");GateUpdater.install(a);settle();check(a.packages.installer.session.committed==0&&a.packages.installer.session.abandoned==1,"incomplete staged bytes must be abandoned, never committed");GateUpdater.install(a);settle();check(a.packages.installer.created==2&&a.packages.installer.openSession(2).committed==1,"explicit retry after removed staging session must freshly verify and commit");
+  GateUpdater.installationResult(a,terminal(1,PackageInstaller.STATUS_FAILURE));Handler.drain();check(queueRejected(),"stale callback from cleared staging must not release a newer session");
+  a=fixture();staged(a,null);restart(a);check(queueRejected(),"owned session with unknown target must conservatively fence admissions");
+  a=fixture();staged(a,"other.app");restart(a);check(!queueRejected(),"owned session for a different target must not fence this app");
+  a=fixture();staged(a,UpdatePolicy.APP_ID);staged(a,UpdatePolicy.APP_ID);restart(a);check(queueRejected(),"all recovered self-update sessions must be tracked");a.packages.installer.finish(1);GateUpdater.installationResult(a,terminal(1,PackageInstaller.STATUS_FAILURE));Handler.drain();check(queueRejected(),"finishing one recovered session must not release another session's fence");a.packages.installer.finish(2);check(!queueRejected(),"last recovered session disappearing must reopen admissions");
+  a=fixture();GateUpdater.install(a);settle();a.packages.installer.finish(1);a.packages.installed.versionCode=2;restart(a);check(!queueRejected(),"successful replacement/reboot with no remaining sessions must not strand the scanner");
+  a=fixture();a.packages.installer.session.failCommit=true;a.packages.installer.session.deferAbandon=true;GateUpdater.install(a);settle();check(queueRejected(),"commit exception plus nonterminal abandonment must retain fence");a.packages.installer.finish(1);check(!queueRejected(),"failed commit recovery requires actual session disappearance");
+  a=fixture();GateUpdater.install(a);settle();GateUpdater.installationResult(a,callback());Handler.drain();a.packages.installer.finish(1);a.launched.clear();GateUpdater.install(a);settle();check(a.launched.isEmpty()&&a.packages.installer.created==2,"stale cached confirmation must not relaunch after session disappearance");
+  a=fixture();staged(a,UpdatePolicy.APP_ID);staged(a,UpdatePolicy.APP_ID);restart(a);GateUpdater.installationResult(a,callback().putExtra(PackageInstaller.EXTRA_SESSION_ID,2));Handler.drain();a.packages.installer.finish(1);GateUpdater.installationResult(a,terminal(1,PackageInstaller.STATUS_FAILURE));Handler.drain();check(field("confirmation").get(null)!=null&&(Integer)field("confirmationSession").get(null)==2,"terminal callback for A must preserve still-pending confirmation for B");GateUpdater.install(a);settle();check(a.launched.size()==1&&queueRejected(),"remaining session B must keep a usable confirmation and admission fence");
+  a=fixture();GateUpdater.install(a);settle();restart(a);new File(a.files,"navrang-update.apk").delete();a.packages.installed.versionCode=2;check(GateUpdater.status(a).optBoolean("installing")&&!GateUpdater.status(a).optBoolean("available")&&!GateUpdater.status(a).optBoolean("ready"),"recovery status must survive missing APK and obsolete release metadata");GateUpdater.install(a);settle();check(a.packages.installer.session.abandoned==1&&!queueRejected(),"explicit recovery must work without a cached APK or available update");
+  for(int outcome:new int[]{PackageInstaller.STATUS_SUCCESS,PackageInstaller.STATUS_FAILURE}){
+   a=fixture();GateUpdater.install(a);settle();GateUpdater.installationResult(a,callback());Handler.drain();a.packages.installer.finish(1);
+   check(!GateUpdater.status(a).optBoolean("installing"),"status can reconcile session removal before terminal callback "+outcome);
+   GateUpdater.installationResult(a,terminal(1,outcome));Handler.drain();
+   check(field("confirmation").get(null)==null&&(Integer)field("confirmationSession").get(null)==-1,"late matching terminal callback clears confirmation after reconciliation "+outcome);
+   check(message(a).contains(outcome==PackageInstaller.STATUS_SUCCESS?"Update installed":"Installation was not completed"),"late matching terminal callback reports its outcome "+outcome);
+   check(!queueRejected(),"late matching terminal callback leaves reconciled admissions usable "+outcome);
+  }
+  a=fixture();staged(a,UpdatePolicy.APP_ID);staged(a,UpdatePolicy.APP_ID);restart(a);GateUpdater.installationResult(a,callback().putExtra(PackageInstaller.EXTRA_SESSION_ID,2));Handler.drain();a.packages.installer.finish(1);GateUpdater.status(a);String activeMessage=message(a);GateUpdater.installationResult(a,terminal(1,PackageInstaller.STATUS_FAILURE));Handler.drain();
+  check(field("confirmation").get(null)!=null&&(Integer)field("confirmationSession").get(null)==2&&message(a).equals(activeMessage),"reconciled old terminal callback cannot replace another session's confirmation or message");check(queueRejected(),"reconciled old terminal callback cannot release another session's admission fence");
+  a=fixture();String idleMessage=message(a);GateUpdater.installationResult(a,terminal(-1,PackageInstaller.STATUS_SUCCESS));Handler.drain();check(message(a).equals(idleMessage)&&field("confirmation").get(null)==null,"missing session id must not match an empty confirmation sentinel");
+  a=fixture();GateUpdater.install(a);settle();restart(a);a.packages.installer.session.deferAbandon=true;GateUpdater.install(a);settle();check(message(a).contains("still finishing"),"deferred recovery explains the active fence");a.packages.installer.finish(1);check(!GateUpdater.status(a).optBoolean("installing")&&!message(a).contains("before scanning")&&!message(a).contains("still finishing"),"missing final callback must not leave a stale recovery warning once Android reports absence");
+  a=fixture();a.packages.installer.failOpen=true;GateUpdater.install(a);settle();check(a.packages.installer.session.abandoned==1&&a.packages.installer.getMySessions().isEmpty(),"created session must be abandoned even if opening its handle fails");restart(a);check(!queueRejected(),"failed open cleanup must not orphan a recovery fence on restart");
+  a=fixture();a.packages.installer.failOpen=true;a.packages.installer.session.failAbandon=true;GateUpdater.install(a);settle();check(queueRejected(),"failed open plus failed cleanup must fence the known orphan in this process");GateUpdater.install(a);settle();check(a.packages.installer.created==1,"failed open retries must not accumulate orphan sessions");a.packages.installer.failOpen=false;a.packages.installer.session.failAbandon=false;GateUpdater.install(a);settle();check(a.packages.installer.created==1&&a.packages.installer.getMySessions().isEmpty()&&!queueRejected(),"explicit recovery can clear the failed-open orphan without implicitly creating another install");
   if(!failures.isEmpty())throw new AssertionError(failures.size()+" of "+checks+" checks failed:\n - "+String.join("\n - ",failures));
-  System.out.println("PASS actual GateUpdater: "+checks+" checks for pending safety, commit/confirmation races, notification routing, and unchanged APK authorization.");
+  System.out.println("PASS actual GateUpdater: "+checks+" checks for pending safety, process/reboot recovery, cancellation/query failures, commit/confirmation races, notification routing, and unchanged APK authorization.");
  }finally{worker().shutdownNow();}}
 }''',
 }
