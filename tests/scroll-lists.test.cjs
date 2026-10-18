@@ -97,6 +97,8 @@ test('saved Help Desk workspace retains a usable bounded records viewport and re
  assert.match(harness,/collapsedHelpDeskList/);
  assert.match(css,/#desk-review-dialog \.update-actions \.button\{min-height:44px/);
  assert.match(harness,/'#desk-approve','Help Desk approve'/);
+ assert.match(harness,/p\.matches\('dialog:modal'\)\)break/);
+ assert.match(harness,/document\.elementFromPoint\(x,y\)/);
  assert.match(harness,/page\.locator\('#desk-records \.button'\)\.first\.click\(\)/);
  assert.ok(!harness.includes('force=True'),'pointer interception must fail the render check');
 });

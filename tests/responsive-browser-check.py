@@ -10,6 +10,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 STAMP = '2026-10-17T11:00:00Z'
+CANDIDATE_VERSION = json.loads((ROOT/'release.json').read_text())['versionName']
 RECORDS = [dict(id=f'DEMO{i:04d}',name=f'Synthetic Student {i:02d}',amount=100,quantity=1,refund=0,description='Transaction completed successfully',eligible=True,reason='') for i in range(1,61)]
 ENTRIES = [dict(ticketId=r['id'],name=r['name'],checker='Demo Checker',checkerId='11111111-1111-4111-8111-111111111111',deviceId='synthetic-preview',at=STAMP,seq=i,source='Synthetic UI fixture') for i,r in enumerate(RECORDS[:40],1)]
 PROFILE = {'admin':dict(role='admin',name='Synthetic Administrator',active=True,reports=True,scanner=True,helpdesk=True,station='',nameConfirmed=True),
@@ -90,14 +91,14 @@ def run():
          }).catch(()=>window.onApiResponse(JSON.stringify({id,status:500,body:{ok:false,error:'Synthetic bridge failure'}})));
         },
         readiness(action){if(!['status','startup'].includes(action))return blocked('readiness:'+action);return JSON.stringify({native:true,camera:false,notifications:false,fullVolume:true,vibration:true,adaptiveBrightness:true});},
-        update(action){if(!['status','background'].includes(action))return blocked('update:'+action);return JSON.stringify({currentVersion:'0.7.8',available:false,ready:false,automatic:true,notifications:false,message:'Synthetic preview: no update is available.'});},
+        update(action){if(!['status','background'].includes(action))return blocked('update:'+action);return JSON.stringify({currentVersion:f.candidateVersion,available:false,ready:false,automatic:true,notifications:false,message:'Synthetic preview: no update is available.'});},
         destination(value){if(value)return blocked('destination');return f.role==='admin'?'admin':'login';},
         feedback(){},
         googleLogin(){return blocked('googleLogin');},googleBrowserLogin(){return blocked('googleBrowserLogin');},
         scan(){return blocked('scan');},submit(){return blocked('submit');},importRegistrations(){return blocked('importRegistrations');}
        };
       }
-    }""",dict(role=role,profile=PROFILE.get(role),records=RECORDS,entries=ENTRIES,stats=STATS,summary=SUMMARY,images=images,deskRecords=DESK_RECORDS,nativeBridge=mocked_native))
+    }""",dict(role=role,profile=PROFILE.get(role),records=RECORDS,entries=ENTRIES,stats=STATS,summary=SUMMARY,images=images,deskRecords=DESK_RECORDS,nativeBridge=mocked_native,candidateVersion=CANDIDATE_VERSION))
     for script in scripts:page.evaluate((assets/script).read_text())
     page.wait_for_timeout(50)
    def measure(page,role,view,width,height):
@@ -119,12 +120,15 @@ def run():
     if scroll:control.scroll_into_view_if_needed()
     result=control.evaluate("""e=>{
       const r=e.getBoundingClientRect();let top=Math.max(0,r.top),bottom=Math.min(innerHeight,r.bottom),left=Math.max(0,r.left),right=Math.min(innerWidth,r.right);
-      for(let p=e.parentElement;p;p=p.parentElement){const s=getComputedStyle(p),b=p.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(s.overflowY)){top=Math.max(top,b.top);bottom=Math.min(bottom,b.bottom)}if(/auto|scroll|hidden|clip/.test(s.overflowX)){left=Math.max(left,b.left);right=Math.min(right,b.right)}}
-      return {height:r.height,width:r.width,visibleHeight:Math.max(0,bottom-top),visibleWidth:Math.max(0,right-left)};
+      // showModal places the dialog in the top layer: outer DOM overflow cannot clip it.
+      // https://drafts.csswg.org/css-position-4/#top-layer-styling
+      for(let p=e.parentElement;p;p=p.parentElement){const s=getComputedStyle(p),b=p.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(s.overflowY)){top=Math.max(top,b.top);bottom=Math.min(bottom,b.bottom)}if(/auto|scroll|hidden|clip/.test(s.overflowX)){left=Math.max(left,b.left);right=Math.min(right,b.right)}if(p.matches('dialog:modal'))break}
+      const x=(r.left+r.right)/2;const hitTarget=[r.top+2,(r.top+r.bottom)/2,r.bottom-2].every(y=>e.contains(document.elementFromPoint(x,y)));
+      return {height:r.height,width:r.width,visibleHeight:Math.max(0,bottom-top),visibleWidth:Math.max(0,right-left),hitTarget,viewport:{width:innerWidth,height:innerHeight}};
     }""")
     reports.append(dict(control=label,**result))
     required_height=result['height']-.5 if minimum==0 else min(minimum,result['height'])
-    if result['height']<minimum or result['visibleHeight']<required_height or result['visibleWidth']<min(43,result['width']):failures.append(dict(unreachableControl=label,**result))
+    if result['height']<minimum or result['visibleHeight']<required_height or result['visibleWidth']<min(43,result['width']) or not result['hitTarget']:failures.append(dict(unreachableControl=label,**result))
    def measure_scroll(page,view):
     result=page.evaluate("""view=>{
       const root=document.querySelector(view==='students'?'#admin-registrations':'#view-entries');

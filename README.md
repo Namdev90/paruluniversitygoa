@@ -11,6 +11,8 @@
 
 > **Release status:** **0.7.8 · Android code 16** restores the original burgundy/gold interface and gold Navrang logo. It keeps the original signing identity, existing update channel, current native sign-in/scanning and data/security protections. Google branding remains deferred. Device, upgrade/reboot, performance and hosted acceptance checks were skipped under the owner's explicit 0.7.8 release approval and remain unverified. See [the signed release record](docs/RESTORATION-RELEASE-0.7.8.md).
 
+**Next source candidate:** 0.7.9 / code 17 is allocated in the update PR and remains unpublished. See the [candidate changes and open acceptance gates](CHANGELOG.md#079-candidate--android-code-17--unpublished).
+
 ## Original Navrang interface
 
 The original screens use the existing local interface host with native Credential Manager/PKCE sign-in and CameraX scanning. Students and Entry log scroll independently while search and pagination stay fixed. Bulk import, both staff permission flags, Help Desk, session security and installer recovery remain in the app. Twelve report datasets and exports are implemented in the released client/source, while production reporting readiness remains unverified. [Restoration details](docs/ORIGINAL-DESIGN-RESTORATION.md) · [Review disposition](docs/RESTORATION-REVIEW-2026-10-18.md).

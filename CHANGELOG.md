@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.9 candidate — Android code 17 · unpublished
+
+- Faithful transparent owner-supplied wordmark, deeper burgundy/gold surfaces, tactile admin tabs and non-overlapping launch animation with an immediate skip action.
+- Screenshot/screen-capture allowance, searchable scrolling lists without paging buttons, and usable compact Help Desk list/review controls.
+- In-camera exact-ID verification; available registration, payment and receipt details with absent fields hidden and genuine zero/false values retained.
+- Automatic local focus/light and conservative full-frame QR zoom assistance, including stale-frame rejection and rotated/off-centre bounds checks. Hardware acceptance remains pending.
+- Safer report generation for populated and empty datasets, authorization/selection races and failed refreshes; exact UTF-8 import-size validation.
+- Persistent release update checks/downloads, including upgrades with an old saved opt-out. Android still controls background scheduling and installation consent; internal/debug builds stay isolated.
+- Candidate source allocation only. The published channel remains 0.7.8/code16 until final verification, source-scoped device acceptance or a fresh waiver, original-key signing, authenticated report acceptance and reviewed publication are complete. Earlier waivers do not apply.
+
 ## 0.7.8 — original design restored · Android code 16 · 18 October 2026
 
 - Restored the original burgundy/gold screens and exact gold Navrang logo, including the launcher.
