@@ -8,6 +8,20 @@ Metadata must use the exact repository HTTPS channel, a higher version code, a v
 
 A ready update appears in Account and, if allowed, as a notification. Tap Install update while your station is idle. Android may first ask to allow installs from Navrang Gate and then shows its package installation confirmation. Cancellation leaves the installed app working. App data stays in the same package. Installation is not silently forced during a check-in. Automatic silent installation is not promised; this channel explicitly requests user confirmation, including on Android versions that can support limited unattended self-update cases.
 
+## Interrupted installation recovery
+
+The scanner's admission fence is rebuilt from this app's Android-owned installer sessions before new requests can be queued, including after process recreation or reboot. Pending or idle sessions keep scanning blocked. An installer query failure also keeps scanning blocked until state can be checked. This stores no attendee data and does not change the RAM-only outbox policy.
+
+The Account screen keeps **Finish app update** available while an installation is outstanding, even if the downloaded APK or cached release metadata is missing. If Android has delivered a confirmation Intent to the reopened app, the button opens that same confirmation. Otherwise the button requests cancellation of the interrupted attempt. Scanning remains blocked until a matching terminal callback arrives or Android reports the session no longer exists. If cancellation is still pending, wait and retry; once it is cleared, tap Install again to reverify and start a fresh update. Recovered sessions are never blindly re-committed because older Android releases can re-enter installation while earlier work is already running.
+
+The deterministic updater regression harness recreates the app runtime while retaining fake Android installer state; it covers API-level branches, multiple/stale sessions, missing callbacks, delayed/failed cancellation and query failures. These are host-side tests, not physical Android process-kill or reboot validation. Before venue use, verify upgrade, cancellation, process recreation and reboot on the intended phones.
+
+References:
+- [Owned sessions and session lookup](https://developer.android.com/reference/android/content/pm/PackageInstaller#getMySessions())
+- [Session lifecycle and commit contract](https://developer.android.com/reference/android/content/pm/PackageInstaller.Session#commit(android.content.IntentSender))
+- [Android 7 installer session implementation](https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-7.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java)
+- [Android 10 installer session implementation](https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/android-10.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java)
+
 ## Publishing the next app version
 
 1. Increase `versionCode` and `versionName` in `release.json`. Keep the original private signing key; a new test key cannot update existing installations.
