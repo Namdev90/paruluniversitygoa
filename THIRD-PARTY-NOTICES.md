@@ -9,3 +9,9 @@ Android SDK build tools and the platform compile jar are build dependencies, not
 The unchanged event poster was provided by the organizer. University and event artwork/wordmarks retain their owners' rights and are not relicensed by the repository's MIT code license. The distinct Navrang Gate app mark was generated for this project; see app/assets/art/ASSET-NOTES.md.
 
 jsdom 26.1.0 (MIT) and fake-indexeddb 6.0.1 (Apache-2.0) are development-only DOM/storage test dependencies. Neither is included in the APK or deployed static app.
+
+## Native Android runtime
+
+The shipped [native third-party notices](native-app/src/main/assets/native-notices.txt) cover AndroidX, Jetpack Compose/Material 3, CameraX, Kotlin, kotlinx.coroutines, ZXing, Google ID/Google Play services and bundled audio, including the full applicable Apache/CC0 notices and Google SDK references. They remain packaged with the app. Exact native dependency coordinates are pinned in [the version catalogue](gradle/libs.versions.toml); inclusion of a library does not dictate the owner-selected visual design.
+
+The repository's [MIT License](LICENSE) is unchanged. It does not replace third-party licenses or grant additional rights to university or Google branding, organizer-supplied artwork or the separately documented app-mark artwork.

@@ -4,8 +4,8 @@
  const text=v=>v==null?'':String(v);
  const csvCell=v=>{let s=text(v);if(/^[\s\u0000-\u001f]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
  function columns(rows){return [...new Set(rows.flatMap(row=>Object.keys(row)))];}
- function csv(rows){const cols=columns(rows);return '\uFEFF'+[cols.map(csvCell).join(','),...rows.map(r=>cols.map(k=>csvCell(r[k])).join(','))].join('\r\n')+'\r\n';}
- function xml(v){return text(v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
+ function csv(rows,headers){const cols=headers||columns(rows);return '\uFEFF'+[cols.map(csvCell).join(','),...rows.map(r=>cols.map(k=>csvCell(r[k])).join(','))].join('\r\n')+'\r\n';}
+ function xml(v){return text(v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
  function colLetter(i){let v='';for(i++;i;i=Math.floor((i-1)/26))v=String.fromCharCode(65+(i-1)%26)+v;return v;}
  const crcTable=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?(c>>>1)^0xedb88320:c>>>1;t[n]=c>>>0;}return t;})();
  function crc32(bytes){let c=0xffffffff;for(let n of bytes)c=crcTable[(c^n)&255]^(c>>>8);return (c^0xffffffff)>>>0;}
@@ -30,8 +30,8 @@
   e.setUint16(10,entries.length,true);e.setUint32(12,dir.length,true);e.setUint32(16,body.length,true);
   return pack([body,dir,end]);
  }
- function xlsx(rows,sheetName='Navrang'){
-  const headers=columns(rows);if(headers.length>150||rows.length>50000)throw Error('Too many report records.');
+ function xlsx(rows,sheetName='Navrang',headers=columns(rows)){
+  if(headers.length>150||rows.length>50000)throw Error('Too many report records.');
   const values=[headers,...rows.map(r=>headers.map(k=>r[k]))];
   const lines=values.map((r,i)=>'<row r="'+(i+1)+'">'+r.map((value,j)=>{
    const cell=colLetter(j)+(i+1);

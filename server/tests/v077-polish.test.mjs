@@ -32,7 +32,7 @@ test('visual brand marks restore the original Navrang logo and retain the univer
  const event=w.document.querySelector('.intro-content .event-wordmark');
  assert.ok(event,'Intro needs the official Navrang artwork');
  assert.equal(event.getAttribute('aria-label'),'Navrang');
- assert.ok(event.querySelector('img').getAttribute('src').endsWith('app-icon.png'));
+ assert.ok(event.querySelector('img').getAttribute('src').endsWith('navrang-transparent.png'));
  assert.ok(w.document.querySelector('.app-footer img[src="art/parul-goa.svg"]'));
  assert.equal(w.document.querySelector('.intro-content h1')?.textContent,'Navrang');
  dom.window.close();

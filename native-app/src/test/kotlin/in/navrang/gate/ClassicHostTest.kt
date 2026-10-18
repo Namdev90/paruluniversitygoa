@@ -17,6 +17,12 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [24, 35])
 class ClassicHostTest {
+    @Test fun scannerAllowsRequestedScreenshots() {
+        val controller = Robolectric.buildActivity(ClassicScannerActivity::class.java).create()
+        assertEquals(0, controller.get().window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE)
+        controller.destroy()
+    }
+
     @Test fun scannerResumptionPreservesUpdaterBlock() {
         val controller = Robolectric.buildActivity(ClassicScannerActivity::class.java).create()
         val activity = controller.get()
@@ -40,12 +46,12 @@ class ClassicHostTest {
         controller.pause().stop().destroy()
     }
 
-    @Test fun restoredHostKeepsPrivateWindowAndInternalUpdateIsolation() {
+    @Test fun restoredHostAllowsRequestedScreenshotsAndInternalUpdateIsolation() {
         val controller = Robolectric.buildActivity(MainActivity::class.java).create()
         val activity = controller.get()
         assertTrue(activity is ClassicActivity)
         assertTrue(activity is ComponentActivity)
-        assertTrue(activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
+        assertEquals(0, activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE)
         assertEquals(!BuildConfig.DEBUG, GateUpdater.automatic(activity))
         if (BuildConfig.DEBUG) {
             MainActivity::class.java.getDeclaredMethod("browserGoogleLogin").apply {

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.9 — Android code 17 · 19 October 2026
+
+- Faithful transparent owner-supplied wordmark, deeper burgundy/gold surfaces, tactile admin tabs and non-overlapping launch animation with an immediate skip action.
+- Screenshot/screen-capture allowance, searchable scrolling lists without paging buttons, and usable compact Help Desk list/review controls.
+- In-camera exact-ID verification; available registration, payment and receipt details with absent fields hidden and genuine zero/false values retained.
+- Automatic local focus/light and conservative full-frame QR zoom assistance, including stale-frame rejection and rotated/off-centre bounds checks. Hardware acceptance remains pending.
+- Safer report generation for populated and empty datasets, authorization/selection races and failed refreshes; exact UTF-8 import-size validation.
+- Persistent release update checks/downloads, including upgrades with an old saved opt-out. Android still controls background scheduling and installation consent; internal/debug builds stay isolated.
+- Download data leads on phones, and Reports scrolls inside the fixed app header/navigation. The reviewed reporting backend repair and hosted portal are live; authenticated administrator summary and owner-confirmed CSV export passed.
+- Original-key signing, APK integrity, source CI and independent layout review passed. Physical-device checks remain SKIPPED_BY_OWNER for post-release testing.
+
 ## 0.7.8 — original design restored · Android code 16 · 18 October 2026
 
 - Restored the original burgundy/gold screens and exact gold Navrang logo, including the launcher.
@@ -44,6 +55,6 @@
 
 ## Evidence and release discipline
 
-The [machine-readable archive inventory](docs/history/apk-inventory.json) records the exact package name, embedded version, byte size, SHA-256 and first archive commit for all fourteen retained APKs. It does not claim that every historical signature or phone upgrade has been retested.
+The [machine-readable archive inventory](docs/history/apk-inventory.json) records the exact package name, embedded version, byte size, SHA-256 and first archive commit for all sixteen retained APKs through 0.7.8. Original archive commit dates are provenance, not GitHub Release publication timestamps. The [historical-release migration](docs/history/GITHUB-RELEASES.md) preserves this distinction. It does not claim that every historical signature or phone upgrade has been retested.
 
 The public updater uses [`updates/latest.json`](updates/latest.json), not this document. A source commit, passing CI, merged PR, or proposed version name does not publish an installable update. Never overwrite an existing APK version or reset its version code. Keep earlier artifacts intact for history; distribute the current verified release through the main download link.

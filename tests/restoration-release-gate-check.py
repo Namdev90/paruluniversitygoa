@@ -31,6 +31,7 @@ class RestorationGate(unittest.TestCase):
         (self.root / 'docs').mkdir()
         (self.root / 'app/assets/art').mkdir(parents=True)
         shutil.copyfile(ROOT / 'app/assets/art/app-icon.png', self.root / 'app/assets/art/app-icon.png')
+        shutil.copyfile(ROOT / 'app/assets/art/navrang-transparent.png', self.root / 'app/assets/art/navrang-transparent.png')
         (self.root / 'release.json').write_text(json.dumps({'interface':'original','versionName':'0.7.8','versionCode':16}))
         (self.root / 'runtime.txt').write_text('verified fixture')
         self.git('init', '-q')

@@ -11,14 +11,16 @@ sys.path.insert(0, str(ROOT / 'tools'))
 spec = importlib.util.spec_from_file_location('native_builder', ROOT / 'tools/build-native.py')
 builder = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(builder)
+TRANSPARENT = (ROOT / 'app/assets/art/navrang-transparent.png').read_bytes()
 ORIGINAL = (ROOT / 'app/assets/art/app-icon.png').read_bytes()
 
 
 class ArtworkTest(unittest.TestCase):
-    def archive(self, launcher=ORIGINAL):
+    def archive(self, launcher=ORIGINAL, wordmark=TRANSPARENT):
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, 'w') as z:
             z.writestr('assets/art/app-icon.png', ORIGINAL)
+            z.writestr('assets/art/navrang-transparent.png', wordmark)
             z.writestr('res/optimized.png', launcher)
         return zipfile.ZipFile(buffer)
 
@@ -28,6 +30,10 @@ class ArtworkTest(unittest.TestCase):
 
     def test_correct_web_logo_does_not_mask_wrong_launcher(self):
         with self.archive(b'wrong launcher') as z, self.assertRaises(SystemExit):
+            builder.verify_restored_artwork(z, "application-icon-160:'res/optimized.png'\n")
+
+    def test_changed_wordmark_is_rejected(self):
+        with self.archive(wordmark=b'wrong wordmark') as z, self.assertRaises(SystemExit):
             builder.verify_restored_artwork(z, "application-icon-160:'res/optimized.png'\n")
 
     def test_missing_launcher_is_rejected(self):

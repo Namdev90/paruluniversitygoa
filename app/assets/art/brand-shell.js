@@ -10,18 +10,21 @@
  try{const saved=sessionStorage.getItem('navrang-login-intent');if(['checker','helpdesk','faculty'].includes(saved))role=saved;}catch{}
  function eventMark(size){
   const mark=el('span',null,'event-wordmark classic-event-mark '+(size||''));mark.setAttribute('role','img');mark.setAttribute('aria-label','Navrang');
-  const image=el('img');image.src='art/app-icon.png';image.alt='Navrang';image.className='classic-event-logo';image.draggable=false;mark.append(image);return mark;
+  const image=el('img');image.src='art/navrang-transparent.png';image.alt='Navrang';image.className='classic-event-logo';image.draggable=false;mark.append(image);return mark;
  }
  function universityMark(){const image=el('img');image.src='art/parul-goa.svg';image.alt='Parul University Goa';image.className='institution-wordmark';return image;}
  function brandLine(target){if(!target)return;target.replaceChildren(universityMark(),eventMark('event-wordmark-small'));target.classList.add('official-brand-line');}
  const intro=document.querySelector('.intro-content'),heading=intro?.querySelector('h1');
- if(heading){heading.classList.add('visually-hidden');heading.before(eventMark('event-wordmark-hero'));}
+ if(heading){heading.hidden=true;heading.before(eventMark('event-wordmark-hero'));}
+ // The owner-supplied transparent wordmark sits below the university mark.
+ // Supporting copy stays in normal flow; no lettering is redrawn or overlaid.
+ const dancerRow=el('div',null,'intro-dancers');dancerRow.setAttribute('aria-hidden','true');document.querySelector('.intro-content')?.after(dancerRow);
  for(const side of ['left','right']){
   const dancer=document.querySelector('.intro>.dancer-'+side);if(!dancer)continue;
-  const stage=el('div',null,'dancer-stage dancer-stage-'+side);dancer.before(stage);stage.append(dancer);
+  const stage=el('div',null,'dancer-stage dancer-stage-'+side);dancerRow.append(stage);stage.append(dancer);
  }
  const header=document.querySelector('.brand'),oldIcon=header?.querySelector(':scope>img');
- if(oldIcon){oldIcon.classList.add('classic-header-logo');header.classList.add('official-header');}
+ if(oldIcon){oldIcon.src='art/navrang-transparent.png';oldIcon.classList.add('classic-header-logo');header.classList.add('official-header');}
  for(const target of document.querySelectorAll('.app-footer,.login-foot'))brandLine(target);
  for(const target of document.querySelectorAll('.section-title>.eyebrow,.station-heading>.eyebrow,#view-desk>.panel-heading>div>.eyebrow')){
   if(/PARUL UNIVERSITY GOA/i.test(target.textContent)){const title=el('span',null,'institution-label');title.append(universityMark());target.replaceChildren(title);}

@@ -1,6 +1,6 @@
 {
-  "versionCode": 16,
-  "versionName": "0.7.8",
-  "notes": "Restores the original burgundy/gold Navrang interface and original Navrang logo at the owner’s request. Retains Credential Manager Google sign-in, CameraX scanning, staff permissions, reports/exports, independent scrolling with fixed controls, secure sessions and installer recovery. Adds fresh server authorization before document saves and preserves durable sign-out/retry protection. No server data, role grants, OAuth configuration or paid domain changes.",
+  "versionCode": 17,
+  "versionName": "0.7.9",
+  "notes": "Original Navrang styling with a faithful transparent wordmark, layered depth, improved admin controls and a non-overlapping launch. Enables screenshots, scroll/search lists, in-camera exact-ID verification and organized available scan details. Adds automatic local camera assistance with stale-frame and edge-cropping protection, resilient report generation, bounded import validation and persistent release update checks with Android installation consent. Preserves existing authorization, signing identity and historical releases.",
   "interface": "original"
 }

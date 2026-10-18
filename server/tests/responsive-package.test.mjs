@@ -22,7 +22,7 @@ test('admin can download attendance when teacher management is temporarily unava
  const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://example.invalid/'});
  const w=dom.window;
  w.GateClient={profile:()=>({role:'admin',active:true,reports:true}),on:()=>{},api:async action=>{
-  if(action==='reports-summary')return {stats:{registered:10,eligible:9,attended:8,registeredAttended:7,organizerConfirmed:1,generatedAt:'2026-10-18T00:00:00Z'}};
+  if(action==='reports-summary')return {stats:{registered:10,eligible:9,blocked:1,noShow:2,serverIssues:0,issueTickets:0,duplicateAttempts:0,pendingHelpDesk:0,attended:8,registeredAttended:7,organizerConfirmed:1,generatedAt:'2026-10-18T00:00:00Z'}};
   if(action==='reports-members')throw Error('Teacher management unavailable.');
   throw Error('unexpected '+action);
  }};

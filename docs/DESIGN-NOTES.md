@@ -1,5 +1,16 @@
 # Interface direction and evidence
 
+## Current owner direction — 18 October 2026
+
+Preserve the original Navrang identity and add more 3D depth. The owner explicitly rejected the Material-style restyle; colours may change, but the original app/logo and complete working feature set remain the starting point. The published 0.7.8 restoration is documented in [the release record](RESTORATION-RELEASE-0.7.8.md).
+
+The next pass calls for background-free logo treatments, an opening animation without overlap, and scroll/search lists without page-arrow controls. Operational information must remain readable; decorative depth must not obscure text, shrink tap targets or delay an admission result. Inspect actual assets and use synthetic records for every public preview. The [current checklist](NEXT-STEPS.md) separates these requests from verified shipped behaviour.
+
+## Earlier design rationale — retained for history
+
+The following notes describe an earlier candidate. Their charcoal/green palette and removal of glossy controls are superseded by the current owner direction above.
+
+
 The goal is a specific, legible event-operations app—not to pass a speculative “AI detection” test. Repeated gradient/glow/card templates are a visual critique, not reliable evidence of how software was authored.
 
 The candidate keeps the original event artwork, restrained dark surfaces, a small accent palette and a clear task hierarchy. It removes leftover glossy button treatments, avoids decorative metrics, separates Administration from the three staff entrances, keeps logos stable during motion and uses truthful report labels. Original white institutional lettering receives a dark background rather than a logo recolour.

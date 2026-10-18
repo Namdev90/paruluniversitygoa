@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 import subprocess
 from native_release_gate import require_native_ready
-from restoration_release_gate import require_restoration_ready, ORIGINAL_LOGO_SHA256
+from restoration_release_gate import require_restoration_ready, ORIGINAL_LOGO_SHA256, TRANSPARENT_WORDMARK_SHA256
 from release_policy import require_signing_key, verify_apk, check_publication, SIGNER_SHA256
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +26,9 @@ def verify_restored_artwork(archive, badging):
     for logo in {'assets/art/app-icon.png', *launchers}:
         if logo not in archive.namelist() or hashlib.sha256(archive.read(logo)).hexdigest() != ORIGINAL_LOGO_SHA256:
             raise SystemExit('APK does not contain the original Navrang logo in ' + logo)
+    mark = 'assets/art/navrang-transparent.png'
+    if mark not in archive.namelist() or hashlib.sha256(archive.read(mark)).hexdigest() != TRANSPARENT_WORDMARK_SHA256:
+        raise SystemExit('APK does not contain the approved transparent Navrang wordmark.')
 
 
 def main():

@@ -82,3 +82,10 @@ test('the Android bridge rejects a late private response after station permissio
   w.onGateEvent(JSON.stringify({type:'profile',data:profile}));w.onApiResponse(JSON.stringify({id:request,status:200,body:{ok:true,records:[{details:{email:'private@example.invalid'}}]}}));await denied;
  }finally{w.close()}
 });
+
+
+test('browser update status does not invent an installed Android version',()=>{
+ const dom=new JSDOM('',{url:'https://gate.test/',runScripts:'outside-only'}),w=dom.window;
+ for(const file of ['live-core.js','config.js','client.js'])w.eval(fs.readFileSync(root+'/app/assets/'+file,'utf8'));
+ try{assert.equal(w.GateClient.native,false);assert.equal(w.GateClient.update().currentVersion,null);assert.match(w.GateClient.update().message,/Android app/)}finally{w.close()}
+});

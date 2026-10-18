@@ -5,15 +5,16 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.8.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [Release handoff](docs/RELEASE-HANDOFF-2026-10-18.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.9.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
 </div>
 
-> **Release status:** **0.7.8 · Android code 16** restores the original burgundy/gold interface and gold Navrang logo. It keeps the original signing identity, existing update channel, current native sign-in/scanning and data/security protections. Google branding remains deferred. Device, upgrade/reboot, performance and hosted acceptance checks were skipped under the owner's explicit 0.7.8 release approval and remain unverified. See [the signed release record](docs/RESTORATION-RELEASE-0.7.8.md).
+> **Release status:** **0.7.9 · Android code 17** includes reachable phone report downloads, the original burgundy/gold design, native scanning and update protections. Signed with the original identity. Physical-device checks remain deferred by the owner; see [the release record](docs/RESTORATION-RELEASE-0.7.9.md).
+
 
 ## Original Navrang interface
 
-The original screens use the existing local interface host with native Credential Manager/PKCE sign-in and CameraX scanning. Students and Entry log scroll independently while search and pagination stay fixed. Bulk import, both staff permission flags, Help Desk, twelve report datasets, exports, session security and installer recovery remain available. [Restoration details](docs/ORIGINAL-DESIGN-RESTORATION.md) · [Review disposition](docs/RESTORATION-REVIEW-2026-10-18.md).
+The original screens use the existing local interface host with native Credential Manager/PKCE sign-in and CameraX scanning. Students and Entry log scroll independently while search and pagination stay fixed. Bulk import, both staff permission flags, Help Desk, session security and installer recovery remain in the app. Twelve report datasets and exports are implemented in the released client/source, while production reporting readiness remains unverified. [Restoration details](docs/ORIGINAL-DESIGN-RESTORATION.md) · [Review disposition](docs/RESTORATION-REVIEW-2026-10-18.md).
 
 The screenshots below render the shared interface with synthetic transport. They are not physical-device captures or live attendance records.
 
@@ -46,13 +47,13 @@ The [feature catalogue](docs/FEATURES.md) documents major and small behaviours: 
 
 The app provides twelve dataset views: complete master, admitted, eligible without verified entry, blocked, recorded issues, resolved issues, unresolved issues, duplicate attempts, gate activity, Help Desk cases, pending cases and **“Admitted — registration data missing.”**
 
-An organizer-confirmed admission is not presented as a payment verification. Unknown names and exact physical entry times stay unknown. “No verified entry” is not proof of absence. Duplicate scans are not extra people. See [reporting definitions](docs/FEATURES.md#faculty-reports--unreleased-app-candidate).
+An organizer-confirmed admission is not presented as a payment verification. Unknown names and exact physical entry times stay unknown. “No verified entry” is not proof of absence. Duplicate scans are not extra people. See [reporting definitions](docs/FEATURES.md#faculty-reports).
 
 ## Current installation and access
 
 Install the current signed APK over the existing app; keep the same package and signing identity. Android may ask you to allow installation from the download source. Android 7+ and WebView/Chrome 86+ are required. Sign in with Google or an assigned staff code, save your real name and wait for the administrator's station approval.
 
-The existing laptop portal is [Navrang Gate](https://navrang-gate-admin.namubhai.chatgpt.site). Its deployment is separate from a repository push; candidate screenshots do **not** establish that the hosted portal has been updated. The prepared browser companion must be deployed back to the same authorized site without changing its audience or access settings.
+The existing laptop portal is [Navrang Gate](https://navrang-gate-admin.namubhai.chatgpt.site). Its deployment is separate from a repository push; candidate screenshots do **not** establish that the hosted portal has been updated. The current hosting audience is public, while operational records require app/server authentication. The hosted interface has not yet been verified against the next reviewed candidate. Follow [the portal parity plan](docs/PORTAL-DEPLOYMENT.md) to deploy the final reviewed companion back to the same site without changing its audience, authentication or backend.
 
 ## Development and verification
 
@@ -66,11 +67,11 @@ python3 tools/package-web.py .build/web-portal
 
 The web package includes every referenced script, including Faculty Reports. `tests/responsive-browser-check.py` provides fixture-only layout checks with Python Playwright and local Chromium; see the [verification record](docs/VERIFICATION-2026-10-18.md) for exact viewports and limitations. Hosted suites require their dedicated synthetic credentials/state; do not run them against real attendee records.
 
-**For signing:** follow [the original-environment handoff](docs/RELEASE-HANDOFF-2026-10-18.md). Do not create a new key or upload one here. No CI workflow in this repository signs releases or needs signing secrets.
+**For signing:** follow [the current original-environment release procedure](docs/RELEASE-PROCEDURE.md). Do not create a new key or upload one here. No CI workflow in this repository signs releases or needs signing secrets.
 
 ## The development record
 
-The project retains **14 historical APK versions** from 0.1.0 through 0.7.6, plus the 0.7.7 native rebuild and 0.7.8 original-design restoration. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. Older architectures are documented, not silently restored.
+The project retains **16 published APK versions** from 0.1.0 through the 0.7.7 native rebuild and 0.7.8 original-design restoration. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. Older architectures remain clearly labelled. [Historical Release migration](docs/history/GITHUB-RELEASES.md) describes the additive archive process: unchanged APKs, original commit/date provenance, current GitHub publication timestamps and no updater-channel changes.
 
 ## Project map
 
@@ -85,4 +86,12 @@ The project retains **14 historical APK versions** from 0.1.0 through 0.7.6, plu
 | `downloads/`, `updates/` | Published APK archive and actual update manifest |
 | `docs/` | Features, operations, original signing handoff, sources and verification |
 
-Created by **Namdev Shirodkar** for Navrang gate operations at Parul University Goa. Institutional/event marks remain their owners' artwork. Audio and asset provenance are documented in [asset notes](app/assets/art/ASSET-NOTES.md). No broader institutional endorsement or certification is implied.
+Created by **Namdev Shirodkar** for Navrang gate operations at Parul University Goa. Institutional/event marks remain their owners' artwork. Current logo provenance is documented in [artwork notes](docs/ARTWORK.md); historical audio and asset sources remain in [asset notes](app/assets/art/ASSET-NOTES.md). No broader institutional endorsement or certification is implied.
+
+## License and artwork
+
+The project code and documentation are provided under the existing [MIT License](LICENSE), copyright © 2026 Namdev90. This update preserves that license and copyright notice. Bundled libraries keep their own licenses; university/Google marks and organizer-supplied artwork retain their own rights. The historical Navrang Gate app mark is owner-approved generated/edited artwork, not independently authenticated institutional branding. See [third-party notices](THIRD-PARTY-NOTICES.md), [artwork provenance](app/assets/art/ASSET-NOTES.md) and the bundled audio notices.
+
+## Next upgrade
+
+The [current checklist](docs/NEXT-STEPS.md) covers the requested deeper original-style visuals, background-free logo treatments, non-overlapping intro, scroll-and-search lists, in-camera exact-ID search and permission-appropriate receipt details. Changes must be demonstrated in the candidate and pass independent review before a new signed release is advertised here. The download above remains the verified 0.7.8 release until then.

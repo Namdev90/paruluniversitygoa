@@ -197,6 +197,18 @@ class NativeDomainTest {
     }
 
     @Test
+    fun importPreflightMeasuresExactUtf8Envelope() {
+        val rows = org.json.JSONArray().put(json("id" to "TEST0001", "name" to "Synthetic"))
+        assertEquals(rows, RegistrationImport.payload(rows).getJSONArray("records"))
+        val oversized = org.json.JSONArray().put(json("description" to "é".repeat(4 * 1024 * 1024)))
+        assertTrue(oversized.toString().length < RegistrationImport.MAX_FILE)
+        val error = assertThrows(IllegalArgumentException::class.java) { RegistrationImport.payload(oversized) }
+        assertTrue(error.message.orEmpty().contains("Nothing was sent"))
+        assertTrue(error.message.orEmpty().contains("Do not split the dataset"))
+        assertFalse(error.message.orEmpty().contains("Split it into smaller files"))
+    }
+
+    @Test
     fun importsRejectUnboundedExpansionBeforeXmlParsing() {
         val zip = java.io.ByteArrayOutputStream()
         java.util.zip.ZipOutputStream(zip).use { z ->
