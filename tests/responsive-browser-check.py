@@ -109,6 +109,11 @@ def run():
        if target=='entries':measure_scroll(page,'entries')
       for tab in ('registrations','admissions','checkers','updates'):
        page.locator('#admin-nav').click();page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
+       if tab=='updates':
+        # The Android bridge exposes this same control. Exercise its layout
+        # without opening a real device picker or sending an import request.
+        page.evaluate("document.getElementById('import-registration').hidden=false")
+        measure(page,role,'admin-updates-native-import',width,height)
      unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
    browser.close()
  finally:pass

@@ -22,6 +22,8 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  protected Class<? extends Activity> scannerActivity(){return ScanActivity.class;}
  protected void clearCredentialProvider(){}
  protected boolean updatesEnabled(){return true;}
+ protected void importRegistrations(){error("Use the updated Android app to import registration files.");}
+ protected final void nativeNotice(String text){try{event(new JSONObject().put("type","notice").put("data",new JSONObject().put("message",text)));}catch(Exception ignored){}}
  protected final void nativeError(String text){error(text);}
  @Override public void onCreate(Bundle saved){
   super.onCreate(saved);getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);GateReadiness.volume(this);readiness=new GateReadiness(this);GateFeedback.init(this);if(updatesEnabled())GateUpdater.init(this);else GateUpdater.setAutomatic(this,false);
@@ -210,6 +212,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
     catch(Exception e){clearReport();error("No document save app is available.");}
    });
   }
+  @JavascriptInterface public void importRegistrations(){runOnUiThread(()->MainActivity.this.importRegistrations());}
   @JavascriptInterface public void scan(){runOnUiThread(()->beginScan());}
   @JavascriptInterface public void googleLogin(){googleLoginFromBridge();}
   private void googleLoginFromBridge(){MainActivity.this.googleLogin();}

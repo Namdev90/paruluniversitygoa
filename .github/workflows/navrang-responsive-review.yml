@@ -5,6 +5,10 @@ on:
   pull_request:
     paths:
       - 'app/assets/art/brand-shell*'
+      - 'app/assets/art/classic-restore.css'
+      - 'app/assets/index.html'
+      - 'app/assets/gate.js'
+      - 'tests/responsive-browser-check.py'
       - 'server/tests/responsive*'
       - 'docs/**'
       - 'README.md'
