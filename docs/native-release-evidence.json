@@ -1,77 +1,77 @@
 {
   "releaseApproved": true,
-  "verifiedSourceCommit": "3698921210829a31dc9a27de953ae646c3275ed1",
+  "verifiedSourceCommit": "38cc5a591091272939c9d85d08d8cc847a0a849e",
   "screens": {
     "N01": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N02": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N03": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N04": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N05": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N06": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N07": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N08": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N09": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N10": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N11": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N12": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N13": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N14": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N15": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N16": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N17": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     },
     "N18": {
-      "status": "IMPLEMENTED—UNVERIFIED",
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
       "evidence": "docs/NATIVE-PARITY.md"
     }
   },
@@ -126,7 +126,7 @@
     "approvedAt": "2026-10-18T17:02:35+05:30",
     "instruction": "skip that and release",
     "sourceCommitAtRequest": "62d40b01133b444cbc8e771e85a920b397261df7",
-    "approvedSourceCommit": "3698921210829a31dc9a27de953ae646c3275ed1",
+    "approvedSourceCommit": "38cc5a591091272939c9d85d08d8cc847a0a849e",
     "versionName": "0.7.7",
     "versionCode": 15,
     "scope": "Apply the owner release instruction to the native candidate, including verified review fixes; waive only the remaining acceptance evidence listed below. Original-key, package/signature/hash/version/anti-rollback, data/security and paid-domain boundaries remain enforced."
@@ -144,7 +144,7 @@
     "approvedAt": "2026-10-18T17:02:35+05:30",
     "instruction": "skip that and release",
     "reason": "Owner directed release after being told the remaining device, sign-in, upgrade/reboot, performance and coordinated backend/portal acceptance evidence was incomplete. These checks stay unverified, not falsely marked passed.",
-    "sourceCommit": "3698921210829a31dc9a27de953ae646c3275ed1",
+    "sourceCommit": "38cc5a591091272939c9d85d08d8cc847a0a849e",
     "versionName": "0.7.7",
     "versionCode": 15,
     "screens": [
@@ -179,7 +179,7 @@
     ]
   },
   "automatedVerification": {
-    "sourceCommit": "3698921210829a31dc9a27de953ae646c3275ed1",
+    "sourceCommit": "38cc5a591091272939c9d85d08d8cc847a0a849e",
     "nativeHostTests": {
       "passed": 49,
       "failed": 0,
@@ -192,7 +192,7 @@
     "legacyJavaChecks": 313,
     "releasePolicyChecks": 7,
     "nativeGateChecks": 11,
-    "releaseBuild": "assembleRelease and lintRelease passed; no release-specific unit-test task is configured.",
+    "releaseBuild": "Earlier clean release assembly/lint passed at 3698921; final original-key build and lint are repeated on this source before publication.",
     "note": "verifiedSourceCommit pins automated source verification; it does not assert device or hosted-service acceptance."
   }
 }
