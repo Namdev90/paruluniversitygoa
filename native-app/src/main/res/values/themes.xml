@@ -1,0 +1,13 @@
+<resources>
+    <color name="brand_wine">#341627</color>
+    <style name="NativeTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+    <style name="NativeSplash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_wine</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/app_icon</item>
+        <item name="postSplashScreenTheme">@style/NativeTheme</item>
+    </style>
+</resources>

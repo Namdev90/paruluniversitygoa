@@ -11,6 +11,10 @@
 
 > **Release status:** the public APK is **0.7.6 · Android code 14**. The visuals and Faculty Reports below show the **unreleased coordinated 0.7.7 candidate**, not an already downloadable update. Installer lifecycle PR #3 is merged source. The original signing key, final build and device validation remain required before publication. [`updates/latest.json`](updates/latest.json) is the actual update channel.
 
+## Native Compose migration — source only
+
+The isolated native rebuild is in `native-app/`. [Implementation and history audit](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) · [N01–N18 parity and verification](docs/NATIVE-PARITY.md). Credential Manager, native workflows and independently scrollable lists are implemented in source. Google branding, device acceptance and production publication remain gated; no native APK has been released. The candidate previews below document the retained browser/legacy presentation.
+
 ## A look at the work
 
 <table><tr><td width="50%" align="center"><img src="docs/screenshots/login-mobile.webp" width="310" alt="Unreleased synthetic preview: official event marks, three staff entrances and separate Administration"><br><strong>One clear entrance for every responsibility</strong></td><td width="50%" align="center"><img src="docs/screenshots/admin-mobile.webp" width="310" alt="Unreleased synthetic preview: compact administrator dashboard and phone navigation"><br><strong>Gate control that remains readable on a phone</strong></td></tr></table>
@@ -70,6 +74,7 @@ The project progressed through **14 archived APK versions**, from the 0.1.0 offl
 
 | Location | Contents |
 |---|---|
+| `native-app/` | Kotlin/Compose Android screens, CameraX, Credential Manager, native imports/exports and synthetic UI tests |
 | `app/java/in/navrang/gate/` | Native scanner, sessions, runtime, document saving, readiness and updater |
 | `app/assets/` | Shared web interface, report generators and original/licensed artwork |
 | `server/` | Private-schema gate/report APIs, additive reporting migration and narrowly scoped historical reconciliation |

@@ -2,6 +2,8 @@
 
 This is a capability inventory, not a claim that every source change has shipped. **Public APK baseline: 0.7.6 / Android code 14.** Teacher Reports, the refreshed brand shell and responsive refinements are coordinated **unreleased 0.7.7 candidate** work. Installer lifecycle PR #3 is merged source, but is not contained in the archived 0.7.6 APK.
 
+The native Compose implementation is an isolated, unreleased source checkpoint. Its complete workflow mapping and evidence are in [NATIVE-PARITY.md](NATIVE-PARITY.md); implementation does not imply device verification or shipped availability.
+
 ## Four clearly separated responsibilities
 
 | Capability | Checker | Help Desk | Faculty (candidate) | Administrator |

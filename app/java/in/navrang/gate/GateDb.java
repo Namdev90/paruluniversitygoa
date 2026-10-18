@@ -25,7 +25,7 @@ public final class GateDb extends SQLiteOpenHelper {
   }
   new AtomicFile(new File(context.getFilesDir(),"navrang-state-v1.json")).delete();
  }
- public synchronized void clearTemporary(){SQLiteDatabase d=getWritableDatabase();d.beginTransaction();try{for(String table:new String[]{"tickets","entries","legacy_entries","outbox"})d.delete(table,null,null);putMeta(d,"dataRevision","-1");putMeta(d,"cursor","0");putMeta(d,"source","");putMeta(d,"stats","{}");putMeta(d,"lastSync","");d.setTransactionSuccessful();}finally{d.endTransaction();}}
+ public synchronized void clearTemporary(){SQLiteDatabase d=getWritableDatabase();d.beginTransaction();try{for(String table:new String[]{"tickets","entries","legacy_entries","outbox"})d.delete(table,null,null);putMeta(d,"dataRevision","-1");putMeta(d,"cursor","0");putMeta(d,"source","");putMeta(d,"stats","{}");putMeta(d,"checkers","[]");putMeta(d,"lastSync","");d.setTransactionSuccessful();}finally{d.endTransaction();}}
  public static String now(){SimpleDateFormat f=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",Locale.US);f.setTimeZone(TimeZone.getTimeZone("UTC"));return f.format(new Date());}
  @Override public void onConfigure(SQLiteDatabase db){db.setForeignKeyConstraintsEnabled(true);db.execSQL("PRAGMA synchronous=FULL");}
  @Override public void onCreate(SQLiteDatabase db){
@@ -94,6 +94,8 @@ public final class GateDb extends SQLiteOpenHelper {
  public synchronized JSONObject snapshot()throws JSONException{
   return new JSONObject().put("deviceId",meta("deviceId","")).put("dataRevision",Long.parseLong(meta("dataRevision","-1"))).put("cursor",Long.parseLong(meta("cursor","0"))).put("source",meta("source","")).put("lastSync",meta("lastSync","")).put("stats",new JSONObject(meta("stats","{}"))).put("localCount",count("tickets")).put("pending",count("outbox")).put("legacyCount",count("legacy_entries")).put("entries",list("entries","seq DESC","LIMIT 15"));
  }
+ /** Complete authorized in-memory view; never the truncated recent-receipt snapshot. */
+ public synchronized JSONObject adminView()throws JSONException{return snapshot().put("records",list("tickets","id","")).put("allEntries",list("entries","seq DESC","")).put("checkers",new JSONArray(meta("checkers","[]")));}
  public synchronized JSONObject lookup(String id)throws JSONException{return new JSONObject().put("record",item("tickets",id)).put("entry",item("entries",id)).put("legacyEntry",item("legacy_entries",id));}
  public synchronized JSONObject queue(String ticket,String actor)throws JSONException{
   if(updateSession()!=-1)throw new UpdateInProgressException();
@@ -126,11 +128,11 @@ public final class GateDb extends SQLiteOpenHelper {
    if(sync.optBoolean("staffSummary")){
     for(String table:new String[]{"tickets","entries","legacy_entries"})db.delete(table,null,null);if(!sync.optBoolean("scanner"))db.delete("outbox",null,null);
     JSONObject s=sync.getJSONObject("stats"),safe=new JSONObject().put("ownScans",s.getLong("ownScans")).put("totalEntries",s.getLong("totalEntries"));
-    putMeta(db,"dataRevision","-1");putMeta(db,"cursor","0");putMeta(db,"source","");putMeta(db,"stats",safe.toString());putMeta(db,"lastSync",now());db.setTransactionSuccessful();return;
+    putMeta(db,"checkers","[]");putMeta(db,"dataRevision","-1");putMeta(db,"cursor","0");putMeta(db,"source","");putMeta(db,"stats",safe.toString());putMeta(db,"lastSync",now());db.setTransactionSuccessful();return;
    }
    if(!sync.isNull("records")&&sync.has("records")&&sync.getLong("dataRevision")>=Long.parseLong(meta("dataRevision","-1"))){JSONArray records=sync.getJSONArray("records");db.delete("tickets",null,null);for(int i=0;i<records.length();i++){JSONObject r=records.getJSONObject(i);putJson(db,"tickets",r.getString("id"),r);}putMeta(db,"dataRevision",String.valueOf(sync.getLong("dataRevision")));}
    JSONArray entries=sync.optJSONArray("entries");if(entries!=null)for(int i=0;i<entries.length();i++){JSONObject e=entries.getJSONObject(i);putJson(db,"entries",e.getString("ticketId"),e);}
-   if(sync.has("cursor"))putMeta(db,"cursor",String.valueOf(Math.max(sync.getLong("cursor"),Long.parseLong(meta("cursor","0")))));if(sync.has("stats"))putMeta(db,"stats",sync.getJSONObject("stats").toString());putMeta(db,"source",sync.optString("source",meta("source","")));putMeta(db,"lastSync",now());db.setTransactionSuccessful();
+   if(sync.has("cursor"))putMeta(db,"cursor",String.valueOf(Math.max(sync.getLong("cursor"),Long.parseLong(meta("cursor","0")))));if(sync.has("stats"))putMeta(db,"stats",sync.getJSONObject("stats").toString());if(sync.has("checkers"))putMeta(db,"checkers",sync.getJSONArray("checkers").toString());putMeta(db,"source",sync.optString("source",meta("source","")));putMeta(db,"lastSync",now());db.setTransactionSuccessful();
   }finally{db.endTransaction();}
  }
  public synchronized void importLocal(JSONArray records,String source)throws JSONException{

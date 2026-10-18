@@ -14,6 +14,7 @@ public final class GateApi {
   try{Reply reply=post(endpoint,new JSONObject().put("action",action).put("payload",payload),token,null);if(reply.status>=500)automaticRegion=!automaticRegion;return reply;}catch(IOException e){automaticRegion=!automaticRegion;throw e;}
  }
  public Reply exchange(String code,String verifier)throws Exception{return post(config.getString("project")+"/auth/v1/token?grant_type=pkce",new JSONObject().put("auth_code",code).put("code_verifier",verifier),"",config.getString("publishableKey"));}
+ public Reply exchangeGoogleIdToken(String idToken,String rawNonce)throws Exception{return post(config.getString("project")+"/auth/v1/token?grant_type=id_token",new JSONObject().put("provider","google").put("id_token",idToken).put("nonce",rawNonce),"",config.getString("publishableKey"));}
  private Reply post(String endpoint,JSONObject body,String token,String key)throws Exception{
   URL url=new URL(endpoint);if(!"https".equals(url.getProtocol()))throw new IOException("HTTPS is required.");
   HttpURLConnection con=(HttpURLConnection)url.openConnection();con.setInstanceFollowRedirects(false);con.setUseCaches(false);con.setRequestProperty("Cache-Control","no-store");con.setConnectTimeout(5000);con.setReadTimeout(15000);con.setRequestMethod("POST");con.setDoOutput(true);con.setRequestProperty("Content-Type","application/json");con.setRequestProperty("Accept","application/json");if(token!=null&&!token.isEmpty())con.setRequestProperty("Authorization","Bearer "+token);if(key!=null)con.setRequestProperty("apikey",key);

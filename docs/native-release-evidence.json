@@ -1,0 +1,116 @@
+{
+  "releaseApproved": false,
+  "verifiedSourceCommit": "",
+  "screens": {
+    "N01": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N02": {
+      "status": "BLOCKED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N03": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N04": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N05": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N06": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N07": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N08": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N09": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N10": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N11": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N12": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N13": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N14": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N15": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N16": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N17": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N18": {
+      "status": "IMPLEMENTED\u2014UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    }
+  },
+  "gates": {
+    "google_branding": {
+      "status": "BLOCKED",
+      "evidence": ""
+    },
+    "credential_manager_device": {
+      "status": "PENDING",
+      "evidence": ""
+    },
+    "api24_device": {
+      "status": "PENDING",
+      "evidence": ""
+    },
+    "current_android_device": {
+      "status": "PENDING",
+      "evidence": ""
+    },
+    "original_key_upgrade": {
+      "status": "PENDING",
+      "evidence": ""
+    },
+    "installer_reboot": {
+      "status": "PENDING",
+      "evidence": ""
+    },
+    "performance_measurements": {
+      "status": "PENDING",
+      "evidence": ""
+    },
+    "portal_hosted": {
+      "status": "PENDING",
+      "evidence": ""
+    },
+    "backend_review": {
+      "status": "PENDING",
+      "evidence": ""
+    }
+  }
+}

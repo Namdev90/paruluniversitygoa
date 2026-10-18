@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Build the established Android app with its original signing identity."""
-import os,pathlib,shutil,subprocess,zipfile,json,runpy
+import os,pathlib,shutil,subprocess,zipfile,json,runpy,sys
 from release_policy import require_signing_key
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
+# The master handoff makes the native release the default; a legacy hotfix is a separate approval.
+if '--legacy-approved-hotfix' not in sys.argv:
+ runpy.run_path(str(ROOT/'tools/build-native.py'),run_name='__main__')
+ raise SystemExit(0)
 RELEASE=json.loads((ROOT/'release.json').read_text())
 key=ROOT/'signing'/'prototype-debug.p12'
 require_signing_key(key)
