@@ -124,6 +124,7 @@ fun GateApp(
                     }
                     val destinations = destinations(s.profile)
                     BoxWithConstraints(Modifier.fillMaxSize()) {
+                        val compactWindow = maxHeight < 480.dp
                         val wide =
                             currentWindowAdaptiveInfo()
                                 .windowSizeClass
@@ -134,7 +135,7 @@ fun GateApp(
                                 NavigationRail(
                                     Modifier.fillMaxHeight().verticalScroll(rememberScrollState())
                                 ) {
-                                    destinations.forEach { d ->
+                                    (destinations + Destination.Settings).forEach { d ->
                                         NavigationRailItem(
                                             selected = s.destination == d,
                                             onClick = { vm.navigate(d) },
@@ -162,12 +163,19 @@ fun GateApp(
                                             },
                                         )
                                         if (s.profile != null) {
+                                            val connection =
+                                                "${if(s.online)"Connected" else "Connecting / offline"} · ${s.pending} pending"
                                             Text(
-                                                "${s.profile?.name} · ${if(s.online)"Connected" else "Connecting / offline"} · ${s.pending} pending",
+                                                if (compactWindow) connection
+                                                else "${s.profile?.name} · $connection",
                                                 Modifier.padding(
-                                                    horizontal = 16.dp,
-                                                    vertical = 4.dp,
-                                                ),
+                                                        horizontal = 16.dp,
+                                                        vertical = 4.dp,
+                                                    )
+                                                    .semantics {
+                                                        contentDescription =
+                                                            "${s.profile?.name} · $connection"
+                                                    },
                                                 style = MaterialTheme.typography.labelMedium,
                                             )
                                             if (!wide)

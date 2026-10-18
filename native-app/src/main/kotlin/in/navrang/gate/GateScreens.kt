@@ -12,6 +12,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -76,106 +79,178 @@ internal fun StudentsScreen(s: GateState, vm: GateViewModel) {
     val page = s.studentPage.bounded(rows.size)
     val list = rememberLazyListState()
     LaunchedEffect(page.index, s.studentQuery, s.studentFilter) { list.scrollToItem(0) }
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Students", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-            TextButton(
-                onClick = {
-                    importer.launch(
-                        arrayOf(
-                            "text/csv",
-                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        )
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val compact = maxHeight < 360.dp
+        Column(Modifier.fillMaxSize()) {
+            if (compact) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        s.studentQuery,
+                        vm::studentSearch,
+                        label = { Text("Students · search") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f).testTagCompat("student-search"),
                     )
-                },
-                enabled = !s.busy,
-            ) {
-                Text("Import")
-            }
-            TextButton(onClick = { vm.openTicket(null) }) { Text("Add") }
-        }
-        OutlinedTextField(
-            s.studentQuery,
-            vm::studentSearch,
-            label = { Text("Search name or ticket ID") },
-            singleLine = true,
-            modifier =
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTagCompat("student-search"),
-        )
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(listOf("All", "Eligible", "Blocked", "Admitted", "No entry")) { filter ->
-                FilterChip(
-                    s.studentFilter == filter,
-                    { vm.studentFilter(filter) },
-                    label = { Text(filter) },
-                )
-            }
-        }
-        LazyColumn(
-            Modifier.weight(1f).fillMaxWidth().testTagCompat("student-list"),
-            state = list,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (rows.isEmpty())
-                item {
-                    EmptyRows(
-                        if (s.online) "No matching registrations."
-                        else "Waiting for authorized registration data. Refresh when connected."
-                    )
-                }
-            items(page.rows(rows), key = { it.id }) { t ->
-                OutlinedCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(
-                            t.name.ifBlank { "Name not supplied" },
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(t.id, style = MaterialTheme.typography.labelLarge)
-                        Text(
-                            if (t.id in admitted) "Admitted · no re-entry"
-                            else if (t.eligible) "Eligible · no verified entry"
-                            else "Blocked · ${t.reason}"
-                        )
-                        Text(
-                            "Amount ₹${t.amount.ifBlank{"Unknown"}} · quantity ${t.quantity.ifBlank{"Unknown"}} · refund ₹${t.refund.ifBlank{"Unknown"}}",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        TextButton(
-                            onClick = { vm.inspectTicket(t) },
-                            modifier =
-                                Modifier.semantics {
-                                    contentDescription = "Details for registration ${t.id}"
-                                },
-                        ) {
-                            Text("Details")
+                    var filtersOpen by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { filtersOpen = true }) {
+                            Icon(Icons.Default.FilterList, "Filter students: ${s.studentFilter}")
                         }
-                        TextButton(
-                            onClick = { vm.openTicket(t) },
-                            modifier =
-                                Modifier.semantics {
-                                    contentDescription = "Edit registration ${t.id}"
+                        DropdownMenu(filtersOpen, { filtersOpen = false }) {
+                            listOf("All", "Eligible", "Blocked", "Admitted", "No entry").forEach {
+                                filter ->
+                                DropdownMenuItem(
+                                    text = { Text(filter) },
+                                    modifier =
+                                        Modifier.semantics { selected = s.studentFilter == filter },
+                                    onClick = {
+                                        filtersOpen = false
+                                        vm.studentFilter(filter)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    var actionsOpen by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { actionsOpen = true }) {
+                            Icon(Icons.Default.MoreVert, "Registration actions")
+                        }
+                        DropdownMenu(actionsOpen, { actionsOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Add registration") },
+                                onClick = {
+                                    actionsOpen = false
+                                    vm.openTicket(null)
                                 },
-                        ) {
-                            Text("Edit")
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Import registrations") },
+                                enabled = !s.busy,
+                                onClick = {
+                                    actionsOpen = false
+                                    importer.launch(
+                                        arrayOf(
+                                            "text/csv",
+                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                        )
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+            } else {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Students",
+                        Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    TextButton(
+                        onClick = {
+                            importer.launch(
+                                arrayOf(
+                                    "text/csv",
+                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                )
+                            )
+                        },
+                        enabled = !s.busy,
+                    ) {
+                        Text("Import")
+                    }
+                    TextButton(onClick = { vm.openTicket(null) }) { Text("Add") }
+                }
+                OutlinedTextField(
+                    s.studentQuery,
+                    vm::studentSearch,
+                    label = { Text("Search name or ticket ID") },
+                    singleLine = true,
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .testTagCompat("student-search"),
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(listOf("All", "Eligible", "Blocked", "Admitted", "No entry")) { filter ->
+                        FilterChip(
+                            s.studentFilter == filter,
+                            { vm.studentFilter(filter) },
+                            label = { Text(filter) },
+                        )
+                    }
+                }
+            }
+            LazyColumn(
+                Modifier.weight(1f).fillMaxWidth().testTagCompat("student-list"),
+                state = list,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                if (rows.isEmpty())
+                    item {
+                        EmptyRows(
+                            if (s.online) "No matching registrations."
+                            else "Waiting for authorized registration data. Refresh when connected."
+                        )
+                    }
+                items(page.rows(rows), key = { it.id }) { t ->
+                    OutlinedCard(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text(
+                                t.name.ifBlank { "Name not supplied" },
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(t.id, style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                if (t.id in admitted) "Admitted · no re-entry"
+                                else if (t.eligible) "Eligible · no verified entry"
+                                else "Blocked · ${t.reason}"
+                            )
+                            Text(
+                                "Amount ₹${t.amount.ifBlank{"Unknown"}} · quantity ${t.quantity.ifBlank{"Unknown"}} · refund ₹${t.refund.ifBlank{"Unknown"}}",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            TextButton(
+                                onClick = { vm.inspectTicket(t) },
+                                modifier =
+                                    Modifier.semantics {
+                                        contentDescription = "Details for registration ${t.id}"
+                                    },
+                            ) {
+                                Text("Details")
+                            }
+                            TextButton(
+                                onClick = { vm.openTicket(t) },
+                                modifier =
+                                    Modifier.semantics {
+                                        contentDescription = "Edit registration ${t.id}"
+                                    },
+                            ) {
+                                Text("Edit")
+                            }
                         }
                     }
                 }
             }
+            Pager(
+                page.index,
+                page.pages(rows.size),
+                rows.size,
+                { vm.page(true, -1, rows.size) },
+                { vm.page(true, 1, rows.size) },
+            )
         }
-        Pager(
-            page.index,
-            page.pages(rows.size),
-            rows.size,
-            { vm.page(true, -1, rows.size) },
-            { vm.page(true, 1, rows.size) },
-        )
     }
 }
 
@@ -192,61 +267,73 @@ internal fun EntriesScreen(s: GateState, vm: GateViewModel) {
     val page = s.entryPage.bounded(rows.size)
     val list = rememberLazyListState()
     LaunchedEffect(page.index, s.entryQuery) { list.scrollToItem(0) }
-    Column(Modifier.fillMaxSize()) {
-        Text(
-            "Entry log",
-            Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Text(
-            "${s.entries.size} receipts loaded · server total ${s.stats["admitted"]?:"unknown"}",
-            Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.labelMedium,
-        )
-        OutlinedTextField(
-            s.entryQuery,
-            vm::entrySearch,
-            label = { Text("Search receipts") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(16.dp).testTagCompat("entry-search"),
-        )
-        LazyColumn(
-            Modifier.weight(1f).fillMaxWidth().testTagCompat("entry-list"),
-            state = list,
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (rows.isEmpty()) item { EmptyRows("No matching receipts loaded.") }
-            items(page.rows(rows), key = { it.id }) { r ->
-                OutlinedCard(Modifier.fillMaxWidth()) {
-                    Column(
-                        Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(r.name, style = MaterialTheme.typography.titleMedium)
-                        Text("${r.id} · ${r.checker}")
-                        Text("${r.timeLabel}: ${displayTime(r.time)}")
-                        if (r.correction) {
-                            Text(
-                                "Admitted — registration data missing",
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                            Text("Physical entry time: unknown · payment verification: unknown")
-                            if (r.observedAt.isNotBlank())
-                                Text("Observed scan: ${displayTime(r.observedAt)}")
-                            if (r.note.isNotBlank()) Text(r.note)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val compact = maxHeight < 360.dp
+        Column(Modifier.fillMaxSize()) {
+            if (!compact)
+                Text(
+                    "Entry log",
+                    Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            Text(
+                if (compact) "${s.entries.size} loaded / ${s.stats["admitted"]?:"unknown"} server"
+                else
+                    "${s.entries.size} receipts loaded · server total ${s.stats["admitted"]?:"unknown"}",
+                Modifier.padding(horizontal = 16.dp).semantics {
+                    contentDescription =
+                        "${s.entries.size} receipts loaded · server total ${s.stats["admitted"]?:"unknown"}"
+                },
+                style = MaterialTheme.typography.labelMedium,
+            )
+            OutlinedTextField(
+                s.entryQuery,
+                vm::entrySearch,
+                label = { Text(if (compact) "Entry log · search" else "Search receipts") },
+                singleLine = true,
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = if (compact) 0.dp else 16.dp)
+                        .testTagCompat("entry-search"),
+            )
+            LazyColumn(
+                Modifier.weight(1f).fillMaxWidth().testTagCompat("entry-list"),
+                state = list,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                if (rows.isEmpty()) item { EmptyRows("No matching receipts loaded.") }
+                items(page.rows(rows), key = { it.id }) { r ->
+                    OutlinedCard(Modifier.fillMaxWidth()) {
+                        Column(
+                            Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(r.name, style = MaterialTheme.typography.titleMedium)
+                            Text("${r.id} · ${r.checker}")
+                            Text("${r.timeLabel}: ${displayTime(r.time)}")
+                            if (r.correction) {
+                                Text(
+                                    "Admitted — registration data missing",
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                                Text("Physical entry time: unknown · payment verification: unknown")
+                                if (r.observedAt.isNotBlank())
+                                    Text("Observed scan: ${displayTime(r.observedAt)}")
+                                if (r.note.isNotBlank()) Text(r.note)
+                            }
                         }
                     }
                 }
             }
+            Pager(
+                page.index,
+                page.pages(rows.size),
+                rows.size,
+                { vm.page(false, -1, rows.size) },
+                { vm.page(false, 1, rows.size) },
+            )
         }
-        Pager(
-            page.index,
-            page.pages(rows.size),
-            rows.size,
-            { vm.page(false, -1, rows.size) },
-            { vm.page(false, 1, rows.size) },
-        )
     }
 }
 

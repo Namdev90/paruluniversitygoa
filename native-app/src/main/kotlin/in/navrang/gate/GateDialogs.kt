@@ -10,6 +10,8 @@ import androidx.compose.ui.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -257,6 +259,7 @@ internal fun GateDialogs(s: GateState, vm: GateViewModel) {
                     { if (!s.pendingSave) vm.closeModal() },
                     vm::saveDesk,
                     if (s.pendingSave) "Retry same save" else "Save case",
+                    dismissEnabled = !s.pendingSave,
                 ) {
                     val d = s.draft
                     Field(
@@ -359,25 +362,48 @@ private fun FormDialog(
     close: () -> Unit,
     save: () -> Unit,
     saveLabel: String? = "Save",
+    dismissEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = close,
-        title = { Text(title) },
-        text = {
-            Column(
-                Modifier.fillMaxWidth()
-                    .heightIn(max = 520.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                content = content,
-            )
-        },
-        confirmButton = {
-            if (saveLabel != null) Button(onClick = save, enabled = !busy) { Text(saveLabel) }
-        },
-        dismissButton = { TextButton(onClick = close, enabled = !busy) { Text("Close") } },
-    )
+    // Forms have a bounded scroll region and fixed actions. Intrinsic alert sizing can repeatedly
+    // remeasure several legacy text fields; the explicit window bounds also preserve actions with
+    // IME.
+    Dialog(
+        onDismissRequest = { if (!busy && dismissEnabled) close() },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Surface(
+                Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                tonalElevation = 6.dp,
+            ) {
+                Column(Modifier.padding(24.dp)) {
+                    Text(title, style = MaterialTheme.typography.headlineSmall)
+                    Spacer(Modifier.height(16.dp))
+                    Column(
+                        Modifier.weight(1f, fill = false)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        content = content,
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = close, enabled = !busy && dismissEnabled) {
+                            Text("Close")
+                        }
+                        if (saveLabel != null)
+                            Button(onClick = save, enabled = !busy) { Text(saveLabel) }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

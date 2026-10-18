@@ -4,6 +4,7 @@
 
 - Added native Compose screens for all N01–N18 workflows, CameraX scanning, Credential Manager and secure token exchange, RAM-only state, bounded native imports/exports, and native account/update controls.
 - Students and Entry log now scroll inside bounded lists with fixed search and pagination; the separate portal has the same stable-control correction.
+- Full-shell regression fixes preserve row space at 640×360 with doubled text, restore wide-screen Account access, and keep native form actions stable with explicit pending-save locks. Native host coverage now includes 45 passing tests and synthetic full-shell screenshots.
 - Integrated PR #4's workbook ZIP bounds and repaired remaining report-expiry, retained-registration, provenance and checkout-credential review findings.
 - Added synthetic Compose/domain checks, a reproducible Gradle build and a fail-closed native release gate. Existing public APKs and production data are unchanged.
 - This is source under review. [Parity/evidence](docs/NATIVE-PARITY.md) and [audit/continuation](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) list Google, device, backend and publication work still required.
