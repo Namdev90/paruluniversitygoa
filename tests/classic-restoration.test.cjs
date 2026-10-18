@@ -11,7 +11,7 @@ test('restored shell uses the original logo without removing faculty routes or f
  w.GateClient={profile:()=>({role:'admin',active:true,reports:true}),on(){},api:async()=>({ok:true})};
  w.eval(read('app/assets/art/brand-shell.js'));
  assert.equal(w.document.querySelector('.brand>.classic-header-logo').getAttribute('src'),'art/navrang-transparent.png');
- assert.equal(w.document.querySelector('.intro-content .classic-event-logo').getAttribute('src'),'art/navrang-transparent.png');
+ assert.equal(w.document.querySelector('.intro-content .combined-brand-mark img').getAttribute('src'),'art/navrang-parul-combined.png');
  assert.ok(w.document.getElementById('station-faculty'));
  assert.ok(w.document.getElementById('reports-nav'));
  assert.ok(w.document.querySelector('#admin-registrations .rows-scroll'));
@@ -33,9 +33,17 @@ test('failed durable sign-out blocks new sign-in until retry succeeds in the res
   api:async action=>action==='config'?{googleEnabled:true}:profile,
   signOut:async()=>{profile=null;listener?.({type:'auth',data:null});if(++attempts===1)throw Error('Synthetic durable storage failure');},
  };
- for(const name of ['core.js','live-core.js','gate.js'])w.eval(read('app/assets/'+name));
+ for(const name of ['core.js','live-core.js','pagination.js','gate.js'])w.eval(read('app/assets/'+name));
+ try{
  await new Promise(r=>setTimeout(r,10));
  w.document.getElementById('sign-out').click();
+ assert.equal(w.document.getElementById('signout-confirm').open,true);
+ assert.equal(attempts,0);
+ w.document.getElementById('cancel-signout').click();
+ assert.equal(attempts,0);
+ assert.equal(w.GateClient.profile(),profile);
+ w.document.getElementById('sign-out').click();
+ w.document.getElementById('confirm-signout').click();
  await new Promise(r=>setTimeout(r,10));
  assert.equal(w.document.getElementById('classic-signout-pending').hidden,false);
  assert.equal(w.document.getElementById('classic-signout-retry').hidden,false);
@@ -44,16 +52,16 @@ test('failed durable sign-out blocks new sign-in until retry succeeds in the res
  await new Promise(r=>setTimeout(r,10));
  assert.equal(w.document.getElementById('classic-signout-pending').hidden,true);
  assert.equal(attempts,2);
- dom.window.close();
+ }finally{dom.window.close();}
 });
 
 test('restored document saves refresh server authority before opening either destination',()=>{
  const java=read('app/java/in/navrang/gate/MainActivity.java');
- for(const role of ['false','true'])assert.ok(java.includes('refreshExportAccess(generation,'+role+')'));
- const report=java.slice(java.indexOf('if(request==REPORT_DOCUMENT)'),java.indexOf('@Override protected void onNewIntent'));
- assert.ok(report.indexOf('refreshExportAccess(generation,false)')<report.indexOf('openOutputStream'));
- const csv=report.slice(report.indexOf('if(request!=EXPORT_DOCUMENT)'));
- assert.ok(csv.indexOf('refreshExportAccess(generation,true)')<csv.indexOf('openOutputStream'));
+ const write=java.slice(java.indexOf('private void writeDocument('),java.indexOf('private void beginScan('));
+ assert.ok(write.includes('boolean adminOnly=request.kind==ReportSaveCoordinator.Kind.HELP_DESK'));
+ assert.ok(write.indexOf('refreshExportAccess(request.generation,adminOnly)')<write.indexOf('AuthorizedDocumentWriter.write'));
+ assert.match(write,/AuthorizedDocumentWriter\.write\(bytes,[\s\S]*openOutputStream[\s\S]*saveAllowed\(request\)/);
+ assert.match(java,/documentSaves\.claimPicker\(request\)/);
  assert.match(java,/runtime\.api\.call\("me",new JSONObject\(\),token\)/);
 });
 
@@ -85,4 +93,33 @@ test('browser fallback client invokes the native PKCE bridge without invoking Cr
  const dom=new JSDOM('',{runScripts:'outside-only',url:'https://fixture.invalid/'});let browser=0;const w=dom.window;
  w.Native={local:()=>JSON.stringify({ok:true,data:{profile:null}}),googleBrowserLogin:()=>browser++,googleLogin:()=>{throw Error('Credential Manager must not run')}};
  try{for(const name of ['live-core.js','config.js','client.js'])w.eval(read('app/assets/'+name));await w.GateClient.googleBrowserLogin();assert.equal(browser,1)}finally{dom.window.close()}
+});
+
+test('approved combined branding is available before scripts without duplicate university marks',()=>{
+ const dom=new JSDOM(read('app/assets/index.html'),{runScripts:'outside-only',url:'https://fixture.invalid/'});
+ const w=dom.window,d=w.document;
+ for(const region of ['.intro-content','.login-card']){
+  const marks=d.querySelectorAll(region+' .combined-brand-mark');assert.equal(marks.length,1);
+  assert.equal(marks[0].getAttribute('aria-label'),'Navrang · Parul University Goa');
+  const image=marks[0].querySelector('img');
+  assert.equal(image.getAttribute('src'),'art/navrang-parul-combined.png');
+  assert.equal(image.getAttribute('width'),'2400');assert.equal(image.getAttribute('height'),'1280');
+  assert.equal(image.alt,'');assert.equal(d.querySelector(region+' .official-logo'),null);
+ }
+ w.GateClient={profile:()=>null,on(){},api:async()=>({ok:true})};w.eval(read('app/assets/art/brand-shell.js'));
+ assert.equal(d.querySelectorAll('.combined-brand-mark').length,2);
+ assert.equal(d.querySelector('.brand .header-logo'),null);
+ assert.equal(d.querySelector('.login-foot img'),null);
+ assert.equal(d.querySelector('meta[name="theme-color"]').content,'#260919');
+ dom.window.close();
+});
+
+test('combined mark keeps the exact owner-approved PNG and a contain-only aspect ratio',()=>{
+ const bytes=fs.readFileSync(path.join(root,'app/assets/art/navrang-parul-combined.png'));
+ assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),'8744a792295a49aad9c6ff65fae4f3bf1f6fbb66c766c59acfa4616f179e3397');
+ assert.equal(bytes.readUInt32BE(16),2400);assert.equal(bytes.readUInt32BE(20),1280);
+ const css=read('app/assets/art/classic-restore.css');
+ assert.match(css,/\.combined-brand-mark\{[^}]*aspect-ratio:15\/8/);
+ assert.match(css,/\.combined-brand-mark>img\{[^}]*object-fit:contain/);
+ assert.match(css,/radial-gradient\(ellipse at center,#680724 0%,#260919 100%\)/);
 });

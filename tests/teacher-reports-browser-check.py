@@ -62,7 +62,7 @@ def format_only(output):
     script = r"""
 const fs=require('node:fs'),{JSDOM}=require('jsdom');const f=JSON.parse(process.argv[1]);
 const dom=new JSDOM(fs.readFileSync('app/assets/index.html','utf8'),{runScripts:'outside-only',url:'https://fixture.invalid/'}),w=dom.window,saved=[];let empty=false;
-w.TextEncoder=TextEncoder;w.GateClient={native:false,profile:()=>f.profile,on(){},api:async(action,payload)=>{if(action==='me')return f.profile;if(action==='reports-summary')return{stats:f.summary};if(action==='reports-export')return{kind:payload.kind,rows:empty?[]:[f.row],count:empty?0:1,generatedAt:f.summary.generatedAt};throw Error('Unexpected fixture action '+action);},saveReport:(name,mime,bytes)=>saved.push({name,empty,content:Buffer.from(bytes).toString('base64')})};
+w.TextEncoder=TextEncoder;w.GateClient={native:false,profile:()=>f.profile,on(){},api:async(action,payload)=>{if(action==='me')return f.profile;if(action==='reports-summary'||action==='reports-summary-prepare')return{operationId:'11111111-1111-4111-8111-111111111111',stats:f.summary};if(action==='reports-save-outcome')return{operationId:payload.operationId,outcome:payload.outcome};if(action==='reports-export')return{operationId:'11111111-1111-4111-8111-111111111111',kind:payload.kind,rows:empty?[]:[f.row],count:empty?0:1,generatedAt:f.summary.generatedAt};throw Error('Unexpected fixture action '+action);},saveReport:(name,mime,bytes)=>saved.push({name,empty,content:Buffer.from(bytes).toString('base64')})};
 for(const file of ['report-export.js','reports.js'])w.eval(fs.readFileSync('app/assets/'+file,'utf8'));
 (async()=>{await w.NavrangReports.refresh();const select=w.document.getElementById('report-kind');for(empty of [false,true])for(const option of select.options){select.value=option.value;for(const format of ['csv','xlsx'])await w.document.getElementById('report-'+format).onclick();}await w.document.getElementById('report-pdf').onclick();process.stdout.write(JSON.stringify(saved));dom.window.close()})().catch(e=>{console.error(e);process.exitCode=1});
 """
@@ -109,8 +109,9 @@ def main():
             window.fetch=async(url,options)=>{
                 const {action,payload}=JSON.parse(options.body);fixtureCalls.push({action,payload});let data;
                 if(action==='me')data=f.profile;
-                else if(action==='reports-summary')data={stats:f.summary};
-                else if(action==='reports-export')data={kind:payload.kind,rows:fixtureEmpty?[]:[f.row],count:fixtureEmpty?0:1,generatedAt:f.summary.generatedAt};
+                else if(action==='reports-summary'||action==='reports-summary-prepare')data={operationId:'11111111-1111-4111-8111-111111111111',stats:f.summary};
+                else if(action==='reports-save-outcome')data={operationId:payload.operationId,outcome:payload.outcome};
+                else if(action==='reports-export')data={operationId:'11111111-1111-4111-8111-111111111111',kind:payload.kind,rows:fixtureEmpty?[]:[f.row],count:fixtureEmpty?0:1,generatedAt:f.summary.generatedAt};
                 else throw Error('Unexpected fixture action: '+action);
                 return new Response(JSON.stringify({ok:true,...data}),{status:200});
             };

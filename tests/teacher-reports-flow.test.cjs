@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {JSDOM}=require('jsdom');
 const ROOT=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(ROOT,'app/assets',file),'utf8');
+const operationId='11111111-1111-4111-8111-111111111111';
 const stamp='2026-10-18T12:00:00Z';
 const faculty={role:'checker',checkerId:'22222222-2222-4222-8222-222222222222',name:'Synthetic Faculty',method:'google',active:true,reports:true,scanner:false,helpdesk:false,nameConfirmed:true};
 const stats={registered:3,eligible:2,blocked:1,attended:2,registeredAttended:1,organizerConfirmed:1,noShow:1,serverIssues:2,issueTickets:1,duplicateAttempts:1,pendingHelpDesk:0,generatedAt:stamp};
@@ -12,7 +13,7 @@ function launch(profile=faculty){
  const dom=new JSDOM(read('index.html'),{url:'https://fixture.invalid/',runScripts:'outside-only'}),w=dom.window,calls=[],saves=[],listeners=[];
  let current=profile,handler;
  w.TextEncoder=TextEncoder;w.TextDecoder=TextDecoder;
- w.GateClient={native:false,profile:()=>current,on:f=>listeners.push(f),api:async(action,payload={})=>{calls.push({action,payload});if(handler){const result=await handler(action,payload);if(result!==undefined)return result;}if(action==='me')return current;if(action==='reports-summary')return{stats};if(action==='reports-members')return{members:[]};if(action==='reports-export')return{kind:payload.kind,count:1,generatedAt:stamp,rows:[{'Ticket ID':'DEMO0001',Name:'=HYPERLINK("https://example.invalid")','Attendance':'Admitted'}]};throw Error('Unexpected fixture request: '+action);},saveReport:(name,mime,bytes)=>saves.push({name,mime,bytes})};
+ w.GateClient={native:false,profile:()=>current,on:f=>listeners.push(f),api:async(action,payload={})=>{calls.push({action,payload});if(handler){const result=await handler(action,payload);if(result!==undefined)return action==='reports-export'&&result&&typeof result==='object'?{operationId,...result}:result;}if(action==='me')return current;if(action==='reports-summary'||action==='reports-summary-prepare')return{stats,operationId};if(action==='reports-save-outcome')return{operationId:payload.operationId,outcome:payload.outcome,deviceReported:true};if(action==='reports-members')return{members:[]};if(action==='reports-export')return{operationId,kind:payload.kind,count:1,generatedAt:stamp,rows:[{'Ticket ID':'DEMO0001',Name:'=HYPERLINK("https://example.invalid")','Attendance':'Admitted'}]};throw Error('Unexpected fixture request: '+action);},saveReport:(name,mime,bytes,metadata)=>{saves.push({name,mime,bytes,metadata});return{operationId:metadata?.operationId,outcome:'initiated'}}};
  for(const file of ['report-export.js','reports.js'])w.eval(read(file));
  return{dom,w,calls,saves,$:id=>w.document.getElementById(id),setHandler:f=>handler=f,setProfile:(p,emit=true)=>{current=p;if(emit)listeners.forEach(f=>f({type:'profile'}));},close:()=>dom.window.close()};
 }
@@ -21,8 +22,8 @@ test('every faculty dataset downloads CSV and XLSX with fresh server authorizati
  for(const kind of kinds)for(const format of ['csv','xlsx']){
   a.$('report-kind').value=kind;const before=a.calls.length;await a.$('report-'+format).onclick();const saved=a.saves.at(-1);
   assert.match(saved.name,new RegExp('^Navrang-'+kind+'-\\d{4}-\\d{2}-\\d{2}\\.'+format+'$'));
-  assert.deepEqual(a.calls.slice(before).map(c=>c.action),['me','reports-export']);
-  assert.equal(a.calls.at(-1).payload.kind,kind);
+  assert.deepEqual(a.calls.slice(before).map(c=>c.action),['me','reports-export','reports-save-outcome']);
+  assert.equal(a.calls.slice(before).find(c=>c.action==='reports-export').payload.kind,kind);
   if(format==='csv'){if(kind!=='activity')assert.match(new TextDecoder().decode(saved.bytes),/'=HYPERLINK/);assert.match(new TextDecoder().decode(saved.bytes),/Report generated UTC/);}
   else assert.equal(Buffer.from(saved.bytes).subarray(0,4).toString('hex'),'504b0304');
  }
@@ -30,7 +31,7 @@ test('every faculty dataset downloads CSV and XLSX with fresh server authorizati
  }finally{a.close()}
 });
 test('PDF gets a fresh summary and does not fetch participant rows',async()=>{
- const a=launch();try{await a.w.NavrangReports.refresh();const before=a.calls.length;await a.$('report-pdf').onclick();assert.deepEqual(a.calls.slice(before).map(c=>c.action),['me','reports-summary']);assert.equal(a.saves.length,1);assert.equal(a.saves[0].mime,'application/pdf');assert.match(Buffer.from(a.saves[0].bytes).toString(),/Total admitted: 2/);}finally{a.close()}
+ const a=launch();try{await a.w.NavrangReports.refresh();const before=a.calls.length;await a.$('report-pdf').onclick();assert.deepEqual(a.calls.slice(before).map(c=>c.action),['me','reports-summary-prepare','reports-save-outcome']);assert.equal(a.saves.length,1);assert.equal(a.saves[0].mime,'application/pdf');assert.match(Buffer.from(a.saves[0].bytes).toString(),/Total admitted: 2/);}finally{a.close()}
 });
 test('denied faculty, scanner and signed-out identities cannot refresh or download reports',async()=>{
  for(const profile of [null,{...faculty,reports:false},{...faculty,active:false}]){const a=launch(profile);try{await a.w.NavrangReports.refresh();await a.$('report-csv').onclick();assert.equal(a.calls.length,0);assert.equal(a.saves.length,0);assert.equal(a.$('report-csv').disabled,true);}finally{a.close()}}
@@ -93,7 +94,7 @@ test('actual browser client creates a typed blob, clicks the filename and releas
 });
 
 test('server-side revocation clears cached totals even before a profile event arrives',async()=>{
- for(const stage of ['me','reports-export']){const a=launch();try{await a.w.NavrangReports.refresh();a.setHandler(action=>{if(action!==stage)return;if(stage==='me'){a.setProfile({...faculty,reports:false},false);return{...faculty,reports:false};}throw Object.assign(Error('Reporting permission revoked.'),{status:403});});await a.$('report-csv').onclick();assert.equal(a.saves.length,0);assert.equal(a.$('report-stats').textContent,'');assert.equal(a.$('report-caveat').textContent,'');assert.equal(a.$('report-csv').disabled,true);assert.match(a.$('report-status').textContent,/access changed|revoked/);}finally{a.close()}}
+ for(const stage of ['me','reports-export','reports-save-outcome']){const a=launch();try{await a.w.NavrangReports.refresh();a.setHandler(action=>{if(action!==stage)return;if(stage==='me'){a.setProfile({...faculty,reports:false},false);return{...faculty,reports:false};}throw Object.assign(Error('Reporting permission revoked.'),{status:403});});await a.$('report-csv').onclick();assert.equal(a.saves.length,0);assert.equal(a.$('report-stats').textContent,'');assert.equal(a.$('report-caveat').textContent,'');assert.equal(a.$('report-csv').disabled,true);assert.match(a.$('report-status').textContent,/access changed|revoked/);}finally{a.close()}}
 });
 
 
@@ -104,4 +105,10 @@ test('browser download QA uses paced visible clicks without disabling browser gu
  assert.match(harness,/page\.locator\('#report-kind'\)\.select_option\(kind\)/);
  assert.match(harness,/failure\.json/);assert.match(harness,/console_messages/);
  assert.ok(!harness.includes('force=True'));assert.ok(!harness.includes('disable-ipc-flooding-protection'));
+});
+test('native save waits through the picker and reports cancellation without saved success',async()=>{
+ const a=launch(),hold=deferred();try{a.w.GateClient.native=true;a.w.GateClient.saveReport=(name,mime,bytes,metadata)=>{a.saves.push({name,mime,bytes,metadata});return hold.promise};await a.w.NavrangReports.refresh();const job=a.$('report-csv').onclick();await settle();assert.equal(a.$('report-csv').disabled,true);assert.equal(a.saves[0].metadata.operationId,operationId);assert.deepEqual(a.calls.filter(c=>c.action==='reports-save-outcome').map(c=>c.payload.outcome),['initiated']);hold.resolve({operationId,outcome:'cancelled'});await job;assert.deepEqual(a.calls.filter(c=>c.action==='reports-save-outcome').map(c=>c.payload.outcome),['initiated','cancelled']);assert.match(a.$('report-status').textContent,/cancelled/i);assert.equal(a.$('report-csv').disabled,false)}finally{a.close()}
+});
+test('missing server operation identity never starts a report save',async()=>{
+ const a=launch();try{await a.w.NavrangReports.refresh();a.setHandler((action,payload)=>action==='reports-export'?{operationId:null,kind:payload.kind,rows:[],count:0,generatedAt:stamp}:undefined);await a.$('report-csv').onclick();assert.equal(a.saves.length,0);assert.match(a.$('report-status').textContent,/operation|server.*upgrade/i)}finally{a.close()}
 });

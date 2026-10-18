@@ -18,7 +18,7 @@ export function createHandler({rpc,googleUser,googleEnabled}){
    let body;
    if(req.method==='GET')body={action:'config',payload:{}};
    else {const reader=req.body?.getReader(),chunks=[];let size=0;if(reader){try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>8*1024*1024){await reader.cancel();return json({ok:false,error:'Request too large.'},413)}chunks.push(part.value)}}finally{reader.releaseLock()}}const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}try{body=JSON.parse(new TextDecoder().decode(bytes))}catch{return json({ok:false,error:'Invalid JSON.'},400)}}
-   try{validateRequest(body)}catch(e){return json({ok:false,error:e.message},400)}
+   try{body=validateRequest(body)}catch(e){return json({ok:false,error:e.message},400)}
    const {action}=body;let p={...body.payload};
    const bearer=(req.headers.get('authorization')||'').replace(/^Bearer /,'');
    const hash=/^[a-f0-9]{64}$/.test(bearer)?await sha256(bearer):'';
@@ -56,6 +56,10 @@ export function createHandler({rpc,googleUser,googleEnabled}){
     const ck=await rpc('google-register',{id:user.id,name:String(user.user_metadata?.given_name||user.user_metadata?.full_name?.split(' ')[0]||'Checker').slice(0,40),email:user.email||''},'');
     if(!ck.id)return json({ok:false,error:ck.error||'Checker account could not be created.'},ck.status||400);
     return session('checker',ck.id);
+   }
+   if(!hash&&action==='notifications-unregister'){
+    if(!await budget('communications-unlink'))return json({ok:false,error:'Too many unlink attempts.'},429);
+    const result=await rpc(action,p,'');return result.error?json({ok:false,error:result.error},result.status||400):json({ok:true,...result});
    }
    if(!hash)return json({ok:false,error:'Sign in first.'},401);
    if(action==='helpdesk-save'||action==='helpdesk-edit'){

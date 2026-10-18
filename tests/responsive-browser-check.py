@@ -24,7 +24,7 @@ DESK_RECORDS = [dict(id=f'synthetic-case-{i}',ticket_id=f'DESK{i:04d}',status=st
 STATS = dict(total=60,eligible=60,admitted=40,remaining=20,blocked=0,lastMinute=0,lastFiveMinutes=0,duplicateAttempts=2,blockedAttempts=1)
 SUMMARY = dict(registered=12,eligible=12,blocked=0,attended=9,registeredAttended=8,organizerConfirmed=1,noShow=4,serverIssues=1,issueTickets=1,duplicateAttempts=2,pendingHelpDesk=0,generatedAt=STAMP)
 def run():
- parser=argparse.ArgumentParser();parser.add_argument('--output',default=str(ROOT/'.build/responsive-review'));parser.add_argument('--baseline',action='store_true');parser.add_argument('--sizes',default='320x640,360x800,390x844,768x1024,1024x768,1366x768,1920x1080,640x360');args=parser.parse_args()
+ parser=argparse.ArgumentParser();parser.add_argument('--output',default=str(ROOT/'.build/responsive-review'));parser.add_argument('--baseline',action='store_true');parser.add_argument('--report-stress',action='store_true');parser.add_argument('--sizes',default='320x640,360x800,390x844,768x1024,1024x768,1366x768,1920x1080,640x360');args=parser.parse_args()
  out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
  assets=ROOT/'app/assets'
  markup=(assets/'index.html').read_text()
@@ -59,17 +59,20 @@ def run():
       window.fetch=async(url,options)=>{
        const body=options?.body?JSON.parse(options.body):{};const action=body.action||'config';window.fixtureCalls.push(action);
        let value;
-       if(action==='config')value={eventId:'O9KL3',googleEnabled:true,pollMs:2000};
+       if(action==='notifications-feed')value={revision:5,serverTime:new Date().toISOString(),items:Array.from({length:5},(_,i)=>({id:'11111111-1111-4111-8111-'+String(i+1).padStart(12,'0'),revision:5-i,kind:'announcement',title:'Synthetic staff update '+(i+1),body:'Fixture-only notification. No production message.',at:new Date().toISOString(),read:false,destination:'account'})),activeIds:Array.from({length:5},(_,i)=>'11111111-1111-4111-8111-'+String(i+1).padStart(12,'0')),dashboard:{revision:5,generatedAt:new Date().toISOString(),status:'live',totals:{attended:9},hidden:false,announcement:{id:'22222222-2222-4222-8222-222222222222',title:'Synthetic pinned announcement',body:'Fixture-only live card.',at:new Date().toISOString()}}};
+       else if(action==='notifications-preview')value={recipientCount:3,previewHash:'a'.repeat(64)};
+       else if(action==='config')value={eventId:'O9KL3',googleEnabled:true,pollMs:2000};
        else if(action==='me')value=f.profile;
        else if(action==='sync')value=f.role==='admin'?{dataRevision:1,records:f.records,entries:f.entries,cursor:8,hasMore:false,source:'Synthetic UI fixture',stats:f.stats,checkers:[{id:'11111111-1111-4111-8111-111111111111',name:'Demo Checker',method:'google',email:'checker@example.invalid',active:true,scanner:true,helpdesk:false,station:'checker',entries:8}]}:{staffSummary:true,scanner:f.role==='checker',dataRevision:-1,cursor:0,hasMore:false,records:null,entries:[],stats:{ownScans:f.role==='checker'?8:0,totalEntries:9}};
-       else if(action==='reports-summary'){
+       else if(action==='reports-summary'||action==='reports-summary-prepare'){
         if(['unavailable','denied'].includes(window.fixtureReportMode))return new Response(JSON.stringify({ok:false,error:window.fixtureReportMode==='denied'?'Reporting access is not approved for this account.':'Report service temporarily unavailable. Refresh to retry.'}),{status:window.fixtureReportMode==='denied'?403:503});
-        value={stats:window.fixtureReportMode==='empty'?Object.fromEntries(Object.entries(f.summary).map(([k,v])=>[k,typeof v==='number'?0:v])):f.summary};
+        value={operationId:'11111111-1111-4111-8111-111111111111',stats:window.fixtureReportMode==='empty'?Object.fromEntries(Object.entries(f.summary).map(([k,v])=>[k,typeof v==='number'?0:v])):f.summary};
        }
        else if(action==='reports-members'&&window.fixtureReportMode==='members-unavailable')return new Response(JSON.stringify({ok:false,error:'Synthetic member service unavailable'}),{status:503});
-       else if(action==='reports-members')value={members:[{id:'22222222-2222-4222-8222-222222222222',name:'Demo Faculty',email:'faculty@example.invalid',nameConfirmed:true,active:true,teacher:true,scanner:false,helpdesk:false}]};
+       else if(action==='reports-members')value={members:window.fixtureLongMembers||[{id:'22222222-2222-4222-8222-222222222222',name:'Demo Faculty',email:'faculty@example.invalid',nameConfirmed:true,active:true,teacher:true,scanner:false,helpdesk:false}]};
        else if(action==='helpdesk-list')value=window.fixtureDeskPopulated?{records:f.deskRecords,total:f.deskRecords.length,stats:{total:2,pending:1,approved:1,rejected:0}}:{records:[],total:0,stats:{total:0,pending:0,approved:0,rejected:0}};
-       else if(action==='reports-export')value={kind:body.payload.kind,rows:window.fixtureReportMode==='empty'?[]:f.records.slice(0,8).map(r=>({'Ticket ID':r.id,'Name':r.name,'Attendance':'Attended'})),count:window.fixtureReportMode==='empty'?0:8,generatedAt:f.summary.generatedAt};
+       else if(action==='reports-save-outcome')value={operationId:body.payload.operationId,outcome:body.payload.outcome,deviceReported:true};
+       else if(action==='reports-export')value={operationId:'11111111-1111-4111-8111-111111111111',kind:body.payload.kind,rows:window.fixtureReportMode==='empty'?[]:f.records.slice(0,8).map(r=>({'Ticket ID':r.id,'Name':r.name,'Attendance':'Attended'})),count:window.fixtureReportMode==='empty'?0:8,generatedAt:f.summary.generatedAt};
        else if(action==='logout')value={signedOut:true};
        else {window.fixtureUnexpected.push(action);return new Response(JSON.stringify({ok:false,error:'Disallowed fixture request'}),{status:400});}
        return new Response(JSON.stringify({ok:true,...value}),{status:200});
@@ -94,27 +97,30 @@ def run():
         update(action){if(!['status','background'].includes(action))return blocked('update:'+action);return JSON.stringify({currentVersion:f.candidateVersion,available:false,ready:false,automatic:true,notifications:false,message:'Synthetic preview: no update is available.'});},
         destination(value){if(value)return blocked('destination');return f.role==='admin'?'admin':'login';},
         feedback(){},
+        googleLoginRequest(operationId){queueMicrotask(()=>window.onGateEvent(JSON.stringify({type:'credential',data:{operationId,phase:'cancelled',generation:1}})));},
         googleLogin(){return blocked('googleLogin');},googleBrowserLogin(){return blocked('googleBrowserLogin');},
         scan(){return blocked('scan');},submit(){return blocked('submit');},importRegistrations(){return blocked('importRegistrations');}
        };
       }
     }""",dict(role=role,profile=PROFILE.get(role),records=RECORDS,entries=ENTRIES,stats=STATS,summary=SUMMARY,images=images,deskRecords=DESK_RECORDS,nativeBridge=mocked_native,candidateVersion=CANDIDATE_VERSION))
     for script in scripts:page.evaluate((assets/script).read_text())
+    page.wait_for_function("[...document.querySelectorAll('.combined-brand-mark>img')].every(e=>e.complete&&e.naturalWidth===2400)")
     page.wait_for_timeout(50)
    def measure(page,role,view,width,height):
     result=page.evaluate(r'''() => {
       const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'&&!e.closest('[hidden]');};
       const over=[...document.querySelectorAll('button,input,select,.topbar,.brand,.top-actions,.login-role-picker,.panel-heading,.report-member,.mobile-nav')].filter(visible).map(e=>{const r=e.getBoundingClientRect();return {id:e.id||e.className,left:r.left,right:r.right};}).filter(r=>r.left < -1 || r.right > innerWidth+1);
-      const logos=[...document.querySelectorAll('.institution-wordmark,.header-logo,.crafted-login>.official-logo')].filter(visible);
+      const logos=[...document.querySelectorAll('.institution-wordmark,.header-logo,.crafted-login>.official-logo,.combined-brand-mark>img')].filter(visible);
+      const distortedBrand=[...document.querySelectorAll('.combined-brand-mark>img')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return Math.abs(r.width/r.height-15/8)>.02||getComputedStyle(e).objectFit!=='contain'||e.naturalWidth!==2400||e.naturalHeight!==1280}).map(e=>e.className||e.parentElement.className);
       const luminance=c=>{const rgb=c.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722};
       const placeholderContrast=[...document.querySelectorAll('input[placeholder]')].filter(visible).map(e=>{const a=luminance(getComputedStyle(e,'::placeholder').color),b=luminance(getComputedStyle(e).backgroundColor);return {id:e.id,ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)}}).filter(x=>x.ratio<4.5);
       const lowContrast=logos.filter(e=>getComputedStyle(e).backgroundColor==='rgb(252, 243, 224)').map(e=>e.className);
       const smallEntryText=[...document.querySelectorAll('#recent-entries td,#all-entry-rows td')].filter(visible).filter(e=>parseFloat(getComputedStyle(e).fontSize)<12).map(e=>e.textContent);
-      return {smallEntryText,documentWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,overflow:over,lowContrastMarks:lowContrast,placeholderContrast,navHeight:document.querySelector('.mobile-nav').getBoundingClientRect().height};
+      return {distortedBrand,smallEntryText,documentWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,overflow:over,lowContrastMarks:lowContrast,placeholderContrast,navHeight:document.querySelector('.mobile-nav').getBoundingClientRect().height};
     }''')
     item=dict(role=role,view=view,width=width,height=height,**result);reports.append(item)
     (out/'partial.json').write_text(json.dumps(reports,indent=2))
-    if result['documentWidth']>width+1 or result['overflow'] or result['lowContrastMarks'] or result['placeholderContrast'] or result['smallEntryText']:failures.append(item)
+    if result['documentWidth']>width+1 or result['overflow'] or result['lowContrastMarks'] or result['placeholderContrast'] or result['smallEntryText'] or result['distortedBrand']:failures.append(item)
    def measure_control(page,selector,label,minimum=43,scroll=True):
     control=page.locator(selector).first
     if scroll:control.scroll_into_view_if_needed()
@@ -131,18 +137,85 @@ def run():
     if result['height']<minimum or result['visibleHeight']<required_height or result['visibleWidth']<min(43,result['width']) or not result['hitTarget']:failures.append(dict(unreachableControl=label,**result))
    def measure_report_downloads(page):
     page.wait_for_function("!document.getElementById('report-csv').disabled")
-    for selector in ('#report-kind','#report-csv','#report-xlsx','#report-pdf'):
-     measure_control(page,selector,'Reachable report '+selector,minimum=40)
-    result=page.evaluate("""()=>{
-     const view=document.getElementById('view-reports');
-     const controls=[document.querySelector('.topbar'),document.querySelector('.mobile-nav')];
-     const bounds=()=>controls.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]});
-     const before=bounds();const rect=view.getBoundingClientRect(),main=document.querySelector('main').getBoundingClientRect();const bounded=rect.height>0&&rect.top>=main.top-1&&rect.bottom<=main.bottom+1;view.scrollTop=view.scrollHeight;const offset=view.scrollTop;view.scrollTop=0;
-     return {before,after:bounds(),bounded,offset,height:view.clientHeight,scrollHeight:view.scrollHeight,downloadsFirst:!!(document.getElementById('report-downloads').compareDocumentPosition(document.getElementById('report-overview'))&Node.DOCUMENT_POSITION_FOLLOWING)};
-    }""")
-    reports.append(dict(reportDownloadLayout=result))
-    if not result['bounded'] or not result['downloadsFirst'] or result['scrollHeight']>result['height']+1 and result['offset']<=0 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):
-     failures.append(dict(unreachableReportDownloads=result))
+    page.locator('#report-tab-downloads').click();page.wait_for_timeout(40)
+    in_dialog=page.locator('#report-download-open').is_visible()
+    if in_dialog:page.locator('#report-download-open').click()
+    if page.locator('#report-download-back').is_visible():page.locator('#report-download-back').click()
+    measure_control(page,'#report-kind','Dataset without page scrolling',minimum=40,scroll=in_dialog)
+    if page.locator('#report-download-next').is_visible():page.locator('#report-download-next').click()
+    in_dialog=page.locator('#report-download-dialog').is_visible()
+    if page.locator('#report-download-open').is_visible() and not in_dialog:
+     page.locator('#report-download-open').click();in_dialog=True
+    if page.locator('#report-format').is_visible():
+     measure_control(page,'#report-format','File format without scrolling',minimum=40,scroll=False)
+     for kind in ('csv','xlsx','pdf'):
+      page.locator('#report-format').select_option(kind)
+      measure_control(page,'#report-download-selected','Reachable report '+kind,minimum=40,scroll=False)
+    else:
+     for selector in ('#report-csv','#report-xlsx','#report-pdf'):
+      measure_control(page,selector,'Reachable report '+selector,minimum=40,scroll=in_dialog)
+    if in_dialog:page.locator('#report-download-close').click()
+    page.locator('#report-tab-overview').click();page.wait_for_timeout(40)
+    for _ in range(11):
+     if page.locator('#report-metrics-previous').is_visible() and not page.locator('#report-metrics-previous').is_disabled():page.locator('#report-metrics-previous').click()
+     else:break
+    seen=set()
+    for _ in range(11):
+     page.evaluate('NavrangReportLayout.fit()')
+     if page.locator('#report-totals-open').is_visible():
+      measure_control(page,'#report-totals-open','Accessible totals without page scroll',minimum=40,scroll=False)
+      page.locator('#report-totals-open').click()
+      seen.update(page.locator('#report-stats article').all_text_contents())
+      for i in range(page.locator('#report-stats article').count()):
+       measure_control(page,f'#report-stats article:nth-child({i+1})','Accessible total in dialog',minimum=0,scroll=True)
+      page.locator('#report-totals-dialog > button').click()
+     else:
+      seen.update(page.locator('#report-stats article:not([hidden])').all_text_contents())
+     result=page.evaluate("""()=>{
+      const view=document.getElementById('view-reports'),main=document.querySelector('main'),r=view.getBoundingClientRect(),m=main.getBoundingClientRect();
+      const bad=[...view.querySelectorAll('button,article.report-stat')].filter(e=>e.getClientRects().length&&!e.hidden).filter(e=>{const b=e.getBoundingClientRect();return b.height<=0||b.top<r.top-1||b.bottom>r.bottom+1}).map(e=>e.id||e.className);
+      return {height:view.clientHeight,scrollHeight:view.scrollHeight,mainHeight:main.clientHeight,mainScroll:main.scrollHeight,bounded:r.height>0&&r.top>=m.top-1&&r.bottom<=m.bottom+1,bad};
+     }""")
+     reports.append(dict(reportConsolidatedLayout=result))
+     if not result['bounded'] or result['scrollHeight']>result['height']+1 or result['mainScroll']>result['mainHeight']+1 or result['bad']:failures.append(dict(reportConsolidationFailure=result))
+     if page.locator('#report-totals-open').is_visible() or page.locator('#report-metrics-next').is_disabled():break
+     page.locator('#report-metrics-next').click()
+    if len(seen)!=11:failures.append(dict(unreachableReportMetrics=len(seen),viewport=page.viewport_size,seen=list(seen)))
+    page.locator('#report-tab-downloads').click()
+   def measure_teacher_access(page):
+    page.locator('#report-tab-teachers').click();page.wait_for_timeout(40)
+    if page.locator('#report-teacher-search').is_visible():measure_control(page,'#report-teacher-search','Teacher search without scrolling',minimum=40,scroll=False)
+    seen=set()
+    for _ in range(20):
+     page.evaluate('NavrangReportLayout.fit()')
+     if page.locator('#report-teachers-open').is_visible():
+      measure_control(page,'#report-teachers-open','Teacher access without page scroll',minimum=40,scroll=False)
+      page.locator('#report-teachers-open').click()
+      for i in range(page.locator('#report-teachers .report-member').count()):
+       seen.add(page.locator(f'#report-teachers .report-member:nth-child({i+1}) strong').inner_text())
+       measure_control(page,f'#report-teachers .report-member:nth-child({i+1}) button','Teacher action in accessible dialog',minimum=40,scroll=True)
+      page.locator('#report-teacher-dialog > button').click()
+      break
+     for row in page.locator('#report-teachers .report-member:not([hidden])').all():
+      seen.add(row.locator('strong').inner_text())
+     for selector in ('#report-members-previous','#report-members-next'):
+      if page.locator(selector).is_visible():measure_control(page,selector,'Teacher pages without scroll',minimum=40,scroll=False)
+     for i in range(page.locator('#report-teachers .report-member:not([hidden])').count()):
+      control=page.locator('#report-teachers .report-member:not([hidden]) button').nth(i)
+      control.evaluate("e=>e.dataset.fixtureVisibleAction='true'")
+      measure_control(page,'[data-fixture-visible-action]','Visible teacher action',minimum=40,scroll=False)
+      control.evaluate("e=>delete e.dataset.fixtureVisibleAction")
+     if page.locator('#report-members-next').is_disabled():break
+     page.locator('#report-members-next').click()
+    if len(seen)!=9:failures.append(dict(unreachableTeacherAccounts=len(seen)))
+    search_in_dialog=page.locator('#report-teachers-open').is_visible()
+    if search_in_dialog:page.locator('#report-teachers-open').click()
+    page.locator('#report-teacher-search').fill('Synthetic Teacher 8')
+    page.wait_for_timeout(40)
+    visible=page.locator('#report-teachers .report-member:not([hidden]) strong').all_text_contents()
+    if len(visible)!=1 or 'Synthetic Teacher 8' not in visible[0]:failures.append(dict(teacherSearch=visible))
+    page.locator('#report-teacher-search').fill('')
+    if search_in_dialog:page.locator('#report-teacher-dialog > button').click()
    def measure_scroll(page,view):
     result=page.evaluate("""view=>{
       const root=document.querySelector(view==='students'?'#admin-registrations':'#view-entries');
@@ -152,8 +225,8 @@ def run():
       const before=bounds();scroller.scrollTop=scroller.scrollHeight;
       return {view,before,after:bounds(),offset:scroller.scrollTop,height:scroller.clientHeight,scrollHeight:scroller.scrollHeight};
     }""",view)
-    if result['scrollHeight']>result['height'] and result['offset']<=0:failures.append(dict(scrollFailure=result))
-    if result['height']<111 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):failures.append(dict(stabilityFailure=result))
+    if result['scrollHeight']>result['height']+1:failures.append(dict(paginatedListOverflow=result))
+    if result['height']<=0 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):failures.append(dict(stabilityFailure=result))
     reports.append(dict(scroll=result))
     root='#admin-registrations' if view=='students' else '#view-entries'
     page.locator(root+' .rows-scroll').hover()
@@ -190,29 +263,43 @@ def run():
      page.locator(close_id).click();page.locator(dialog_id).wait_for(state='hidden')
     ctx,page=fresh('login')
     for role in ('helpdesk','faculty'):
+     page.locator('#auth-staff').click()
      page.locator(f'[data-login-role="{role}"]').click()
      shot(page,'login',role)
+     page.locator('#auth-back').click();page.locator('#auth-back').click()
     page.locator('#show-admin-login').click();shot(page,'login','administrator')
-    page.locator('#show-checker-login').click();finish(ctx,page)
+    page.locator('#auth-back').click();finish(ctx,page)
     ctx,page=fresh('admin')
     dialog(page,'#registration-rows .table-link','#student-dialog','registration-details','#close-student','#dialog-details dd:last-child')
     page.locator('#registration-rows .table-link').first.click();page.locator('#edit-student').click()
     shot(page,'admin','edit-registration');shot(page,'admin','edit-registration-lower','#ticket-editor button')
     page.locator('#close-editor').click()
     page.locator('#reports-nav').click();page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
+    page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
     shot(page,'admin','reports-evidence-caveat','#report-caveat')
+    page.locator('#report-notes-dialog button').click();page.locator('#report-tab-downloads').click()
     shot(page,'admin','reports-download-controls','#report-kind')
+    page.locator('#report-tab-teachers').click()
     shot(page,'admin','reports-access-management','#report-teachers')
+    page.locator('#report-tab-downloads').click()
     page.evaluate("window.fixtureReportMode='empty';NavrangReports.refresh()")
     page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
-    shot(page,'admin','reports-empty-summary','#report-stats')
+    page.locator('#report-tab-overview').click()
+    shot(page,'admin','reports-empty-summary','#report-tab-overview')
+    page.locator('#report-tab-downloads').click()
     page.locator('#report-kind').select_option('pending')
-    with page.expect_download() as waiting:page.locator('#report-csv').click()
+    if page.locator('#report-download-next').is_visible():page.locator('#report-download-next').click()
+    if page.locator('#report-format').is_visible():page.locator('#report-format').select_option('csv')
+    with page.expect_download() as waiting:page.locator('#report-download-selected' if page.locator('#report-format').is_visible() else '#report-csv').click()
     assert waiting.value.failure() is None
     page.wait_for_function("document.getElementById('report-status').textContent.includes('Column headers prepared')")
     shot(page,'admin','reports-empty-download','#report-status')
     for mode in ('members-unavailable','unavailable','denied'):
      page.evaluate("mode=>{window.fixtureReportMode=mode;return NavrangReports.refresh()}",mode)
+     if page.locator('#report-message-dialog').is_visible():
+      shot(page,'admin','reports-error-message','#report-message-dialog');page.locator('#report-message-dialog button').click()
+     if mode=='members-unavailable':page.locator('#report-tab-teachers').click()
+     else:page.locator('#report-tab-downloads').click()
      shot(page,'admin','reports-'+mode,'#report-teachers' if mode=='members-unavailable' else '#report-status')
      if mode!='members-unavailable':assert page.locator('#report-csv').is_disabled()
     page.evaluate("window.fixtureReportMode='normal';NavrangReports.refresh()")
@@ -230,6 +317,7 @@ def run():
     # Android readiness is deliberately hidden in the browser and is not fabricated.
     if page.locator('#readiness-panel').is_visible():shot(page,'admin','account-readiness','#readiness-panel')
     shot(page,'admin','account-update-settings','#automatic-updates')
+    page.locator('#notifications-button').click();page.wait_for_function("document.querySelectorAll('#notifications-items li').length===5");shot(page,'admin','notifications-pinned-and-five','#notifications-live');page.locator('#notifications-compose-toggle').click();page.locator('#notification-title').fill('Synthetic emergency meeting');page.locator('#notification-body').fill('Fixture-only preview.');page.locator('#notification-preview').click();page.wait_for_function("!document.getElementById('notification-preview-result').hidden");shot(page,'admin','notification-composer-preview','#notification-preview-result');page.locator('#notifications-close').click()
     page.locator('#admin-nav').click();page.locator('[data-admin-tab="checkers"]').click()
     dialog(page,'#checker-list .checker-row button','#staff-dialog','staff-access','#close-staff','#staff-access-form button')
     dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
@@ -240,7 +328,9 @@ def run():
     ctx,page=fresh('faculty')
     page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
     shot(page,'faculty','reports-download-controls','#report-kind')
+    page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
     shot(page,'faculty','reports-evidence-caveat','#report-caveat')
+    page.locator('#report-notes-dialog button').click()
     page.locator('[data-view="account"]').click();shot(page,'faculty','account')
     finish(ctx,page)
     # Native-only shared-web controls, with a separately labelled mocked bridge.
@@ -255,7 +345,10 @@ def run():
     shot(page,'mock-native-admin','import-controls','#import-registration')
     finish(ctx,page)
     ctx,page=fresh('login',mocked_native=True)
-    assert page.locator('#google-browser-signin').is_visible()
+    page.locator('#auth-staff').click();page.locator('[data-login-role=checker]').click()
+    assert not page.locator('#google-browser-signin').is_visible()
+    page.locator('#google-signin').click()
+    page.locator('#google-browser-signin').wait_for(state='visible')
     shot(page,'mock-native-login','browser-sign-in','#google-browser-signin')
     finish(ctx,page)
     for role in ('helpdesk','pending','newstaff'):
@@ -276,8 +369,9 @@ def run():
       launch=page.evaluate("""() => {
        const box=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
        const children=[...document.querySelector('.intro-content').children].filter(e=>!e.hidden&&getComputedStyle(e).display!=='none').map(e=>{const r=e.getBoundingClientRect();return {name:e.className||e.tagName,left:r.left,right:r.right,top:r.top,bottom:r.bottom}});
-       return {content:box('.intro-content'),children,figures:box('.intro-dancers'),cta:box('#skip-intro'),width:innerWidth,height:innerHeight};
+       return {brand:box('.combined-brand-hero'),content:box('.intro-content'),children,figures:box('.intro-dancers'),cta:box('#skip-intro'),width:innerWidth,height:innerHeight};
       }""")
+      if abs(launch['brand']['width']/launch['brand']['height']-15/8)>.02:failures.append(dict(distortedLaunchBrand=launch['brand']))
       overlap=lambda a,b:a['left']<b['right']-1 and a['right']>b['left']+1 and a['top']<b['bottom']-1 and a['bottom']>b['top']+1
       if overlap(launch['content'],launch['figures']) or overlap(launch['content'],launch['cta']) or overlap(launch['figures'],launch['cta']):failures.append(dict(launchOverlap=launch))
       if any(b['left'] < -1 or b['right'] > width+1 or b['top'] < -1 or b['bottom'] > height+1 for b in (launch['content'],launch['figures'],launch['cta'])):failures.append(dict(launchOverflow=launch))
@@ -297,7 +391,12 @@ def run():
      page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
      measure(page,role,view,width,height)
-     if role=='faculty':measure_report_downloads(page)
+     if role=='faculty':
+      measure_report_downloads(page)
+      if args.report_stress:
+       page.evaluate("""()=>{window.fixtureTextStyles=[...document.querySelectorAll('body *')].map(e=>[e,e.style.fontSize,parseFloat(getComputedStyle(e).fontSize)]);for(const [e,,size]of fixtureTextStyles)if(Number.isFinite(size))e.style.fontSize=(size*2)+'px';const n=document.getElementById('notice');n.textContent='Synthetic expanded connection notice: changes remain saved on the server.';n.hidden=false;NavrangReportLayout.fit()}""")
+       page.wait_for_timeout(100);measure_report_downloads(page)
+       page.evaluate("for(const [e,old]of fixtureTextStyles)e.style.fontSize=old;document.getElementById('notice').hidden=true;NavrangReportLayout.fit()")
      if role=='admin':measure_control(page,'#registration-count','Student list footer',minimum=0,scroll=False)
      if role=='login':
       page.evaluate("document.getElementById('google-browser-signin').hidden=false")
@@ -312,7 +411,16 @@ def run():
        else:page.locator(selector).click()
        page.wait_for_timeout(70);measure(page,role,target,width,height)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
-       if target=='reports':measure_report_downloads(page)
+       if target=='reports':
+        measure_report_downloads(page)
+        if args.report_stress:
+         page.evaluate("""()=>{window.fixtureLongMembers=Array.from({length:9},(_,i)=>({id:'22222222-2222-4222-8222-'+String(i).padStart(12,'0'),name:'Synthetic Teacher '+i+' With A Very Long Display Name',email:'synthetic.long.address.'+i+'@example.invalid',nameConfirmed:i%2===0,requested:true,active:true,teacher:false,scanner:i%2!==0,helpdesk:false}));return NavrangReports.refresh()}""")
+         measure_teacher_access(page)
+         page.evaluate("""()=>{window.fixtureTextStyles=[...document.querySelectorAll('body *')].map(e=>[e,e.style.fontSize,parseFloat(getComputedStyle(e).fontSize)]);for(const [e,,size]of fixtureTextStyles)if(Number.isFinite(size))e.style.fontSize=(size*2)+'px';const n=document.getElementById('notice');n.textContent='Synthetic expanded connection notice: changes remain saved on the server.';n.hidden=false;NavrangReportLayout.fit()}""")
+         measure_teacher_access(page)
+         page.screenshot(path=str(out/f'teacher-access-large-text-{width}x{height}.png'))
+         page.evaluate("for(const [e,old]of fixtureTextStyles)e.style.fontSize=old;document.getElementById('notice').hidden=true;NavrangReportLayout.fit()")
+         page.locator('#report-tab-downloads').click()
        if target=='desk':
         page.evaluate('window.fixtureDeskPopulated=true')
         page.locator('#desk-saved').click()

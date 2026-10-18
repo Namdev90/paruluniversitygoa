@@ -1,0 +1,48 @@
+/* Scoped communications surfaces; operational screens keep their own layout. */
+.topbar.has-notification-center .brand{flex:1 1 auto;min-width:0}
+.topbar.has-notification-center .brand>img{flex:0 0 auto}
+.topbar.has-notification-center .brand>div{flex:1 1 auto;min-width:0}
+.topbar.has-notification-center .brand h1{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar.has-notification-center .top-actions{flex:0 0 auto}
+.notifications-button{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;width:44px;min-height:44px;height:44px;padding:6px}
+.notifications-button .notification-bell{font-size:24px;line-height:1}
+.notifications-button .notification-badge{position:absolute;right:0;top:0;min-width:17px;height:17px;padding:1px 4px;border-radius:999px;background:#e5be7d;color:#260919;font-size:11px;font-weight:750;line-height:15px}
+.notification-center{width:min(540px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:16px;overflow:auto;overscroll-behavior:contain;background:#1b111e;color:#f6eddf;border:1px solid #c795745c;border-radius:18px}
+.notification-center::backdrop{background:#08050bcc}
+.notification-center [hidden],.notifications-button[hidden]{display:none!important}
+.notification-center .notification-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.notification-center h2{font-size:23px;line-height:1.25}.notification-center h3{font-size:17px;line-height:1.3;margin:0}.notification-center h4{font-size:15px;line-height:1.4;margin:0}
+.notification-center button,.notification-center select,.notification-center input{min-height:44px}
+.notification-center button{font-size:13px;line-height:1.35;padding:8px 12px;white-space:normal}
+.notification-center p,.notification-center time,.notification-center label,.notification-center legend{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.notification-center .notification-status{margin:10px 0;color:#ddc2ce}
+.notification-center .notification-live{margin:14px 0;padding:12px;border:1px solid #d0a56f80;border-radius:12px;background:#422138}
+.notification-center .notification-live .notification-heading{flex-wrap:wrap}
+.notification-center .notification-live-state{margin:8px 0;color:#eed6b0}
+.notification-center .notification-live-announcement{margin:10px 0;padding:10px;border:1px solid #d0a56f55;border-radius:10px;background:#291623}
+.notification-center .notification-live-announcement>button{margin-top:10px}
+.notification-center .notification-live-totals{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;margin:0;font-size:14px}
+.notification-center .notification-live-totals dt{overflow-wrap:anywhere}.notification-center .notification-live-totals dd{margin:0;font-weight:700}
+.notification-center .notification-items{display:flex;flex-direction:column;gap:10px;padding:0;margin:12px 0;list-style:none}
+.notification-center .notification-item{padding:12px;border:1px solid #bea18740;border-radius:12px;background:#281a2b;overflow-wrap:anywhere}
+.notification-center .notification-item[data-read=false]{border-left:3px solid #e5be7d}
+.notification-center .notification-item[data-read=true]{background:#211824}
+.notification-center .notification-message{white-space:pre-wrap;margin:6px 0}
+.notification-center .notification-kind{font-size:12px;font-weight:700;color:#eed6b0;margin:6px 0}
+.notification-center .notification-meeting-details{margin:8px 0;padding-top:6px;border-top:1px solid #bea18730}
+.notification-center .notification-meeting-details p{margin:0 0 4px}
+.notification-center .notification-delivery{margin:10px 0 0;padding-top:8px;border-top:1px solid #d0a56f55;color:#ddc2ce}
+.notification-center time{display:block;color:#cab6c4;font-size:11px}
+.notification-center .notification-item-actions,.notification-center .notification-form-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.notification-center .notification-empty{margin:12px 0;color:#cab6c4}
+.notification-center .notification-composer{margin-top:16px;padding-top:16px;border-top:1px solid #bea18740}
+.notification-center .notification-composer label{display:block;margin:10px 0 5px;color:#dbc5d2}
+.notification-center .notification-composer textarea{display:block;width:100%;min-height:90px;resize:vertical;padding:10px;border:1px solid #ffffff35;border-radius:10px;background:#100d17;color:#f6eddf;font:inherit;font-size:14px}
+.notification-center .notification-composer fieldset{min-width:0;padding:10px;border:1px solid #bea18740;border-radius:10px;margin:12px 0}
+.notification-center .notification-composer .notification-role-choice{display:flex;align-items:center;gap:10px;min-height:44px;margin:0}
+.notification-center .notification-role-choice input{width:22px;min-height:22px;height:22px;margin:0;flex:none}
+.notification-center .notification-compose-status{margin:10px 0;color:#eed6b0}
+.notification-center .notification-preview-result{padding:12px;margin:12px 0;border:1px solid #d0a56f80;border-radius:10px;background:#342132}
+.notification-center .notification-preview-result p{white-space:pre-wrap;margin:8px 0 0}
+.notification-center :focus-visible,.notifications-button:focus-visible{outline:2px solid #f4cf91;outline-offset:2px}
+@media(max-width:360px){.notification-center{padding:12px}.notification-center .notification-heading{gap:8px}.notification-center .notification-heading h2{font-size:21px}}

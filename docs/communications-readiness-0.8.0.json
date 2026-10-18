@@ -1,0 +1,49 @@
+{
+  "baseline": "6f450eb5b03183d5cd2a15de48a33ab820e94f93",
+  "reviewedPlanCommit": "001930147d75f67562c2d98a217560ff7335dee7",
+  "checkedAt": "2026-10-19",
+  "push": {
+    "configured": false,
+    "artifactResolved": true,
+    "deliveryVerified": false,
+    "sdkVersion": "26.0.0",
+    "bomVersion": "35.0.2",
+    "googleServicesPluginVersion": "4.5.0",
+    "apiVersion": "HTTP v1 with FID registration support",
+    "evidence": "Reviewer fetched official messaging 26.0.0 POM and AAR; configuration not established."
+  },
+  "voice": {
+    "configured": false,
+    "artifactResolved": false,
+    "deliveryVerified": false,
+    "sdkVersion": "2.29.0",
+    "revocationVerified": false,
+    "workerHealthy": false,
+    "evidence": "Official Android SDK release verified; artifact compile and owner-controlled relay not yet established."
+  },
+  "checks": {
+    "providerToDevicePush": "NOT_RUN: no configured project and isolated endpoint",
+    "twoIdentityVoice": "NOT_RUN: no configured relay",
+    "revokedCredentialReplay": "NOT_RUN: no revocation-capable relay",
+    "physicalDeviceChecks": "SKIPPED_BY_OWNER"
+  },
+  "blockers": [
+    "Owner-controlled Firebase configuration for in.navrang.gate and privately configured HTTP v1 sender are not established.",
+    "Reachable authenticated voice relay with TURN and strict reconnect revocation is not established.",
+    "An independently runnable authenticated delivery/voice-expiry worker has not been deployed or verified."
+  ],
+  "discoveryScope": "Repository configuration, current deployed function metadata and private table/secret-name metadata only. No secret values were read or exported. Separate external accounts may exist.",
+  "reportBodyHashes": {
+    "navrang_gate": "f812772597e14fbea6ce7c228f9bb950a3a2dfc1d1c02fa371dc0e58e3040c43",
+    "navrang_reports": "b6d280339ca2fc5f3073e54664ce4e4ddc7c4d688407c9327112e92672bf4e04"
+  },
+  "reportBaselineVerified": {
+    "reviewedBtrimHashesMatch": true,
+    "securityInvoker": true,
+    "functionExecuteRoles": [
+      "postgres",
+      "service_role"
+    ],
+    "productionEdgeVersion": 7
+  }
+}

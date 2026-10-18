@@ -1,3 +1,4 @@
+import {isCommunicationAction} from './communications-contract.mjs';
 import {createHandler} from './handler.mjs';
 const base=Deno.env.get('SUPABASE_URL')!;
 const service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -6,8 +7,9 @@ let google=false,checked=0;
 const handler=createHandler({
  async rpc(action:string,payload:unknown,hash:string){
   const report=action.startsWith('reports-');
-  const rpcName=report?'navrang_reports':'navrang_gate';
-  const dbAction=report?action.slice('reports-'.length):action;
+  const operation=action==='reports-summary-prepare'||action==='reports-save-outcome'||action==='reports-export'&&(payload as Record<string,unknown>)?.format!=null;
+  const rpcName=operation?'navrang_report_operations':report?'navrang_reports':isCommunicationAction(action)?'navrang_communications':'navrang_gate';
+  const dbAction=operation?(action==='reports-export'?'prepare-export':action==='reports-summary-prepare'?'prepare-summary':'outcome'):report?action.slice('reports-'.length):action;
   const r=await fetch(base+'/rest/v1/rpc/'+rpcName,{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:dbAction,p:payload,p_token:hash}),signal:AbortSignal.timeout(15000)});
   if(!r.ok)throw Error('Database request failed');return r.json();
  },

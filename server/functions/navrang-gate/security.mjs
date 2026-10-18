@@ -1,13 +1,20 @@
+import {isCommunicationAction,validateCommunication} from './communications-contract.mjs';
 const hex=b=>Array.from(new Uint8Array(b),n=>n.toString(16).padStart(2,'0')).join('');
 export const token=()=>hex(crypto.getRandomValues(new Uint8Array(32)));
 export async function sha256(value){return hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)));}
 export async function passwordHash(password,salt){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);return hex(await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:210000,hash:'SHA-256'},key,256));}
 export async function passwordMatches(password,stored){const hash=await passwordHash(password,stored.salt||'0'.repeat(32));const expected=stored.hash||'0'.repeat(64);let diff=hash.length^expected.length;for(let i=0;i<hash.length;i++)diff|=hash.charCodeAt(i)^(expected.charCodeAt(i)||0);return diff===0;}
-const actions=new Set(['config','login','checker-login','google-login','checker-profile','me','logout','sync','checkin','import','upsert','staff-create','staff-update','staff-request','admin-password','helpdesk-save','helpdesk-list','helpdesk-edit','helpdesk-review','helpdesk-export','reports-access','reports-summary','reports-export','reports-members','reports-grant','reports-request']);
+const actions=new Set(['config','login','checker-login','google-login','checker-profile','me','logout','sync','checkin','import','upsert','staff-create','staff-update','staff-request','admin-password','helpdesk-save','helpdesk-list','helpdesk-edit','helpdesk-review','helpdesk-export','reports-access','reports-summary','reports-export','reports-members','reports-grant','reports-request','reports-summary-prepare','reports-save-outcome']);
 export function validateRequest(body){
- if(!body||!actions.has(body.action))throw Error('Unknown action.');
+ if(!body||!actions.has(body.action)&&!isCommunicationAction(body.action))throw Error('Unknown action.');
  if(!body.payload||typeof body.payload!=='object'||Array.isArray(body.payload))throw Error('Invalid payload.');
  const p=body.payload;
+ if(isCommunicationAction(body.action))return {action:body.action,payload:validateCommunication(body.action,p)};
+ const operationUuid=value=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+ const exactKeys=keys=>Object.keys(p).every(key=>keys.includes(key));
+ if(body.action==='reports-export'&&(p.format!=null||p.requestId!=null)&&(!exactKeys(['kind','format','requestId'])||!['csv','xlsx'].includes(p.format)||!operationUuid(p.requestId)))throw Error('Invalid report preparation.');
+ if(body.action==='reports-summary-prepare'&&(!exactKeys(['requestId'])||!operationUuid(p.requestId)))throw Error('Invalid summary preparation.');
+ if(body.action==='reports-save-outcome'&&(!exactKeys(['operationId','outcome'])||!operationUuid(p.operationId)||!['initiated','saved','cancelled','failed'].includes(p.outcome)))throw Error('Invalid report save outcome.');
  if(body.action==='reports-export'&&!['all','attended','absent','blocked','issues','resolved','unresolved','duplicates','activity','helpdesk','pending','corrections'].includes(p.kind))throw Error('Invalid report dataset.');
  if(body.action==='reports-request'&&Object.keys(p).length!==0)throw Error('Faculty requests do not accept permissions or account identifiers.');
  if(body.action.startsWith('reports-')&&JSON.stringify(p).length>2000)throw Error('Report request is too large.');
