@@ -1,10 +1,10 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 15,
-  "versionName": "0.7.7",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.7.apk",
-  "size": 19823096,
-  "sha256": "cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a",
-  "notes": "Native Android Compose rebuild with CameraX scanning, Credential Manager Google sign-in, stable search and pagination around scrollable student and entry lists, native registration, staff administration, reports and exports. Preserves server authorization, private session storage, original signing identity and installer recovery. Released at the owner's request with device sign-in, upgrade/reboot, performance and hosted backend/portal acceptance checks skipped; Google branding deferred.",
-  "publishedAt": "2026-10-18T13:09:35.076589+00:00"
+  "versionCode": 16,
+  "versionName": "0.7.8",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.8.apk",
+  "size": 21176693,
+  "sha256": "b72cd7bdc99883cd9052f3873885073a153f8cb8c83293ffe7191040e415fc60",
+  "notes": "Restores the original burgundy/gold Navrang interface and original Navrang logo at the owner\u2019s request. Retains Credential Manager Google sign-in, CameraX scanning, staff permissions, reports/exports, independent scrolling with fixed controls, secure sessions and installer recovery. Adds fresh server authorization before document saves and preserves durable sign-out/retry protection. No server data, role grants, OAuth configuration or paid domain changes.",
+  "publishedAt": "2026-10-18T16:42:47.713460+00:00"
 }

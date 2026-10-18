@@ -5,46 +5,46 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.7.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [Release handoff](docs/RELEASE-HANDOFF-2026-10-18.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.8.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [Release handoff](docs/RELEASE-HANDOFF-2026-10-18.md)
 
 </div>
 
-> **Release status:** **0.7.7 · Android code 15** is the native Compose release. The APK uses the original signing identity and the existing update channel. Google branding is deferred at the owner's request. Real-device sign-in, upgrade/reboot, performance and hosted backend/portal acceptance were skipped under the owner's explicit release instruction and remain unverified. See [the release record](docs/NATIVE-RELEASE-0.7.7.md).
+> **Release status:** **0.7.8 · Android code 16** restores the original burgundy/gold interface and gold Navrang logo. It keeps the original signing identity, existing update channel, current native sign-in/scanning and data/security protections. Google branding remains deferred. Device, upgrade/reboot, performance and hosted acceptance checks were skipped under the owner's explicit 0.7.8 release approval and remain unverified. See [the signed release record](docs/RESTORATION-RELEASE-0.7.8.md).
 
-## Native Compose application
+## Original Navrang interface
 
-All N01–N18 workflows use native Kotlin/Compose, Material 3, CameraX and Credential Manager. Students and Entry log scroll independently while search and pagination stay fixed. Existing session security, role checks and installer recovery remain in place. [Implementation/history audit](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) · [Parity/evidence](docs/NATIVE-PARITY.md).
+The original screens use the existing local interface host with native Credential Manager/PKCE sign-in and CameraX scanning. Students and Entry log scroll independently while search and pagination stay fixed. Bulk import, both staff permission flags, Help Desk, twelve report datasets, exports, session security and installer recovery remain available. [Restoration details](docs/ORIGINAL-DESIGN-RESTORATION.md) · [Review disposition](docs/RESTORATION-REVIEW-2026-10-18.md).
 
-The screenshots below are synthetic browser/legacy previews. They do not show the new native application.
+The screenshots below render the shared interface with synthetic transport. They are not physical-device captures or live attendance records.
 
 ## A look at the work
 
-<table><tr><td width="50%" align="center"><img src="docs/screenshots/login-mobile.webp" width="310" alt="Unreleased synthetic preview: official event marks, three staff entrances and separate Administration"><br><strong>One clear entrance for every responsibility</strong></td><td width="50%" align="center"><img src="docs/screenshots/admin-mobile.webp" width="310" alt="Unreleased synthetic preview: compact administrator dashboard and phone navigation"><br><strong>Gate control that remains readable on a phone</strong></td></tr></table>
+<table><tr><td width="50%" align="center"><img src="docs/restoration/original-login-synthetic.png" width="310" alt="Synthetic restored original interface: old Navrang logo, staff entrances and separate Administration"><br><strong>One clear entrance for every responsibility</strong></td><td width="50%" align="center"><img src="docs/restoration/original-admin-synthetic.png" width="310" alt="Synthetic restored original interface: administrator dashboard and phone navigation"><br><strong>Gate control that remains readable on a phone</strong></td></tr></table>
 
-![Unreleased synthetic desktop preview of Faculty Reports, showing sample totals and local download controls](docs/screenshots/faculty-desktop.webp)
+[Historical Faculty Reports preview](docs/screenshots/faculty-desktop.webp).
 
-**All preview records are synthetic.** These are rendered candidate-source screens, not production attendance screenshots or evidence of a published APK. Original university/event artwork is retained; no attendee information or credentials are embedded in these images.
+**All preview records are synthetic.** These are rendered source screens with fixture data; they do not establish physical-device or hosted-service acceptance. Original university/event artwork is retained; no attendee information or credentials are embedded in these images.
 
 ## What Navrang Gate does
 
 | At the gate | At the Help Desk | For faculty and administration |
 |---|---|---|
-| Continuous Android QR scanning, exact-ID fallback, focus/torch/zoom aids and distinct feedback. | Named, server-saved registration cases with duplicate safeguards and administrator review. | Searchable registration/entry views, staff permissions, and candidate read-only attendance reports. |
+| Continuous Android QR scanning, exact-ID fallback, focus/torch/zoom aids and distinct feedback. | Named, server-saved registration cases with duplicate safeguards and administrator review. | Searchable registration/entry views, staff permissions, and read-only attendance reports. |
 | Server-confirmed, single-use admissions; duplicate and pending outcomes remain explicit. | Payment and identity approval are deliberate; a case alone never authorizes entry. | CSV/XLSX datasets and PDF summaries distinguish evidence, missing records and organizer corrections. |
 
-**Four roles, one permission model:** Checker · Help Desk · Faculty · Administrator. Faculty reporting is an approved read-only role in the candidate update. The administrator retains access to all stations and reports. Choosing a role in the interface never grants permission.
+**Four roles, one permission model:** Checker · Help Desk · Faculty · Administrator. Faculty reporting is an approved read-only role. The administrator retains access to all stations and reports. Choosing a role in the interface never grants permission.
 
 ## Built for real gate conditions
 
 - **Accountable outcomes:** stable request IDs, immutable receipt attribution, queued problem notices and late-response recovery. Green means a committed admission—not just a decoded QR.
 - **Private by design:** server-owned records; RAM-only student copies; restricted staff summaries; guarded sign-out/late exports; no live roster, workbook or service secret in this repository or APK.
-- **Safe updates:** original signing identity, package/version/hash checks, scan priority and unresolved-installation guards. Merged PR #3 adds process/reboot recovery; phone validation is still required for its release.
+- **Safe updates:** original signing identity, package/version/hash checks, scan priority and unresolved-installation guards. Merged PR #3 adds process/reboot recovery; physical-phone acceptance remains unverified under the owner’s release waiver.
 
 The [feature catalogue](docs/FEATURES.md) documents major and small behaviours: camera cancellation, inverted QR handling, named codes, station locking, Help Desk races, report provenance, formula-safe exports, branding, reduced motion, readiness controls, installer recovery and more.
 
 ## Reports that do not hide the exceptions
 
-The candidate provides twelve dataset views: complete master, admitted, eligible without verified entry, blocked, recorded issues, resolved issues, unresolved issues, duplicate attempts, gate activity, Help Desk cases, pending cases and **“Admitted — registration data missing.”**
+The app provides twelve dataset views: complete master, admitted, eligible without verified entry, blocked, recorded issues, resolved issues, unresolved issues, duplicate attempts, gate activity, Help Desk cases, pending cases and **“Admitted — registration data missing.”**
 
 An organizer-confirmed admission is not presented as a payment verification. Unknown names and exact physical entry times stay unknown. “No verified entry” is not proof of absence. Duplicate scans are not extra people. See [reporting definitions](docs/FEATURES.md#faculty-reports--unreleased-app-candidate).
 
@@ -70,13 +70,13 @@ The web package includes every referenced script, including Faculty Reports. `te
 
 ## The development record
 
-The project progressed through **14 archived APK versions**, from the 0.1.0 offline prototype to 0.7.6's UI-thread and camera responsiveness fixes. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. Older architectures are documented, not silently restored.
+The project retains **14 historical APK versions** from 0.1.0 through 0.7.6, plus the 0.7.7 native rebuild and 0.7.8 original-design restoration. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. Older architectures are documented, not silently restored.
 
 ## Project map
 
 | Location | Contents |
 |---|---|
-| `native-app/` | Kotlin/Compose Android screens, CameraX, Credential Manager, native imports/exports and synthetic UI tests |
+| `native-app/` | AndroidX interface host, Kotlin/Compose scanner, CameraX, Credential Manager, native imports and synthetic UI tests |
 | `app/java/in/navrang/gate/` | Native scanner, sessions, runtime, document saving, readiness and updater |
 | `app/assets/` | Shared web interface, report generators and original/licensed artwork |
 | `server/` | Private-schema gate/report APIs, additive reporting migration and narrowly scoped historical reconciliation |
