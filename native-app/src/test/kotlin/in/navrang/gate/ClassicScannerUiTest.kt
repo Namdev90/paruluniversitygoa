@@ -156,6 +156,7 @@ class ClassicScannerUiTest {
         compose.onNodeWithTag("scanner-exact-id").performScrollTo().performTextInput("TEST0002")
         compose.onNodeWithText("Verify entry").performScrollTo().assertIsDisplayed().assertIsEnabled()
         compose.onNodeWithTag("synthetic-camera-preview").assertIsDisplayed()
+        compose.onNodeWithTag("scanner-frame").assertDoesNotExist()
         screenshot("classic-scanner-compact-id-controls")
         compose.onNodeWithText("Entry confirmed").performScrollTo().assertIsDisplayed()
         screenshot("classic-scanner-compact-confirmed-result")

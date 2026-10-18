@@ -15,7 +15,10 @@
  function universityMark(){const image=el('img');image.src='art/parul-goa.svg';image.alt='Parul University Goa';image.className='institution-wordmark';return image;}
  function brandLine(target){if(!target)return;target.replaceChildren(universityMark(),eventMark('event-wordmark-small'));target.classList.add('official-brand-line');}
  const intro=document.querySelector('.intro-content'),heading=intro?.querySelector('h1');
- if(heading){heading.classList.add('visually-hidden');heading.before(eventMark('event-wordmark-hero'));}
+ if(heading){heading.hidden=true;heading.before(eventMark('event-wordmark-hero'));}
+ // The authentic event artwork already includes the university and event names.
+ // Keep supporting copy in normal flow, without painting duplicate names over it.
+ for(const duplicate of intro?.querySelectorAll(':scope>.official-logo,:scope>.eyebrow')||[])duplicate.hidden=true;
  const dancerRow=el('div',null,'intro-dancers');dancerRow.setAttribute('aria-hidden','true');document.querySelector('.intro-content')?.after(dancerRow);
  for(const side of ['left','right']){
   const dancer=document.querySelector('.intro>.dancer-'+side);if(!dancer)continue;

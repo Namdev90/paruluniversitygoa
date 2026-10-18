@@ -141,13 +141,14 @@ data class Receipt(
     val observedAt: String,
     val note: String,
     val source: String = "",
+    val checkerId: String = "",
 ) {
     val correction
         get() = basis == "organizer_confirmed"
 
     val hasScanDetails
         get() = checker.isNotBlank() || recordedAt.isNotBlank() || actualAt.isNotBlank() ||
-            observedAt.isNotBlank() || note.isNotBlank() || source.isNotBlank() || seq > 0 || correction
+            observedAt.isNotBlank() || note.isNotBlank() || source.isNotBlank() || checkerId.isNotBlank() || seq > 0 || correction
 
     val timeLabel
         get() = if (correction) "Correction recorded" else "Entry confirmed"
@@ -168,6 +169,7 @@ data class Receipt(
                 o.text("observedScanAt"),
                 o.text("note"),
                 o.text("source"),
+                o.text("checkerId"),
             )
     }
 }
@@ -331,7 +333,7 @@ data class ScanRecordDetails(
 
 /** No truncation: an overlong pasted ID must never verify a different ticket. */
 internal fun exactScannerId(raw: String): String? =
-    raw.trim().uppercase(Locale.ROOT).takeIf { Regex("[A-Z0-9]{8}").matches(it) }
+    raw.trim().takeIf { Regex("[A-Za-z0-9]{8}").matches(it) }?.uppercase(Locale.ROOT)
 
 data class ScanResult(
     val id: String,

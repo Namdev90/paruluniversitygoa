@@ -13,6 +13,9 @@ test('launch uses separate content, dancer and action regions without replacing 
  assert.equal(stage.querySelectorAll('.dancer').length,2);
  assert.equal(w.document.querySelector('.intro-content .classic-event-logo').getAttribute('src'),'art/app-icon.png');
  assert.equal(w.document.querySelector('#skip-intro').parentElement.id,'intro');
+ assert.equal(w.document.querySelector('.intro-content h1').hidden,true);
+ assert.equal(w.document.querySelector('.intro-content>.official-logo').hidden,true);
+ assert.match(read('app/assets/art/classic-restore.css'),/intro-content>\.intro-tagline,\.intro-content>\.pill\{position:static/);
  assert.match(read('app/assets/art/classic-restore.css'),/grid-template-rows:auto minmax\(0,1fr\) auto/);
  assert.match(read('app/assets/art/classic-restore.css'),/prefers-reduced-motion:reduce/);
  dom.window.close();

@@ -25,7 +25,7 @@ object RegistrationImport {
         val bytes = json("action" to "import", "payload" to payload).toString().toByteArray(Charsets.UTF_8)
         try {
             require(bytes.size <= MAX_FILE) {
-                "Import expands beyond the server's 8 MiB request limit. Split it into smaller files."
+                "Import exceeds the server's 8 MiB request limit. Nothing was sent. Ask the organizer to reduce unnecessary field text while keeping the complete dataset. Do not split the dataset: each import replaces the active registration set."
             }
         } finally {
             bytes.fill(0)

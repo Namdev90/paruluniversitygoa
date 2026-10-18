@@ -52,7 +52,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
             title = { Text(result.title) },
             text = { ClassicScanReceipt(result) },
             confirmButton = {
-                TextButton(onClick = { inspectedResult = null }) { Text("Back to camera") }
+                ClassicScannerButton(onClick = { inspectedResult = null }) { Text("Back to camera") }
             },
         )
     }
@@ -75,7 +75,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
             Button(onClick = { request.launch(Manifest.permission.CAMERA) }) {
                 Text("Allow camera")
             }
-            if (!exactIdOpen) OutlinedButton(onClick = { exactIdOpen = true }) {
+            if (!exactIdOpen) ClassicScannerButton(onClick = { exactIdOpen = true }) {
                 Text("Find by ticket ID")
             }
             s.result?.let { result ->
@@ -87,7 +87,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                 onClose = { exactIdOpen = false },
                 cameraAvailable = false,
             )
-            TextButton(onClick = exit, enabled = s.held == null) { Text("Return to station") }
+            ClassicScannerButton(onClick = exit, enabled = s.held == null) { Text("Return to station") }
         }
         return
     }
@@ -317,7 +317,6 @@ internal fun ClassicScannerCameraLayout(
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val controlsHeight = maxHeight * (if (exactIdOpen) .7f else .55f)
-        val frameSize = minOf(220.dp, maxHeight * .35f)
         Column(Modifier.fillMaxSize()) {
             Box(
                 Modifier.weight(1f).fillMaxWidth().background(Color.Black).pointerInput(onFocus) {
@@ -325,19 +324,24 @@ internal fun ClassicScannerCameraLayout(
                 }
             ) {
                 previewContent()
-                Surface(
-                    color = Color.Black.copy(alpha = .72f),
-                    contentColor = Color.White,
-                    modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth(),
-                ) {
-                    Text(status, Modifier.padding(12.dp))
+                Column(Modifier.fillMaxSize()) {
+                    Surface(
+                        color = Color.Black.copy(alpha = .72f),
+                        contentColor = Color.White,
+                        modifier = Modifier.fillMaxWidth().testTagCompat("scanner-status"),
+                    ) {
+                        Text(status, Modifier.padding(12.dp))
+                    }
+                    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                        // Size against space remaining below the status, never the whole screen.
+                        if (!exactIdOpen && maxHeight >= 48.dp) {
+                            val frameSize = minOf(220.dp, maxHeight * .85f, maxWidth * .75f)
+                            Box(Modifier.align(Alignment.Center).size(frameSize)
+                                .border(2.dp, Color.White, RoundedCornerShape(20.dp))
+                                .testTagCompat("scanner-frame"))
+                        }
+                    }
                 }
-                Box(
-                    Modifier.align(Alignment.Center)
-                        .size(frameSize)
-                        .border(2.dp, Color.White, RoundedCornerShape(20.dp))
-                        .testTagCompat("scanner-frame")
-                )
             }
             Column(
                 Modifier.fillMaxWidth()
@@ -355,7 +359,7 @@ internal fun ClassicScannerCameraLayout(
                     onClose = { onExactIdOpen(false) },
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    OutlinedButton(
+                    ClassicScannerButton(
                         onClick = onTorch,
                         enabled = hasFlash,
                     ) {
@@ -367,12 +371,12 @@ internal fun ClassicScannerCameraLayout(
                             }
                         )
                     }
-                    TextButton(
+                    ClassicScannerButton(
                         onClick = { onZoom(1f) }
                     ) {
                         Text("Reset zoom")
                     }
-                    TextButton(
+                    ClassicScannerButton(
                         onClick = { onExactIdOpen(!exactIdOpen) },
                         enabled = s.held == null,
                     ) { Text(if (exactIdOpen) "Hide ID" else "Find ID") }

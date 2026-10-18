@@ -68,16 +68,28 @@ def run():
     for script in scripts:page.evaluate((assets/script).read_text())
     page.wait_for_timeout(50)
    def measure(page,role,view,width,height):
-    result=page.evaluate('''() => {
+    result=page.evaluate(r'''() => {
       const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'&&!e.closest('[hidden]');};
       const over=[...document.querySelectorAll('button,input,select,.topbar,.brand,.top-actions,.login-role-picker,.panel-heading,.report-member,.mobile-nav')].filter(visible).map(e=>{const r=e.getBoundingClientRect();return {id:e.id||e.className,left:r.left,right:r.right};}).filter(r=>r.left < -1 || r.right > innerWidth+1);
       const logos=[...document.querySelectorAll('.institution-wordmark,.header-logo,.crafted-login>.official-logo')].filter(visible);
+      const luminance=c=>{const rgb=c.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722};
+      const placeholderContrast=[...document.querySelectorAll('input[placeholder]')].filter(visible).map(e=>{const a=luminance(getComputedStyle(e,'::placeholder').color),b=luminance(getComputedStyle(e).backgroundColor);return {id:e.id,ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)}}).filter(x=>x.ratio<4.5);
       const lowContrast=logos.filter(e=>getComputedStyle(e).backgroundColor==='rgb(252, 243, 224)').map(e=>e.className);
-      return {documentWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,overflow:over,lowContrastMarks:lowContrast,navHeight:document.querySelector('.mobile-nav').getBoundingClientRect().height};
+      return {documentWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,overflow:over,lowContrastMarks:lowContrast,placeholderContrast,navHeight:document.querySelector('.mobile-nav').getBoundingClientRect().height};
     }''')
     item=dict(role=role,view=view,width=width,height=height,**result);reports.append(item)
     (out/'partial.json').write_text(json.dumps(reports,indent=2))
-    if result['documentWidth']>width+1 or result['overflow'] or result['lowContrastMarks']:failures.append(item)
+    if result['documentWidth']>width+1 or result['overflow'] or result['lowContrastMarks'] or result['placeholderContrast']:failures.append(item)
+   def measure_control(page,selector,label):
+    control=page.locator(selector).first
+    control.scroll_into_view_if_needed()
+    result=control.evaluate("""e=>{
+      const r=e.getBoundingClientRect();let top=Math.max(0,r.top),bottom=Math.min(innerHeight,r.bottom),left=Math.max(0,r.left),right=Math.min(innerWidth,r.right);
+      for(let p=e.parentElement;p;p=p.parentElement){const s=getComputedStyle(p),b=p.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(s.overflowY)){top=Math.max(top,b.top);bottom=Math.min(bottom,b.bottom)}if(/auto|scroll|hidden|clip/.test(s.overflowX)){left=Math.max(left,b.left);right=Math.min(right,b.right)}}
+      return {height:r.height,width:r.width,visibleHeight:Math.max(0,bottom-top),visibleWidth:Math.max(0,right-left)};
+    }""")
+    reports.append(dict(control=label,**result))
+    if result['height']<43 or result['visibleHeight']<min(43,result['height']) or result['visibleWidth']<min(43,result['width']):failures.append(dict(unreachableControl=label,**result))
    def measure_scroll(page,view):
     result=page.evaluate("""view=>{
       const root=document.querySelector(view==='students'?'#admin-registrations':'#view-entries');
@@ -88,8 +100,14 @@ def run():
       return {view,before,after:bounds(),offset:scroller.scrollTop,height:scroller.clientHeight,scrollHeight:scroller.scrollHeight};
     }""",view)
     if result['scrollHeight']>result['height'] and result['offset']<=0:failures.append(dict(scrollFailure=result))
-    if result['height']<=0 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):failures.append(dict(stabilityFailure=result))
+    if result['height']<112 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):failures.append(dict(stabilityFailure=result))
     reports.append(dict(scroll=result))
+    root='#admin-registrations' if view=='students' else '#view-entries'
+    page.locator(root+' .rows-scroll').hover()
+    parent_before=page.locator(root).evaluate('e=>e.scrollTop')
+    page.mouse.wheel(0,300);page.wait_for_timeout(80)
+    parent_after=page.locator(root).evaluate('e=>e.scrollTop')
+    if abs(parent_after-parent_before)>1:failures.append(dict(scrollEscapedRows=view,before=parent_before,after=parent_after))
    sizes=[tuple(map(int,size.split('x'))) for size in args.sizes.split(',')]
    for width,height in sizes:
     for role in ('login','admin','faculty','checker'):
@@ -100,17 +118,23 @@ def run():
       page.evaluate("const i=document.getElementById('intro');i.hidden=false;i.classList.remove('leaving')")
       launch=page.evaluate("""() => {
        const box=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
-       return {content:box('.intro-content'),figures:box('.intro-dancers'),cta:box('#skip-intro'),width:innerWidth,height:innerHeight};
+       const children=[...document.querySelector('.intro-content').children].filter(e=>!e.hidden&&getComputedStyle(e).display!=='none').map(e=>{const r=e.getBoundingClientRect();return {name:e.className||e.tagName,left:r.left,right:r.right,top:r.top,bottom:r.bottom}});
+       return {content:box('.intro-content'),children,figures:box('.intro-dancers'),cta:box('#skip-intro'),width:innerWidth,height:innerHeight};
       }""")
       overlap=lambda a,b:a['left']<b['right']-1 and a['right']>b['left']+1 and a['top']<b['bottom']-1 and a['bottom']>b['top']+1
       if overlap(launch['content'],launch['figures']) or overlap(launch['content'],launch['cta']) or overlap(launch['figures'],launch['cta']):failures.append(dict(launchOverlap=launch))
       if any(b['left'] < -1 or b['right'] > width+1 or b['top'] < -1 or b['bottom'] > height+1 for b in (launch['content'],launch['figures'],launch['cta'])):failures.append(dict(launchOverflow=launch))
+      for i,a in enumerate(launch['children']):
+       for b in launch['children'][i+1:]:
+        if overlap(a,b):failures.append(dict(launchChildOverlap=[a,b],width=width,height=height))
+       if a['top']<launch['content']['top']-1 or a['bottom']>launch['content']['bottom']+1:failures.append(dict(launchChildOutsideContent=a,width=width,height=height))
       reports.append(dict(launch=launch))
       page.screenshot(path=str(out/f'launch-{width}x{height}.png'))
       if width in (390,640):
        page.emulate_media(reduced_motion='no-preference')
        for frame in (0,350,1100,2600):
         page.evaluate('ms=>document.getAnimations().forEach(a=>{a.pause();a.currentTime=ms})',frame)
+        if page.locator('#skip-intro').evaluate('e=>Number(getComputedStyle(e).opacity)')<1:failures.append(dict(hiddenLaunchActionAtMs=frame,width=width))
         page.screenshot(path=str(out/f'launch-{width}x{height}-motion-{frame}.png'))
        page.emulate_media(reduced_motion='reduce')
      page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
@@ -132,6 +156,8 @@ def run():
        if target=='entries':measure_scroll(page,'entries')
       for tab in ('registrations','admissions','checkers','updates'):
        page.locator('#admin-nav').click();page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
+       if tab=='checkers':measure_control(page,'#checker-list .checker-row button','Manage access')
+       if tab=='updates':measure_control(page,'#password-open','Change admin password')
        if width in (390,1366):page.screenshot(path=str(out/f'admin-tab-{tab}-{width}.png'))
        if tab=='updates':
         # The Android bridge exposes this same control. Exercise its layout

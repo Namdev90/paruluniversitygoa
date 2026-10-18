@@ -64,3 +64,15 @@ test('scan result details retain optional payment facts and correction provenanc
   for(const value of ['Quantity: 1','Refund: ₹0','Payment status: Verified payment','Entry basis: Organizer-confirmed attendance','Recorded by: Checker 0','Correction recorded:','Observed scan:','Receipt source: Organizer note'])assert.ok(text.includes(value),value);for(const value of ['Amount:','Payment method:','Payment date:','Physical entry:','undefined','Not recorded','unavailable'])assert.ok(!text.includes(value),value);
  }finally{await tick();t.dom.window.close()}
 });
+
+
+test('manual entry validates ASCII before uppercase so Unicode cannot change the ticket',async()=>{
+ for(const [raw,expected] of [['TEßT001',null],['ABﬀCD12',null],['test0001','TEST0001']]){
+  const t=setup();try{await tick();const calls=[];t.w.GateClient.submit=async id=>calls.push(id);t.$('ticket-id').value=raw;t.$('manual-form').dispatchEvent(new t.w.Event('submit',{cancelable:true}));await tick();assert.deepEqual(calls,expected?[expected]:[]);if(!expected)assert.match(t.$('result-title').textContent,/not allowed/)}finally{t.dom.window.close()}
+ }
+});
+
+test('list search caches sorted normalized data and clears that cache with access loss',()=>{
+ const source=asset('gate.js');assert.match(source,/searchIndex\('students',m.records/);assert.match(source,/searchIndex\('entries',model.entries/);assert.match(source,/function clearLists\(\)\{searchIndexes.clear\(\)/);
+ assert.match(source,/cached.source!==source/);
+});

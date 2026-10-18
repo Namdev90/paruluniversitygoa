@@ -2,6 +2,8 @@ package `in`.navrang.gate
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +20,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -41,6 +44,34 @@ internal fun ClassicScannerTheme(content: @Composable () -> Unit) {
             small = RoundedCornerShape(9.dp), medium = RoundedCornerShape(12.dp),
             large = RoundedCornerShape(18.dp),
         ),
+        content = content,
+    )
+}
+
+
+/** Raised rectangular controls match the classic host rather than default pill styling. */
+@Composable
+internal fun ClassicScannerButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    primary: Boolean = false,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+    content: @Composable RowScope.() -> Unit,
+) {
+    val shape = RoundedCornerShape(12.dp)
+    val colors = if (primary) listOf(Color(0xffffe6b8), Color(0xffc99557))
+                 else listOf(Color(0xff573449), Color(0xff291d2f))
+    Button(
+        onClick = onClick, enabled = enabled,
+        modifier = modifier.heightIn(min = 48.dp).shadow(if (enabled) 6.dp else 0.dp, shape)
+            .background(Brush.verticalGradient(colors), shape),
+        shape = shape, border = BorderStroke(1.dp, ScannerGold.copy(alpha = .5f)),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent,
+            contentColor = if (primary) Color(0xff201219) else ScannerGold,
+            disabledContainerColor = Color(0xff211923), disabledContentColor = Color(0xff8c7c84)),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
+        contentPadding = contentPadding,
         content = content,
     )
 }
@@ -73,33 +104,37 @@ internal fun ScannerExactIdPanel(
             "Verify entry checks the server and records admission for an eligible ticket. Only a confirmed receipt permits entry.",
             style = MaterialTheme.typography.bodySmall,
         )
-        OutlinedTextField(
+        Text("Exact eight-character ticket ID", style = MaterialTheme.typography.labelLarge)
+        BasicTextField(
             value = input,
             onValueChange = { input = it },
-            label = { Text("Exact eight-character ticket ID") },
             singleLine = true,
             enabled = enabled,
-            isError = input.isNotBlank() && normalized == null,
-            supportingText = {
-                Text(if (input.isNotBlank() && normalized == null) "Use exactly eight letters or digits."
-                     else if (cameraAvailable) "Camera stays open; QR reading is paused while you enter the ID."
-                     else "You can verify an ID without camera permission.")
-            },
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color(0xfff9e9dc)),
+            cursorBrush = Brush.verticalGradient(listOf(ScannerGold, ScannerGold)),
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Characters,
                 autoCorrectEnabled = false,
                 imeAction = ImeAction.Done,
             ),
             keyboardActions = KeyboardActions(onDone = { verify() }),
-            modifier = Modifier.fillMaxWidth().testTagCompat("scanner-exact-id"),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+                .background(Color(0xff100d15), RoundedCornerShape(12.dp))
+                .border(1.dp, if (input.isNotBlank() && normalized == null) Color(0xffffbdad) else ScannerGold.copy(alpha = .65f), RoundedCornerShape(12.dp))
+                .padding(14.dp).semantics { contentDescription = "Exact eight-character ticket ID" }
+                .testTagCompat("scanner-exact-id"),
         )
+        Text(if (input.isNotBlank() && normalized == null) "Use exactly eight ASCII letters or digits."
+             else if (cameraAvailable) "Camera stays open; QR reading is paused while you enter the ID."
+             else "You can verify an ID without camera permission.", style = MaterialTheme.typography.bodySmall)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
+            ClassicScannerButton(
                 onClick = { verify() },
+                primary = true,
                 enabled = enabled && normalized != null,
                 modifier = Modifier.weight(1f).heightIn(min = 48.dp),
             ) { Text("Verify entry") }
-            OutlinedButton(
+            ClassicScannerButton(
                 onClick = {
                     focus.clearFocus()
                     keyboard?.hide()
@@ -133,7 +168,7 @@ internal fun ClassicScanOutcomeCard(result: ScanResult, onDetails: () -> Unit) {
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             Text(listOf(result.id, result.name).filter { it.isNotBlank() }.joinToString(" · "))
             if (result.pending) Text("Wait for the server receipt. Entry is not confirmed.", style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = onDetails, contentPadding = PaddingValues(horizontal = 0.dp)) {
+            ClassicScannerButton(onClick = onDetails, contentPadding = PaddingValues(horizontal = 0.dp)) {
                 Text("View ticket and entry details")
             }
         }
@@ -194,6 +229,7 @@ internal fun ClassicScanReceipt(result: ScanResult) {
             HorizontalDivider(color = ScannerGold.copy(alpha = .3f))
             Text(if (result.code == "duplicate") "Previous accepted entry" else "Accepted entry receipt", style = MaterialTheme.typography.titleMedium)
             ScannerDetail(if (receipt.correction) "Recorded by" else "Entry checked by", receipt.checker)
+            ScannerDetail("Checker ID", receipt.checkerId)
             ScannerDetail(receipt.timeLabel, scannerTime(receipt.time))
             ScannerDetail("Original scan observed", scannerTime(receipt.observedAt))
             if (receipt.seq > 0) ScannerDetail("Entry receipt number", receipt.seq.toString())

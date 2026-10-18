@@ -63,10 +63,11 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 
 /* Launch has three real layout regions, so figures never cross the logo or CTA. */
 .intro{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:max(18px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 25%,#742a4c66,transparent 62%),linear-gradient(155deg,#241221,#100d15)}
-.intro-content{grid-column:1;grid-row:1;position:relative;align-self:center;justify-self:center;width:100%;margin:0;gap:8px;z-index:3}
+.intro-content{grid-column:1;grid-row:1;position:relative;align-self:center;justify-self:center;width:100%;height:auto;padding:0;margin:0;gap:8px;z-index:3}
 .intro-content>.official-logo{width:min(230px,66vw);height:28px;margin:0;flex:none;animation:none}
 .intro-content .event-wordmark-hero.classic-event-mark{width:min(208px,32vh,54vw);max-height:none;aspect-ratio:1;filter:drop-shadow(0 7px 12px #0007)}
 .intro-content .eyebrow{font-size:10px;color:#e5be7d;display:block}
+.intro-content>.intro-tagline,.intro-content>.pill{position:static;inset:auto;transform:none;animation:none;opacity:1;flex:none}
 .intro-content .intro-tagline,.intro-content p:not(.eyebrow){color:#ead0bb;font-size:14px;line-height:1.25}
 .intro-content .pill{color:#f5d4a3;background:#4e283754;border-color:#bd905652}
 .intro-dancers{grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:min(520px,100%);height:100%;min-height:0;justify-self:center;align-self:stretch;overflow:hidden;isolation:isolate}
@@ -81,7 +82,7 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 @media(max-height:560px) and (min-width:520px){.intro{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);grid-template-rows:minmax(0,1fr) auto;gap:8px 16px;padding:12px 22px}.intro-content{grid-column:1;grid-row:1;gap:5px}.intro-content>.official-logo{width:min(205px,33vw);height:24px}.intro-content .event-wordmark-hero.classic-event-mark{width:min(160px,42vh)}.intro-content .eyebrow{display:none}.intro-content .intro-tagline,.intro-content p:not(.eyebrow){font-size:12px}.intro-dancers{grid-column:2;grid-row:1;width:100%}.intro .intro-skip{grid-column:1/-1;grid-row:2;min-height:42px;margin:0}}
 @media(max-height:600px) and (max-width:519px){.intro-content .event-wordmark-hero.classic-event-mark{width:min(150px,28vh)}.intro-content .eyebrow{display:none}.intro-content .pill{display:none}.intro-content>.official-logo{height:24px}.intro{gap:6px;padding-block:12px}}
 @media(prefers-reduced-motion:reduce){.intro .dancer-stage,.intro .dancer-stage>.dancer{animation:none!important;transform:none!important}.intro-content .event-wordmark-hero.classic-event-mark{filter:none}}
-.institution-wordmark,.crafted-login>.official-logo,.official-logo,.brand.official-header .header-logo{border:0}
+.institution-wordmark,.crafted-login>.official-logo,.official-logo,.intro-content>.official-logo,.brand.official-header .header-logo{border:0;padding:0;border-radius:0}
 #view-desk.desk-list-mode{overflow:hidden;min-height:0}
 #view-desk.desk-list-mode>.panel-heading,#view-desk.desk-list-mode>.stats{flex-shrink:0}
 #view-desk.desk-list-mode .desk-workspace{flex:1 1 0;min-height:0;overflow:hidden}
@@ -90,3 +91,65 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 #desk-list-panel>.panel-heading,#desk-list-panel>.table-toolbar,.list-footer{flex-shrink:0}
 .list-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px}
 .list-footer .list-status{padding-top:0;min-height:0}.list-footer .button{flex-shrink:0}
+
+/* Reserve real row space; compact viewports can scroll the panel to every action. */
+#admin-console>.admin-tab{overflow:auto;overscroll-behavior:contain}
+#admin-console>.panel-heading,#admin-console>.namu-guide,#admin-console>.admin-stats{flex-shrink:0}
+#admin-console .rows-scroll{min-height:160px}
+#admin-console #checker-list{min-height:112px;flex:1 0 112px}
+#admin-checkers>#provider-note,#admin-checkers>.table-toolbar,#admin-checkers>.list-status,#admin-checkers>#open-code{flex-shrink:0}
+#admin-console>#admin-updates:not([hidden]){overflow-y:auto;display:block}
+#admin-updates>.button{min-height:44px}
+#admin-console .checker-row{min-height:72px}
+#admin-console .checker-row .button{min-height:44px}
+.admin-tab th,.table-panel th{overflow-wrap:normal;word-break:normal;font-size:11px}
+.admin-tab td,.table-panel td{font-size:12px}
+.admin-tab .table-link{font-size:12px;min-height:44px}
+@media(max-height:900px){
+ #admin-console>.namu-guide{display:none}
+ #admin-console{gap:8px}
+ #admin-console>.admin-stats{margin-block:4px}
+ #admin-console>.admin-stats article{padding-block:8px}
+}
+@media(max-width:480px){
+ #admin-registrations th:first-child{width:38%}
+ #admin-registrations th:nth-child(2){width:15%}
+ #admin-registrations th:nth-child(3){width:18%}
+ #admin-registrations th:nth-child(4){width:13%}
+ #admin-registrations th:last-child{width:16%}
+ #admin-registrations th{padding-inline:2px}
+ #admin-registrations .table-link{font-size:12px;min-height:44px}
+ #admin-registrations td:last-child .table-link{min-width:44px}
+}
+@media(max-height:500px){
+ #admin-console .rows-scroll{min-height:112px}
+ #admin-console #checker-list{min-height:112px}
+}
+
+.intro .intro-skip{animation:none;opacity:1}
+#view-entries>.table-panel{overflow:auto}
+#view-entries .rows-scroll{min-height:160px}
+@media(max-height:500px){#view-entries .rows-scroll{min-height:112px}}
+input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
+/* Staff actions share one toolbar so a compact viewport still has a whole row. */
+#admin-console>#admin-checkers:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto minmax(112px,1fr) auto;gap:6px;overflow:hidden}
+#admin-checkers>#provider-note{grid-column:1/-1;grid-row:1;margin:0}
+#admin-checkers>.table-toolbar{grid-column:1;grid-row:2;margin:0}
+#admin-checkers>#open-code{grid-column:2;grid-row:2;margin:0;max-width:180px;min-height:44px}
+#admin-checkers>#checker-list{grid-column:1/-1;grid-row:3}
+#admin-checkers>.list-status,#admin-checkers>.empty{grid-column:1/-1;grid-row:4;margin:0}
+@media(max-height:500px){
+ .topbar{min-height:44px;padding-block:4px}
+ .brand.official-header>.classic-header-logo{width:32px;height:32px}
+ .brand.official-header .header-logo{height:26px}
+ .mobile-nav{padding-top:3px;padding-bottom:0}
+ .mobile-nav button,.administrator-session .mobile-nav button{min-height:40px;padding:3px}
+ .mobile-nav button span{line-height:16px;margin:0}
+ #admin-console>#admin-checkers:not([hidden]){grid-template-rows:auto minmax(112px,1fr) auto;gap:4px}
+ #admin-checkers>#provider-note{display:none}
+ #admin-checkers>.table-toolbar,#admin-checkers>#open-code{grid-row:1}
+ #admin-checkers>#checker-list{grid-row:2}
+ #admin-checkers>.list-status,#admin-checkers>.empty{grid-row:3;padding:0;min-height:18px}
+ #admin-checkers>#open-code{font-size:11px;max-width:150px}
+ .list-status{padding-top:4px;min-height:22px}
+}

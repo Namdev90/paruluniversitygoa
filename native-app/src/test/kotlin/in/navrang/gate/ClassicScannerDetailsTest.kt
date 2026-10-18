@@ -13,7 +13,7 @@ import org.robolectric.annotation.Config
 class ClassicScannerDetailsTest {
     @Test fun exactIdDoesNotTruncateOrSubmitArbitraryQrContent() {
         assertEquals("TEST0001", exactScannerId(" test0001 "))
-        for (raw in listOf("", "TEST001", "TEST00010", "TEST 001", "TEST-001", "https://fixture.invalid/TEST0001", "{\"id\":\"TEST0001\"}"))
+        for (raw in listOf("", "TEST001", "TEST00010", "TEST 001", "TEST-001", "TEßT001", "ABﬀCD12", "https://fixture.invalid/TEST0001", "{\"id\":\"TEST0001\"}"))
             assertNull(raw, exactScannerId(raw))
     }
 
@@ -33,7 +33,7 @@ class ClassicScannerDetailsTest {
                 "eligible" to true, "reason" to ""),
             "entry" to json("ticketId" to "TEST0001", "name" to "Synthetic student",
                 "checker" to "Original synthetic checker", "at" to "2026-10-10T10:11:12Z",
-                "seq" to 71, "source" to "Synthetic workbook"),
+                "seq" to 71, "source" to "Synthetic workbook", "checkerId" to "synthetic-checker-17"),
         ))
         assertFalse(result.confirmed)
         assertEquals("100", result.record!!.amount)
@@ -44,6 +44,7 @@ class ClassicScannerDetailsTest {
         assertEquals("Original synthetic checker", result.receipt!!.checker)
         assertEquals("2026-10-10T10:11:12Z", result.receipt!!.time)
         assertEquals("Synthetic workbook", result.receipt!!.source)
+        assertEquals("synthetic-checker-17", result.receipt!!.checkerId)
         assertEquals("", result.record!!.paymentAt)
         assertEquals("", result.record!!.paymentMethod)
         assertEquals("", result.record!!.paymentReference)
