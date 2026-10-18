@@ -162,7 +162,9 @@ def run():
         measure_scroll(page,'entries')
       for tab in ('registrations','admissions','checkers','updates'):
        page.locator('#admin-nav').click();page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
-       if tab=='checkers':measure_control(page,'#checker-list .checker-row button','Manage access')
+       if tab=='checkers':
+        measure_control(page,'#checker-list .checker-row button','Manage access')
+        measure_control(page,'#staff-count','Staff list footer',minimum=0,scroll=False)
        if tab=='updates':measure_control(page,'#password-open','Change admin password')
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-tab-{tab}-{width}.png'))
        if tab=='updates':

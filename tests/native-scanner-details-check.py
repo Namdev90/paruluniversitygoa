@@ -18,8 +18,8 @@ class ClassicScannerContract(unittest.TestCase):
         self.assertIn('onClick = { onExactIdOpen(!exactIdOpen) }', scanner)
         self.assertIn('onExactIdOpen = { exactIdOpen = it }', scanner)
         self.assertNotIn('onClick = exit) { Text("Exact ID")', scanner)
-        self.assertIn('if (!active.get() || held || now - last < 100)', scanner)
-        self.assertIn('if (active.get() && !held)', scanner)
+        self.assertIn('if (!active.get() || !foreground.get() || held || now - last < 100)', scanner)
+        self.assertIn('if (active.get() && foreground.get() && !held)', scanner)
         # Opening the ID panel must not become a camera-effect key.
         effect = scanner.split('DisposableEffect(', 1)[1].split(')', 1)[0]
         self.assertNotIn('exactId', effect)

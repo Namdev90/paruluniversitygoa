@@ -23,15 +23,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 @Composable
 internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = { vm.navigate(Destination.Checker) }) {
@@ -96,20 +97,64 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
     }
     var camera by remember { mutableStateOf<Camera?>(null) }
     var torch by remember { mutableStateOf(false) }
-    var torchMode by remember { mutableIntStateOf(0) }
     var zoom by remember { mutableFloatStateOf(1f) }
     var maxZoom by remember { mutableFloatStateOf(1f) }
-    var status by remember { mutableStateOf("Center one QR · tap to focus") }
+    var status by remember { mutableStateOf("Automatic camera · keep one whole QR visible") }
     val preview = remember {
         PreviewView(context).apply {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
     }
+    val assist = remember { ScannerAssist() }
+    val focusUntil = remember { AtomicLong(0) }
+    val focusSequence = remember { AtomicLong(0) }
+    val startFocus: (MeteringPoint) -> Unit = { point ->
+        val c = camera
+        val now = SystemClock.elapsedRealtime()
+        if (c != null && now >= focusUntil.get()) {
+            val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE)
+                .setAutoCancelDuration(3, TimeUnit.SECONDS).build()
+            if (c.cameraInfo.isFocusMeteringSupported(action)) {
+                val request = focusSequence.incrementAndGet()
+                focusUntil.set(now + 4500)
+                try {
+                    c.cameraControl.startFocusAndMetering(action).addListener({
+                        if (focusSequence.get() == request) focusUntil.set(0)
+                    }, ContextCompat.getMainExecutor(context))
+                } catch (_: Exception) { focusUntil.set(0) }
+            }
+        }
+    }
     val held by rememberUpdatedState(s.held != null || s.profile?.canScan != true || exactIdOpen || inspectedResult != null)
+    LaunchedEffect(held, camera) {
+        if (held) {
+            assist.paused()
+            torch = false
+            camera?.cameraControl?.enableTorch(false)
+            camera?.cameraControl?.cancelFocusAndMetering()
+            focusSequence.incrementAndGet()
+            focusUntil.set(0)
+        }
+    }
     DisposableEffect(owner, preview) {
         val worker = Executors.newSingleThreadExecutor()
         val active = AtomicBoolean(true)
+        val foreground = AtomicBoolean(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+        val lifecycleObserver = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                foreground.set(true)
+            } else if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
+                foreground.set(false)
+                assist.paused()
+                torch = false
+                camera?.cameraControl?.enableTorch(false)
+                camera?.cameraControl?.cancelFocusAndMetering()
+                focusSequence.incrementAndGet()
+                focusUntil.set(0)
+            }
+        }
+        owner.lifecycle.addObserver(lifecycleObserver)
         val main = ContextCompat.getMainExecutor(context)
         val latch = ScanLatch()
         var provider: ProcessCameraProvider? = null
@@ -131,16 +176,11 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                             .build()
                     var last = 0L
                     var lastHint = 0L
-                    var lastRead = 0L
-                    var lastTorch = 0L
-                    var lastZoom = 0L
-                    var darkFrames = 0
-                    var brightFrames = 0
                     var frameBytes = ByteArray(0)
                     analyzer.setAnalyzer(worker) { frame ->
                         try {
                             val now = SystemClock.elapsedRealtime()
-                            if (!active.get() || held || now - last < 100) return@setAnalyzer
+                            if (!active.get() || !foreground.get() || held || now - last < 100) return@setAnalyzer
                             last = now
                             val plane = frame.planes[0]
                             val buffer = plane.buffer
@@ -152,12 +192,12 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                             val base = buffer.position()
                             for (y in 0 until height) for (x in 0 until width) data[y * width + x] =
                                 buffer.get(base + y * plane.rowStride + x * plane.pixelStride)
-                            val found = QrCodec.inspect(data, width, height)
+                            val found = ScannerQrReader.inspect(data, width, height)
                             val fresh = latch.observe(found.value, now)
                             if (fresh && found.value != null) {
-                                lastRead = now
                                 main.execute {
-                                    if (active.get() && !held) {
+                                    if (active.get() && foreground.get() && !held) {
+                                        assist.read(now)
                                         GateFeedback.play(context, "scan")
                                         vm.scanned(found.value)
                                         status = "QR read · awaiting server confirmation"
@@ -166,75 +206,38 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                             } else if (now - lastHint > 500) {
                                 lastHint = now
                                 val health = CameraHealth.measure(data, width, height)
-                                darkFrames = if (health.dark()) darkFrames + 1 else 0
-                                brightFrames = if (health.luminance > 165) brightFrames + 1 else 0
                                 main.execute {
-                                    if (active.get()) {
+                                    // Recheck after queueing: ID entry, a held result, or backgrounding
+                                    // must pause camera adjustments as well as QR submission.
+                                    if (active.get() && foreground.get() && !held && SystemClock.elapsedRealtime() - now < 1500) {
                                         val c = camera
-                                        if (
-                                            torchMode == 0 &&
-                                                c?.cameraInfo?.hasFlashUnit() == true &&
-                                                now - lastTorch > 5000
-                                        ) {
-                                            val next =
-                                                if (darkFrames >= 3) true
-                                                else if (brightFrames >= 5 && found.points == 0)
-                                                    false
-                                                else torch
-                                            if (next != torch) {
-                                                torch = next
-                                                c.cameraControl.enableTorch(next)
-                                                lastTorch = now
-                                            }
+                                        val decision = assist.inspect(
+                                            now, true, health.dark(), health.luminance > 165, health.soft(),
+                                            found, zoom, maxZoom, torch, true,
+                                            c?.cameraInfo?.hasFlashUnit() == true, now < focusUntil.get(),
+                                        )
+                                        if (decision.torch >= 0) {
+                                            torch = decision.torch == 1
+                                            c?.cameraControl?.enableTorch(torch)
                                         }
-                                        status =
-                                            when {
-                                                health.dark() ->
-                                                    if (torch)
-                                                        "Low light · hold steady or increase ticket brightness"
-                                                    else "Low light · automatic torch is available"
-                                                found.points >= 2 &&
-                                                    health.soft() &&
-                                                    now - lastRead > 1600 -> {
-                                                    c?.cameraControl?.startFocusAndMetering(
-                                                        FocusMeteringAction.Builder(
-                                                                preview.meteringPointFactory
-                                                                    .createPoint(
-                                                                        preview.width / 2f,
-                                                                        preview.height / 2f,
-                                                                    )
-                                                            )
-                                                            .build()
-                                                    )
-                                                    "Image may be soft · hold steady, clean lens or tap to focus"
-                                                }
-                                                found.points >= 2 &&
-                                                    found.span > 0 &&
-                                                    zoom < minOf(maxZoom, 1.8f) &&
-                                                    found.span < minOf(width, height) * .24f &&
-                                                    now - lastZoom > 2200 -> {
-                                                    zoom = minOf(zoom + .25f, maxZoom, 1.8f)
-                                                    c?.cameraControl?.setZoomRatio(zoom)
-                                                    lastZoom = now
-                                                    "Small QR · adjusting zoom. Keep the whole code visible"
-                                                }
-                                                else -> "Center one QR · avoid glare · tap to focus"
-                                            }
-                                        if (
-                                            now - lastRead > 6000 &&
-                                                now - lastZoom > 6000 &&
-                                                torchMode == 0
-                                        ) {
-                                            zoom = 1f
-                                            c?.cameraControl?.setZoomRatio(1f)
-                                            lastZoom = now
+                                        if (decision.focus && c != null) {
+                                            // Raw ImageAnalysis coordinates: CameraX handles the surface
+                                            // aspect ratio, so off-centre focus does not guess screen rotation.
+                                            val point = SurfaceOrientedMeteringPointFactory(width.toFloat(), height.toFloat(), analyzer)
+                                                .createPoint(decision.focusX * width, decision.focusY * height)
+                                            startFocus(point)
                                         }
+                                        if (decision.zoom > 0) {
+                                            zoom = decision.zoom
+                                            c?.cameraControl?.setZoomRatio(zoom)
+                                        }
+                                        if (decision.hint.isNotBlank()) status = decision.hint
                                     }
                                 }
                             }
                         } catch (_: Exception) {
                             main.execute {
-                                if (active.get())
+                                if (active.get() && foreground.get() && !held)
                                     status = "Could not read frame. Hold steady or use exact ID."
                             }
                         } finally {
@@ -259,6 +262,11 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
         )
         onDispose {
             active.set(false)
+            foreground.set(false)
+            owner.lifecycle.removeObserver(lifecycleObserver)
+            assist.paused()
+            focusSequence.incrementAndGet()
+            focusUntil.set(0)
             GateUpdater.scanActive = false
             camera?.cameraControl?.enableTorch(false)
             provider?.unbindAll()
@@ -277,24 +285,12 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
             inspectedResult != null -> "Camera open · QR reading paused for details"
             else -> status
         },
-        torchMode = torchMode,
-        hasFlash = camera?.cameraInfo?.hasFlashUnit() == true,
-        onTorch = {
-            torchMode = (torchMode + 1) % 3
-            torch = torchMode == 1
-            camera?.cameraControl?.enableTorch(torch)
-        },
-        zoom = zoom,
-        maxZoom = maxZoom,
-        onZoom = {
-            zoom = it
-            camera?.cameraControl?.setZoomRatio(it)
-        },
         onFocus = { point ->
-            camera?.cameraControl?.startFocusAndMetering(
-                FocusMeteringAction.Builder(preview.meteringPointFactory.createPoint(point.x, point.y)).build()
-            )
-            status = "Focusing · hold steady"
+            if (!held && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                assist.manualFocus(SystemClock.elapsedRealtime())
+                startFocus(preview.meteringPointFactory.createPoint(point.x, point.y))
+                status = "Focusing · hold steady"
+            }
         },
         previewContent = { AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize()) },
     )
@@ -309,12 +305,6 @@ internal fun ClassicScannerCameraLayout(
     onVerify: (String) -> Unit,
     onDetails: (ScanResult) -> Unit,
     status: String,
-    torchMode: Int,
-    hasFlash: Boolean,
-    onTorch: () -> Unit,
-    zoom: Float,
-    maxZoom: Float,
-    onZoom: (Float) -> Unit,
     onFocus: (Offset) -> Unit,
     previewContent: @Composable BoxScope.() -> Unit,
 ) {
@@ -361,39 +351,11 @@ internal fun ClassicScannerCameraLayout(
                     onVerify = onVerify,
                     onClose = { onExactIdOpen(false) },
                 )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    ClassicScannerButton(
-                        onClick = onTorch,
-                        enabled = hasFlash,
-                    ) {
-                        Text(
-                            when (torchMode) {
-                                0 -> "Light: auto"
-                                1 -> "Light: on"
-                                else -> "Light: off"
-                            }
-                        )
-                    }
-                    ClassicScannerButton(
-                        onClick = { onZoom(1f) }
-                    ) {
-                        Text("Reset zoom")
-                    }
-                    ClassicScannerButton(
-                        onClick = { onExactIdOpen(!exactIdOpen) },
-                        enabled = s.held == null,
-                    ) { Text(if (exactIdOpen) "Hide ID" else "Find ID") }
-                }
-                if (maxZoom > 1f)
-                    Slider(
-                        value = zoom,
-                        onValueChange = onZoom,
-                        valueRange = 1f..minOf(maxZoom, 5f),
-                        modifier = Modifier.semantics {
-                            contentDescription = "Camera zoom"
-                            stateDescription = String.format(java.util.Locale.ROOT, "%.1f×", zoom)
-                        },
-                    )
+                ClassicScannerButton(
+                    onClick = { onExactIdOpen(!exactIdOpen) },
+                    enabled = s.held == null,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(if (exactIdOpen) "Hide ID" else "Find ID") }
                 Text(
                     "${s.pending} pending · ${if(s.online)"Connected"else"Offline — wait for confirmation"}",
                     style = MaterialTheme.typography.labelMedium,

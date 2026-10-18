@@ -159,3 +159,20 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 /* A footer never borrows space from beneath navigation on small phones. */
 #admin-console .rows-scroll,#view-entries .rows-scroll{min-height:112px}
 @media(max-width:480px){#admin-checkers>#open-code{max-width:132px;font-size:12px}}
+@media(max-height:500px){main{padding-top:4px;padding-bottom:0}}
+.badge{white-space:nowrap;word-break:normal}
+.mobile-nav button,.administrator-session .mobile-nav button{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+@media(max-width:360px){
+ .mobile-nav button,.administrator-session .mobile-nav button{font-size:10px;padding-inline:0}
+ #admin-registrations thead{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%)}
+ #registration-rows tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 0;border-top:1px solid var(--line)}
+ #registration-rows td{display:block;width:auto;border:0;padding:4px 2px}
+ #registration-rows td:first-child{grid-column:1/-1}
+ #registration-rows td[data-label]:before{content:attr(data-label);display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
+ #registration-rows .badge{padding-inline:4px}
+ #admin-console>#admin-checkers:not([hidden]){grid-template-rows:auto minmax(112px,1fr) auto}
+ #admin-checkers>#provider-note{display:none}
+ #admin-checkers>.table-toolbar,#admin-checkers>#open-code{grid-row:1}
+ #admin-checkers>#checker-list{grid-row:2}
+ #admin-checkers>.list-status,#admin-checkers>.empty{grid-row:3}
+}

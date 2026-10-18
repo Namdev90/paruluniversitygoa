@@ -113,8 +113,7 @@ class ClassicScannerUiTest {
                     onVerify = onVerify,
                     onDetails = {},
                     status = if (idOpen) "Camera open · QR reading paused for exact ID" else "Synthetic camera preview · no live camera",
-                    torchMode = 0, hasFlash = true, onTorch = {},
-                    zoom = 1f, maxZoom = 3f, onZoom = {}, onFocus = {},
+                    onFocus = {},
                     previewContent = {
                         Box(Modifier.fillMaxSize().background(Color(0xff1b171a)).testTagCompat("synthetic-camera-preview"), contentAlignment = Alignment.Center) {
                             Text("SYNTHETIC CAMERA FIXTURE", color = ScannerGold)
@@ -129,10 +128,14 @@ class ClassicScannerUiTest {
         val verified = mutableListOf<String>()
         compose.setContent { CameraFixture({ verified += it }) }
         compose.onNodeWithTag("scanner-frame").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Camera zoom").assertExists()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "1.0×"))
+        compose.onNodeWithContentDescription("Camera zoom").assertDoesNotExist()
+        compose.onNodeWithText("Light: auto").assertDoesNotExist()
+        screenshot("classic-scanner-automatic-layout")
+        compose.onNodeWithText("Camera controls").assertDoesNotExist()
+        compose.onNodeWithText("Reset zoom").assertDoesNotExist()
         screenshot("classic-scanner-camera-layout")
         compose.onNodeWithText("Find ID").performClick()
+        compose.onNodeWithContentDescription("Camera zoom").assertDoesNotExist()
         compose.onNodeWithTag("scanner-exact-id").performScrollTo().performTextInput("TEST0001")
         compose.onNodeWithTag("synthetic-camera-preview").assertIsDisplayed()
         screenshot("classic-scanner-camera-id-focused")
