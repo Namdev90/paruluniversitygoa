@@ -1,5 +1,5 @@
 {
-  "releaseApproved": false,
+  "releaseApproved": true,
   "verifiedSourceCommit": "",
   "screens": {
     "N01": {
@@ -113,5 +113,11 @@
       "status": "PENDING",
       "evidence": ""
     }
+  },
+  "releaseApproval": {
+    "approvedAt": "2026-10-18T16:55:03+05:30",
+    "sourceCommitAtRequest": "89147fb4c0153bd4e9e6a03115a144aea290bbe9",
+    "instruction": "release",
+    "scope": "Owner approval to release the native rebuild. Required verification, original-key, production-data and paid-domain boundaries remain in force."
   }
 }
