@@ -1,7 +1,7 @@
 (function(){
  'use strict';
  const C=GateClient,L=NavrangLive,$=id=>document.getElementById(id);
- let view='home',adminTab='registrations',page=0,entryPage=0,recentPage=0,crewPage=0,selected=null,syncBusy=false,syncAgain=false,resultTimer=null,queueTimer=null,held=false,lastResult=null,queuedResults=[],introEnded=false,staffSelected=null;
+ let view='home',adminTab='registrations',selected=null,syncBusy=false,syncAgain=false,resultTimer=null,queueTimer=null,held=false,lastResult=null,queuedResults=[],introEnded=false,staffSelected=null;
  if(location.hash==='#desk')C.destination?.('desk');
  const pendingResults=new Map(),pendingAcknowledged=new Set();
  let model=emptyModel(),uiGeneration=0,pollRun=0,previousRole=C.profile()?.role||'';function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
@@ -9,6 +9,11 @@
  const initials=name=>(name||'NG').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
  const when=at=>at?new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(at)):'—';
  const money=amount=>amount==null?'Review':'₹'+Number(amount).toLocaleString('en-IN',{maximumFractionDigits:2});
+ const hasValue=value=>value!==null&&value!==undefined&&String(value).trim()!=='';
+ const fullWhen=at=>at&&Number.isFinite(Date.parse(at))?new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(at))+' IST':'';
+ function paymentDetails(record){if(!record)return[];return[['Amount',hasValue(record.amount)?money(record.amount):''],['Quantity',record.quantity],['Refund',hasValue(record.refund)?money(record.refund):''],['Payment status',record.description],['Eligibility issue',record.eligible===false?record.reason:'']].filter(([,value])=>hasValue(value))}
+ function receiptDetails(entry){if(!entry)return[];const correction=entry.admissionBasis==='organizer_confirmed';return[['Entry basis',correction?'Organizer-confirmed attendance':'Server-confirmed entry'],[correction?'Recorded by':'Checked by',entry.checker],[correction?'Correction recorded':'Confirmed entry',fullWhen(correction?entry.at:entry.actualAdmittedAt||entry.at)],['Observed scan',correction?fullWhen(entry.observedScanAt):''],['Physical entry',correction?fullWhen(entry.actualAdmittedAt):''],['Receipt source',entry.source],['Receipt number',entry.seq],['Entry note',entry.note]].filter(([,value])=>hasValue(value))}
+
  const expired=p=>!!p&&[p.accessExpiresAt,p.expiresAt].filter(Boolean).some(value=>{const at=Date.parse(value);return !Number.isFinite(at)||Date.now()>=at});
  const isAdmin=()=>C.profile()?.role==='admin'&&!expired(C.profile());const data=()=>model;
  function station(p=C.profile()){if(!p)return '';if(p.station!=null)return p.station;return p.scanner!==false&&!p.helpdesk?'checker':p.scanner===false&&p.helpdesk?'helpdesk':'';}
@@ -16,7 +21,7 @@
  const canDesk=()=>!!C.profile()?.active&&!expired(C.profile())&&(isAdmin()||station()==='helpdesk'&&C.profile()?.helpdesk===true);
  const canReports=()=>isAdmin()||!!C.profile()?.active&&!expired(C.profile())&&C.profile()?.reports===true;
  const assignedView=()=>isAdmin()?'admin':needsName(C.profile())?'station':canScan()?'home':canDesk()?'desk':canReports()?'reports':'station';
- const pageSize=()=>25; // Data pages are independent of viewport height; rows scroll inside their panel.
+ const listViews=new Map(),listBatchSize=50; // Only already-authorized RAM records are progressively rendered.
  function feedback(kind){if(typeof C.feedback==='function')C.feedback(kind,true);}
  let noticeTimer;function notice(text){clearTimeout(noticeTimer);$('notice').textContent=text;$('notice').hidden=false;if(!/client ID|client secret|organizer.s attention/i.test(text))noticeTimer=setTimeout(()=>{$('notice').hidden=true},9000)}
  function connection(online,text){$('connection').classList.toggle('online',online);$('connection').querySelector('span').textContent=text||(online?'Live':'Offline');}
@@ -55,9 +60,50 @@
  function afterSignIn(){uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;renderAuth();setView(assignedView());globalThis.NavrangDesk?.refresh();poll(true)}
  function setAdminTab(next){adminTab=next;for(const b of document.querySelectorAll('[data-admin-tab]')){const yes=b.dataset.adminTab===next;b.classList.toggle('selected',yes);b.setAttribute('aria-selected',String(yes));b.tabIndex=yes?0:-1;$('admin-'+b.dataset.adminTab).hidden=!yes}}
  for(const tab of document.querySelectorAll('[data-admin-tab]'))tab.addEventListener('keydown',e=>{const tabs=[...document.querySelectorAll('[data-admin-tab]')],index=tabs.indexOf(tab);let target;if(e.key==='ArrowRight')target=tabs[(index+1)%tabs.length];else if(e.key==='ArrowLeft')target=tabs[(index-1+tabs.length)%tabs.length];else if(e.key==='Home')target=tabs[0];else if(e.key==='End')target=tabs.at(-1);if(target){e.preventDefault();setAdminTab(target.dataset.adminTab);target.focus()}});setAdminTab(adminTab);
- function paginate(list,current,label,prev,next,size=pageSize()){const pages=Math.max(1,Math.ceil(list.length/size)),p=Math.min(Math.max(0,current),pages-1);$(label).textContent=(p+1)+' / '+pages;$(prev).disabled=p===0;$(next).disabled=p+1>=pages;return{page:p,rows:list.slice(p*size,p*size+size)}}
- function fillEntries(target,entries){const body=$(target);body.replaceChildren();for(const e of entries){const tr=node('tr');for(const value of [e.name,e.ticketId,e.checker,e.admissionBasis==='organizer_confirmed'?'Correction recorded '+when(e.at)+' IST · physical entry time unknown':when(e.actualAdmittedAt||e.at)+' IST · confirmed entry']){const cell=node('td');cell.append(node('span',value,'cell-text'));tr.append(cell)}body.append(tr)}}
- async function renderLocal(){const generation=uiGeneration;try{const s=await C.local('snapshot');if(generation!==uiGeneration||!C.profile())return;const admin=isAdmin();$('home-total').textContent=admin?s.stats.total??s.localCount:s.stats.ownScans??'—';$('home-entered').textContent=admin?s.stats.admitted??'—':s.stats.totalEntries??'—';$('home-remaining').textContent=admin?s.stats.remaining??'—':'—';$('desk-own-scans').textContent=s.stats.ownScans??'—';$('desk-total-entries').textContent=s.stats.totalEntries??'—';$('cache-count').textContent=admin?s.localCount:0;$('pending-count').textContent=s.pending;$('sync-time').textContent=s.lastSync?'Synced '+when(s.lastSync)+' IST':'Awaiting shared update';const entries=admin?Object.values(model.entries).sort((a,b)=>b.seq-a.seq):[],rows=paginate(entries,recentPage,'recent-page','recent-prev','recent-next');recentPage=rows.page;fillEntries('recent-entries',rows.rows);$('entries-empty').hidden=!!entries.length;$('entry-coverage').textContent=entries.length+' loaded · '+(model.stats.admitted??'unknown')+' server total'}catch(e){if(generation===uiGeneration)notice(e.message)}}
+ // Keep the same scroll container and unchanged rows across refreshes. Search covers
+ // the full authorized RAM collection, not just the rows currently drawn.
+ function updateList(target,items,options){
+  let state=listViews.get(target);
+  if(!state){
+   const body=$(target),scroller=body.closest('.rows-scroll')||body;
+   state={body,scroller,items:[],cache:new Map(),limit:listBatchSize,query:null,options:null};
+   const more=()=>{if(!isAdmin()||state.limit>=state.items.length)return;state.limit+=listBatchSize;paintList(state)};
+   scroller.addEventListener('scroll',()=>{if(scroller.clientHeight>0&&scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<160)more()},{passive:true});
+   body.addEventListener('focusin',event=>{const row=event.target.closest('[data-list-key]');if(row&&[...body.children].indexOf(row)>=state.limit-5)more()});
+   listViews.set(target,state);
+  }
+  const reset=state.query!==options.query;
+  state.items=items;state.options=options;state.query=options.query;
+  if(reset){state.limit=listBatchSize;state.scroller.scrollTop=0}
+  paintList(state,!reset);
+ }
+ function paintList(state,preserve=true){
+  const {body,scroller,options,items}=state,top=scroller.getBoundingClientRect().top;
+  const anchor=preserve&&scroller.scrollTop>0?[...body.children].find(row=>row.getBoundingClientRect().bottom>top+1):null;
+  const anchorKey=anchor?.dataset.listKey,anchorTop=anchor?.getBoundingClientRect().top;
+  const active=document.activeElement,activeRow=body.contains(active)?active.closest('[data-list-key]'):null;
+  const activeKey=activeRow?.dataset.listKey,activeIndex=activeRow?[...activeRow.querySelectorAll('button,a,input,select')].indexOf(active):-1;
+  const cache=new Map(),wanted=items.slice(0,state.limit).map(item=>{
+   const key=String(options.key(item)),signature=options.signature?options.signature(item):JSON.stringify(item),old=state.cache.get(key);
+   const row=old?.signature===signature?old.row:options.draw(item);row.dataset.listKey=key;cache.set(key,{row,signature});return row;
+  });
+  for(let i=0;i<wanted.length;i++)if(body.children[i]!==wanted[i])body.insertBefore(wanted[i],body.children[i]||null);
+  while(body.children.length>wanted.length)body.lastElementChild.remove();
+  state.cache=cache;
+  if(anchorKey&&cache.has(anchorKey))scroller.scrollTop+=cache.get(anchorKey).row.getBoundingClientRect().top-anchorTop;
+  if(activeKey&&activeIndex>=0&&document.activeElement!==active&&cache.has(activeKey))cache.get(activeKey).row.querySelectorAll('button,a,input,select')[activeIndex]?.focus({preventScroll:true});
+  const summary=options.summary+(wanted.length<items.length?' · Scroll for more':'');
+  if($(options.status).textContent!==summary)$(options.status).textContent=summary;
+ }
+ function clearLists(){for(const state of listViews.values()){state.items=[];state.cache.clear();state.limit=listBatchSize;state.query=null;state.body.replaceChildren();state.scroller.scrollTop=0;$(state.options.status).textContent=''}}
+ function entryRow(e){const tr=node('tr');for(const value of [e.name,e.ticketId,e.checker,e.admissionBasis==='organizer_confirmed'?'Correction recorded '+when(e.at)+' IST · physical entry time unknown':when(e.actualAdmittedAt||e.at)+' IST · confirmed entry']){const cell=node('td');cell.append(node('span',value,'cell-text'));tr.append(cell)}return tr}
+ function renderEntries(target,search,status,empty){
+  const loaded=isAdmin()?Object.values(model.entries).sort((a,b)=>b.seq-a.seq):[],q=$(search).value.trim().toLowerCase();
+  const entries=loaded.filter(e=>[e.name,e.ticketId,e.checker].join(' ').toLowerCase().includes(q));
+  updateList(target,entries,{query:q,key:e=>e.ticketId,draw:entryRow,status,summary:(q?entries.length+' results · ':'')+loaded.length+' loaded · '+(model.stats.admitted??'unknown')+' server total'});
+  $(empty).hidden=!!entries.length;$(empty).textContent=q?'No loaded entries match your search.':'No confirmed entries yet.';
+ }
+ async function renderLocal(){const generation=uiGeneration;try{const s=await C.local('snapshot');if(generation!==uiGeneration||!C.profile())return;const admin=isAdmin();$('home-total').textContent=admin?s.stats.total??s.localCount:s.stats.ownScans??'—';$('home-entered').textContent=admin?s.stats.admitted??'—':s.stats.totalEntries??'—';$('home-remaining').textContent=admin?s.stats.remaining??'—':'—';$('desk-own-scans').textContent=s.stats.ownScans??'—';$('desk-total-entries').textContent=s.stats.totalEntries??'—';$('cache-count').textContent=admin?s.localCount:0;$('pending-count').textContent=s.pending;$('sync-time').textContent=s.lastSync?'Synced '+when(s.lastSync)+' IST':'Awaiting shared update';renderEntries('recent-entries','recent-search','entry-coverage','entries-empty')}catch(e){if(generation===uiGeneration)notice(e.message)}}
  function clearPending(id){clearTimeout(pendingResults.get(id)?.timer);pendingResults.delete(id);queuedResults=queuedResults.filter(r=>r.code!=='pending'||r.id!==id)}
  function handoffQueuedResult(){
   if(held||queueTimer!==null||!queuedResults.length)return;
@@ -95,20 +141,23 @@
   $('result-kicker').textContent=good?'SERVER RECEIPT SAVED':pending?'AWAITING SERVER':'HELP DESK REQUIRED';
   $('result-title').textContent=good?'✓ Entry confirmed':dup?'Already entered':pending?'Awaiting confirmation':'Entry not allowed';
   const e=r.entry,record=r.record;$('result-name').textContent=e?.name||record?.name||r.id||'Ticket issue';
-  $('result-details').textContent=e?[(r.id||e.ticketId)+(record?' · '+money(record.amount):''),e.checker+' · '+when(e.at)+' IST',good?'Entry saved. Ready for the next QR.':'One entry only. No re-entry.'].join('\n'):r.message||'The ticket could not be verified.';
+  const details=[['Ticket',r.id||e?.ticketId||record?.id],...paymentDetails(record),...receiptDetails(e)].filter(([,value])=>hasValue(value));$('result-details').textContent=[...details.map(([label,value])=>label+': '+value),e?(good?'Entry saved. Ready for the next QR.':'One entry only. No re-entry.'):r.message||'The ticket could not be verified.'].join('\n');
   $('close-result').textContent=pending?'Close · still not confirmed':'Next student';show('result-popup',false);if(!pending)feedback(good?'success':dup?'duplicate':['invalid','not_found'].includes(r.code)?'invalid':'issue');
   if(!good&&!pending||overdue)holdResult();else if(good)resultTimer=setTimeout(releaseResult,1500);
   renderAuth();renderLocal();if(isAdmin())renderAdmin();handoffQueuedResult();
  }
  function filteredRecords(){const m=data(),q=$('student-search').value.trim().toLowerCase(),filter=$('payment-filter').value;return Object.values(m.records).filter(r=>(!q||(r.name+' '+r.id).toLowerCase().includes(q))&&(filter==='all'||filter==='eligible'&&r.eligible||filter==='blocked'&&!r.eligible||filter==='entered'&&m.entries[r.id])).sort((a,b)=>a.name.localeCompare(b.name))}
- function renderRegistrations(){const records=filteredRecords(),s=paginate(records,page,'page-number','previous-page','next-page');page=s.page;const body=$('registration-rows');body.replaceChildren();for(const r of s.rows){const tr=node('tr'),name=node('td'),open=node('button',r.name,'table-link');open.type='button';open.onclick=()=>showStudent(r.id);name.append(open,node('span',r.id,'cell-secondary'));const pay=node('td');pay.append(node('span',r.eligible?'Paid':'Issue','badge '+(r.eligible?'green':'red')));const status=node('td');status.append(node('span',data().entries[r.id]?'In':'—','badge '+(data().entries[r.id]?'green':'')));const action=node('td'),edit=node('button','Edit','table-link');edit.onclick=()=>editTicket(r);action.append(edit);tr.append(name,pay,node('td',money(r.amount)),status,action);body.append(tr)}$('registration-count').textContent=records.length+' results'}
- function showStudent(id){if(!isAdmin())return;selected=id;const r=data().records[id],e=data().entries[id];$('dialog-name').textContent=r.name;const dl=$('dialog-details');dl.replaceChildren();for(const[k,v]of[['Ticket',id],['Payment',r.eligible?'Eligible':r.reason],['Amount',money(r.amount)],['Status',r.description],['Entry',e?'Entered · no re-entry':'Not entered'],['Checked by',e?.checker||'—'],[e?.admissionBasis==='organizer_confirmed'?'Correction recorded · IST (physical entry unknown)':'Confirmed entry · IST',e?when(e.at):'—']])dl.append(node('dt',k),node('dd',v));show('student-dialog')}
+ function registrationRow(r){const tr=node('tr'),name=node('td'),open=node('button',r.name,'table-link');open.type='button';open.onclick=()=>showStudent(r.id);name.append(open,node('span',r.id,'cell-secondary'));const pay=node('td');pay.append(node('span',r.eligible?'Paid':'Issue','badge '+(r.eligible?'green':'red')));const status=node('td');status.append(node('span',data().entries[r.id]?'In':'—','badge '+(data().entries[r.id]?'green':'')));const action=node('td'),edit=node('button','Edit','table-link');edit.onclick=()=>editTicket(r);action.append(edit);tr.append(name,pay,node('td',money(r.amount)),status,action);return tr}
+ function renderRegistrations(){if(!isAdmin())return;const records=filteredRecords();updateList('registration-rows',records,{query:JSON.stringify([$('student-search').value.trim().toLowerCase(),$('payment-filter').value]),key:r=>r.id,signature:r=>JSON.stringify([r,!!data().entries[r.id]]),draw:registrationRow,status:'registration-count',summary:records.length+' results · '+Object.keys(model.records).length+' loaded · '+(model.stats.total??'unknown')+' server total'});$('registrations-empty').hidden=!!records.length}
+ function showStudent(id){if(!isAdmin())return;const r=data().records[id];if(!r)return;selected=id;const e=data().entries[id];$('dialog-name').textContent=r.name;const dl=$('dialog-details');dl.replaceChildren();const details=[['Ticket',id],['Eligibility',r.eligible===true?'Eligible':r.eligible===false?r.reason||'Blocked':''],...paymentDetails(r),['Entry',e?'Entered · no re-entry':'Not entered'],...receiptDetails(e),['Registration source',r.source],['Current registration dataset',data().source]].filter(([,value])=>hasValue(value));for(const [label,value]of details)dl.append(node('dt',label),node('dd',value));show('student-dialog')}
  function editTicket(r){if(!isAdmin())return;$('edit-id').value=r.id;$('edit-name').value=r.name;$('edit-amount').value=r.amount??'';$('edit-quantity').value=r.quantity??'';$('edit-refund').value=r.refund??'';const status=$('edit-status');for(const o of [...status.options])if(o.dataset.custom)o.remove();if(![...status.options].some(o=>o.value===r.description)){const o=node('option',r.description||'Unknown');o.value=r.description;o.dataset.custom='true';status.append(o)}status.value=r.description;show('edit-dialog')}
  let adminPaint='';
- function renderAdmin(){if(!isAdmin())return;const m=data(),s=m.stats,key=JSON.stringify([m.dataRevision,m.cursor,s,m.checkers,page,entryPage,crewPage,$('student-search').value,$('payment-filter').value,$('entry-search').value]);if(key===adminPaint)return;adminPaint=key;for(const[key,id]of[['total','total'],['eligible','eligible'],['admitted','admitted'],['remaining','remaining'],['lastMinute','minute'],['blocked','blocked'],['duplicateAttempts','duplicates'],['blockedAttempts','refused']])$('stat-'+id).textContent=s[key]??'—';renderRegistrations();const q=$('entry-search').value.toLowerCase(),all=Object.values(m.entries).sort((a,b)=>b.seq-a.seq).filter(e=>(e.name+' '+e.ticketId+' '+e.checker).toLowerCase().includes(q)),p=paginate(all,entryPage,'all-page','all-prev','all-next');entryPage=p.page;fillEntries('all-entry-rows',p.rows);$('all-entry-empty').hidden=!!all.length;
- const staff=$('checker-list');staff.replaceChildren();const crew=[...(m.checkers||[])].sort((a,b)=>Number(!!b.requestedRole)-Number(!!a.requestedRole)||Number(a.active)-Number(b.active)||a.name.localeCompare(b.name)),cp=paginate(crew,crewPage,'crew-page','crew-prev','crew-next',Math.max(2,pageSize()-1));crewPage=cp.page;if(!crew.length)staff.append(node('p','Google checkers appear here after completing sign-in.','empty'));
- for(const ck of cp.rows){const expired=ck.accessExpiresAt&&Date.parse(ck.accessExpiresAt)<=Date.now(),row=node('div',undefined,'checker-row'),avatar=node('span',initials(ck.name),'checker-avatar'),info=node('div');info.append(node('strong',ck.name),node('small',(ck.method==='google'?'Google · ':'Code · ')+(expired?'Expired':ck.active?[ck.scanner!==false?'Checker':'',ck.helpdesk?'Help Desk':''].filter(Boolean).join(' + ')||'No station':'Access disabled')+' · '+ck.entries+' entries'));if(ck.requestedRole)info.append(node('small','Requested: '+(ck.requestedRole==='helpdesk'?'Help Desk':'Checker'),'staff-request'));if(ck.accessExpiresAt)info.append(node('small','Temporary · until '+when(ck.accessExpiresAt)+' IST'));const manage=node('button','Manage access','button secondary');manage.onclick=()=>openStaff(ck);row.append(avatar,info,manage);staff.append(row)}$('namu-message').textContent='Live control · '+(s.admitted??0)+' entered · '+crew.filter(c=>c.active&&(!c.accessExpiresAt||Date.parse(c.accessExpiresAt)>Date.now())).length+' active staff.';
-
+ function staffRow(ck){const expired=ck.accessExpiresAt&&Date.parse(ck.accessExpiresAt)<=Date.now(),row=node('div',undefined,'checker-row'),avatar=node('span',initials(ck.name),'checker-avatar'),info=node('div');info.append(node('strong',ck.name),node('small',(ck.method==='google'?'Google · ':'Code · ')+(expired?'Expired':ck.active?[ck.scanner!==false?'Checker':'',ck.helpdesk?'Help Desk':''].filter(Boolean).join(' + ')||'No station':'Access disabled')+' · '+ck.entries+' entries'));if(ck.requestedRole)info.append(node('small','Requested: '+(ck.requestedRole==='helpdesk'?'Help Desk':'Checker'),'staff-request'));if(ck.accessExpiresAt)info.append(node('small','Temporary · until '+when(ck.accessExpiresAt)+' IST'));const manage=node('button','Manage access','button secondary');manage.onclick=()=>openStaff(ck);row.append(avatar,info,manage);return row}
+ function renderStaff(){if(!isAdmin())return;const all=[...(model.checkers||[])].sort((a,b)=>Number(!!b.requestedRole)-Number(!!a.requestedRole)||Number(a.active)-Number(b.active)||a.name.localeCompare(b.name)),q=$('staff-search').value.trim().toLowerCase(),crew=all.filter(c=>[c.name,c.method,c.station,c.requestedRole,c.active?'active':'disabled',c.helpdesk?'help desk':'',c.scanner!==false?'checker':''].join(' ').toLowerCase().includes(q));
+  updateList('checker-list',crew,{query:q,key:c=>c.id,signature:c=>JSON.stringify([c,!!c.accessExpiresAt&&Date.parse(c.accessExpiresAt)<=Date.now()]),draw:staffRow,status:'staff-count',summary:crew.length+' staff'+(q?' matching · '+all.length+' loaded':'')});
+  $('staff-empty').hidden=!!crew.length;$('staff-empty').textContent=q?'No staff match your search.':'Google checkers appear here after completing sign-in.';
+ }
+ function renderAdmin(){if(!isAdmin())return;const m=data(),s=m.stats,key=JSON.stringify([m.dataRevision,m.cursor,s,m.checkers,$('student-search').value,$('payment-filter').value,$('entry-search').value,$('staff-search').value]);if(key===adminPaint)return;adminPaint=key;for(const[key,id]of[['total','total'],['eligible','eligible'],['admitted','admitted'],['remaining','remaining'],['lastMinute','minute'],['blocked','blocked'],['duplicateAttempts','duplicates'],['blockedAttempts','refused']])$('stat-'+id).textContent=s[key]??'—';renderRegistrations();renderEntries('all-entry-rows','entry-search','all-entry-count','all-entry-empty');renderStaff();$('namu-message').textContent='Live control · '+(s.admitted??0)+' entered · '+(m.checkers||[]).filter(c=>c.active&&(!c.accessExpiresAt||Date.parse(c.accessExpiresAt)>Date.now())).length+' active staff.';
  }
  async function poll(force){
   if(!C.profile())return;
@@ -134,12 +183,12 @@
   }finally{if(run===pollRun){syncBusy=false;if(syncAgain){syncAgain=false;poll(true)}}}
  }
  function clearAdminView(){
-  model=emptyModel();adminPaint='';selected=staffSelected=null;page=entryPage=recentPage=crewPage=0;
+  model=emptyModel();adminPaint='';selected=staffSelected=null;clearLists();
   for(const id of ['student-dialog','edit-dialog','code-dialog','staff-dialog','password-dialog'])close(id);
   for(const id of ['ticket-editor','create-checker-form','staff-access-form','change-password-form'])$(id).reset();
   for(const id of ['registration-rows','all-entry-rows','recent-entries','checker-list','dialog-details'])$(id).replaceChildren();
   for(const id of ['dialog-name','new-checker-code','staff-detail'])$(id).textContent='';$('new-code-panel').hidden=true;
-  for(const id of ['student-search','entry-search'])$(id).value='';$('payment-filter').selectedIndex=0;
+  for(const id of ['student-search','entry-search','recent-search','staff-search'])$(id).value='';$('payment-filter').selectedIndex=0;
   for(const id of ['stat-total','stat-eligible','stat-admitted','stat-remaining','stat-minute','stat-blocked','stat-duplicates','stat-refused'])$(id).textContent='—';
  }
 
@@ -151,13 +200,13 @@
  $('google-browser-signin').hidden=!C.native;$('google-browser-signin').onclick=()=>busy($('google-browser-signin'),()=>C.googleBrowserLogin());
  $('google-signin').onclick=()=>busy($('google-signin'),()=>C.googleLogin());$('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
  function clearSessionView(){
-  uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;model=emptyModel();adminPaint='';selected=staffSelected=null;page=entryPage=recentPage=crewPage=0;queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);
+  uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;model=emptyModel();adminPaint='';selected=staffSelected=null;clearLists();queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);
   for(const d of document.querySelectorAll('dialog[open]'))close(d.id);
   for(const id of ['checker-form','admin-form','manual-form','name-form','ticket-editor','create-checker-form','staff-access-form','change-password-form'])$(id).reset();
   for(const o of $('edit-status').querySelectorAll('[data-custom]'))o.remove();
   for(const id of ['registration-rows','all-entry-rows','recent-entries','checker-list','dialog-details'])$(id).replaceChildren();
   for(const id of ['dialog-name','result-name','result-details','new-checker-code','checker-name','checker-access','staff-detail','station-message','notice'])$(id).textContent='';
-  for(const id of ['student-search','entry-search'])$(id).value='';$('payment-filter').selectedIndex=0;
+  for(const id of ['student-search','entry-search','recent-search','staff-search'])$(id).value='';$('payment-filter').selectedIndex=0;
   for(const id of ['home-total','home-entered','home-remaining','desk-own-scans','desk-total-entries','stat-total','stat-eligible','stat-admitted','stat-remaining','stat-minute','stat-blocked','stat-duplicates','stat-refused'])$(id).textContent='—';
   $('cache-count').textContent=$('pending-count').textContent='0';$('sync-time').textContent='Awaiting shared update';$('station-title').textContent='Choose your station';$('registration-count').textContent='0 results';
   $('new-code-panel').hidden=true;$('notice').hidden=true;$('signin-panel').hidden=false;$('admin-signin').hidden=true;globalThis.NavrangDesk?.clear();setView('login');connection(false,'Sign in');
@@ -174,7 +223,7 @@
  $('name-form').onsubmit=e=>{e.preventDefault();busy(e.submitter||$('name-form').querySelector('button'),async()=>{const name=$('real-name').value.trim().replace(/\s+/g,' ');if(!/^[\p{L}\p{M}][\p{L}\p{M} .'-]{0,39}$/u.test(name))throw Error('Enter your real name using letters, up to 40 characters.');await C.api('checker-profile',{name});await C.api('me');close('name-dialog');renderAuth();setView(assignedView());feedback('success');poll(true)})};
  $('manual-form').onsubmit=e=>{e.preventDefault();if(held||!canScan()||needsName(C.profile()))return;const id=$('ticket-id').value.trim().toUpperCase();if(!/^[A-Z0-9]{8}$/.test(id)){result({code:'invalid',id,message:'Use the exact eight-character Transaction ID from the ticket email.'});return}busy($('manual-submit'),async()=>{await C.submit(id)})};
  $('close-result').onclick=releaseResult;$('result-popup').addEventListener('cancel',e=>{e.preventDefault()});
- $('admin-refresh').onclick=()=>poll(true);$('student-search').oninput=$('payment-filter').onchange=()=>{page=0;renderRegistrations()};$('entry-search').oninput=()=>{entryPage=0;renderAdmin()};$('previous-page').onclick=()=>{page--;renderRegistrations()};$('next-page').onclick=()=>{page++;renderRegistrations()};$('recent-prev').onclick=()=>{recentPage--;renderLocal()};$('recent-next').onclick=()=>{recentPage++;renderLocal()};$('all-prev').onclick=()=>{entryPage--;renderAdmin()};$('all-next').onclick=()=>{entryPage++;renderAdmin()};$('crew-prev').onclick=()=>{crewPage--;renderAdmin()};$('crew-next').onclick=()=>{crewPage++;renderAdmin()};
+ $('admin-refresh').onclick=()=>poll(true);$('student-search').oninput=$('payment-filter').onchange=()=>renderRegistrations();$('entry-search').oninput=()=>renderEntries('all-entry-rows','entry-search','all-entry-count','all-entry-empty');$('recent-search').oninput=()=>renderEntries('recent-entries','recent-search','entry-coverage','entries-empty');$('staff-search').oninput=()=>renderStaff();
  $('close-student').onclick=()=>close('student-dialog');$('edit-student').onclick=()=>{close('student-dialog');if(selected)editTicket(data().records[selected])};$('close-editor').onclick=()=>close('edit-dialog');$('add-registration').onclick=()=>editTicket({id:'',name:'',amount:100,quantity:1,refund:0,description:'Transaction completed successfully'});
  if($('import-registration')){
   $('import-registration').hidden=!C.native;

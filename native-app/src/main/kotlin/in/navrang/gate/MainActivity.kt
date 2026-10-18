@@ -91,6 +91,7 @@ class MainActivity : ClassicActivity() {
                             }
                         }
                     }
+                val payload = withContext(Dispatchers.Default) { RegistrationImport.payload(rows) }
                 requireImportIdentity(repo, identity)
                 importDialog =
                     AlertDialog.Builder(this@MainActivity)
@@ -105,11 +106,7 @@ class MainActivity : ClassicActivity() {
                                     requireImportIdentity(repo, identity)
                                     repo.call(
                                         "import",
-                                        json(
-                                            "eventId" to "O9KL3",
-                                            "source" to "Administrator document import",
-                                            "records" to rows,
-                                        ),
+                                        payload,
                                     )
                                     repo.refresh()
                                     repo.runtime.emit(

@@ -136,3 +136,55 @@ test('a completed review cannot close or overwrite a newer record review dialog'
   assert.equal(w.document.getElementById('desk-review-dialog').open,true);assert.equal(w.document.getElementById('desk-review-name').textContent,'Student 2');assert.equal(w.document.getElementById('desk-review-message').textContent,'');
  }finally{dom.window.close()}
 });
+
+function scrollDesk(t){const box=t.w.document.getElementById('desk-records');Object.defineProperty(box,'clientHeight',{configurable:true,value:300});Object.defineProperty(box,'scrollHeight',{configurable:true,value:3000});box.scrollTop=2800;box.dispatchEvent(new t.w.Event('scroll'));return box;}
+function deskRows(count=19){return Array.from({length:count},(_,n)=>({id:'case-'+n,ticket_id:'HD'+String(n).padStart(6,'0'),created_by_name:'Raju',created_at:'2026-10-17T01:00:00Z',details:{...details,name:'Student '+n},status:'pending',version:1}));}
+function listReply(records,query){const matches=records.filter(r=>!query.search||r.details.name.includes(query.search));return{records:matches.slice(query.offset,query.offset+query.limit),total:matches.length,stats:{total:records.length,pending:records.length,approved:0}};}
+
+test('Help Desk appends authorized eight-row batches with honest loaded/server counts and stable cards',async()=>{
+ const t=desk(),{w,dom,calls}=t,records=deskRows();t.setBehavior(async(action,query)=>listReply(records,query));try{
+  await w.NavrangDesk.refresh(true);const first=w.document.querySelector('.desk-record');assert.equal(w.document.querySelectorAll('.desk-record').length,8);assert.match(w.document.getElementById('desk-list-status').textContent,/8 loaded · 19 matching server records/);
+  const box=scrollDesk(t);await pause();assert.equal(w.document.querySelectorAll('.desk-record').length,16);assert.equal(w.document.querySelector('.desk-record'),first);const top=box.scrollTop;
+  await w.NavrangDesk.refresh(true);assert.equal(w.document.querySelector('.desk-record'),first);assert.equal(box.scrollTop,top);assert.equal(w.document.querySelectorAll('.desk-record').length,16);
+  scrollDesk(t);await pause();assert.equal(w.document.querySelectorAll('.desk-record').length,19);assert.match(w.document.getElementById('desk-list-status').textContent,/19 loaded · 19 matching server records/);assert.ok(!w.document.getElementById('desk-list-status').textContent.includes('Scroll for more'));assert.ok(calls.filter(c=>c.a==='helpdesk-list').every(c=>c.p.limit===8));
+  w.dispatchEvent(new w.Event('resize'));await pause();assert.equal(w.document.querySelectorAll('.desk-record').length,19);
+ }finally{await pause();dom.window.close()}
+});
+
+test('Help Desk search runs on the server and fences an older in-flight append',async()=>{
+ const t=desk(),{w,dom,calls}=t,records=deskRows();let deliver;t.setBehavior(async(action,query)=>query.offset?new Promise(resolve=>deliver=()=>resolve(listReply(records,query))):listReply(records,query));try{
+  await w.NavrangDesk.refresh(true);scrollDesk(t);await pause();const input=w.document.getElementById('desk-search');input.value='Student 18';input.dispatchEvent(new w.Event('input'));await w.NavrangDesk.refresh(true);deliver();await pause();await pause();
+  assert.equal(w.document.querySelectorAll('.desk-record').length,1);assert.match(w.document.getElementById('desk-records').textContent,/Student 18/);assert.match(w.document.getElementById('desk-list-status').textContent,/1 loaded · 1 matching server records/);assert.equal(calls.filter(c=>c.a==='helpdesk-list').at(-1).p.search,'Student 18');
+ }finally{await pause();dom.window.close()}
+});
+
+test('Help Desk detects changed offset ordering and requires refresh rather than silently duplicating or skipping rows',async()=>{
+ const t=desk(),{w,dom,calls}=t,records=deskRows();t.setBehavior(async(action,query)=>listReply(records,query));try{
+  await w.NavrangDesk.refresh(true);scrollDesk(t);await pause();const first=w.document.querySelector('.desk-record');records.unshift({...records[0],id:'new-record',ticket_id:'HD999999',details:{...details,name:'New arrival'}});await w.NavrangDesk.refresh(true);
+  assert.equal(w.document.querySelectorAll('.desk-record').length,16);assert.equal(w.document.querySelector('.desk-record'),first);assert.match(w.document.getElementById('desk-list-status').textContent,/16 loaded · 20 matching server records · Records changed/);
+  const count=calls.length;scrollDesk(t);await pause();assert.equal(calls.length,count);w.document.getElementById('desk-refresh').click();await pause();assert.equal(w.document.querySelectorAll('.desk-record').length,8);assert.match(w.document.querySelector('.desk-record').textContent,/New arrival/);assert.equal(w.document.getElementById('desk-records').scrollTop,0);
+ }finally{await pause();dom.window.close()}
+});
+
+test('Help Desk revocation discards an in-flight appended page and prevents cached rows returning',async()=>{
+ const t=desk(),{w,dom}=t,records=deskRows();let deliver;t.setBehavior(async(action,query)=>query.offset?new Promise(resolve=>deliver=()=>resolve(listReply(records,query))):listReply(records,query));try{
+  await w.NavrangDesk.refresh(true);scrollDesk(t);await pause();t.setProfile(null);w.NavrangDesk.clear();deliver();await pause();scrollDesk(t);await pause();assert.equal(w.document.getElementById('desk-records').children.length,0);assert.equal(w.document.getElementById('desk-search').value,'');
+ }finally{await pause();dom.window.close()}
+});
+
+test('Help Desk viewport filling stops after a failed append instead of retrying every animation frame',async()=>{
+ const t=desk(),{w,dom,calls}=t,records=deskRows(),frames=[];w.requestAnimationFrame=callback=>frames.push(callback);t.setBehavior(async(action,query)=>{if(query.offset)throw Error('Offline');return listReply(records,query)});try{
+  w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;const box=w.document.getElementById('desk-records');Object.defineProperty(box,'clientHeight',{value:1000});Object.defineProperty(box,'scrollHeight',{value:500});
+  await w.NavrangDesk.refresh(true);assert.equal(frames.length,1);frames.shift()();await pause();assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);assert.equal(frames.length,0);assert.match(w.document.getElementById('desk-list-stats').textContent,/Offline/);assert.equal(box.getAttribute('aria-busy'),'false');
+ }finally{await pause();dom.window.close()}
+});
+
+test('Help Desk rejects a stale admin page if the same account loses its admin role before response',async()=>{
+ const t=desk({role:'admin',checkerId:'same-user',name:'Administrator',active:true}),{w,dom}=t;let deliver;t.setBehavior(async(action,query)=>new Promise(resolve=>deliver=()=>resolve(listReply(deskRows(),query))));try{
+  const pending=w.NavrangDesk.refresh(true);t.setProfile({role:'checker',checkerId:'same-user',name:'Staff',active:true,helpdesk:true,station:'helpdesk'});deliver();await pending;assert.equal(w.document.getElementById('desk-records').children.length,0);
+ }finally{await pause();dom.window.close()}
+});
+
+test('Help Desk enables bounded list mode only while showing saved records',async()=>{
+ const t=desk(),{w,dom}=t;try{w.document.getElementById('desk-saved').click();await pause();assert.equal(w.document.getElementById('view-desk').classList.contains('desk-list-mode'),true);w.document.getElementById('desk-new').click();assert.equal(w.document.getElementById('view-desk').classList.contains('desk-list-mode'),false);w.document.getElementById('desk-saved').click();await pause();w.NavrangDesk.clear();assert.equal(w.document.getElementById('view-desk').classList.contains('desk-list-mode'),false)}finally{await pause();dom.window.close()}
+});

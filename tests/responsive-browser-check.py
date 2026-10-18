@@ -47,6 +47,7 @@ def run():
       if(f.profile)storage.setItem('navrang-session',JSON.stringify({token:'a'.repeat(64),profile:f.profile}));
       const prop=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');
       Object.defineProperty(HTMLImageElement.prototype,'src',{get:prop.get,set(value){prop.set.call(this,f.images[value]||value);}});
+      const realTimeout=window.setTimeout.bind(window);window.setTimeout=(fn,ms,...args)=>fn?.name==='endIntro'?0:realTimeout(fn,ms,...args);
       window.AudioContext=undefined;window.webkitAudioContext=undefined;
       window.fixtureCalls=[];window.fixtureUnexpected=[];
       window.fetch=async(url,options)=>{
@@ -81,7 +82,7 @@ def run():
     result=page.evaluate("""view=>{
       const root=document.querySelector(view==='students'?'#admin-registrations':'#view-entries');
       const scroller=root.querySelector('.rows-scroll');
-      const controls=[document.querySelector('.topbar'),document.querySelector('.mobile-nav'),root.querySelector('.pager'),...(view==='students'?[root.querySelector('.table-toolbar'),document.querySelector('.admin-tabs')]:[])];
+      const controls=[document.querySelector('.topbar'),document.querySelector('.mobile-nav'),root.querySelector('.list-status'),...(view==='students'?[root.querySelector('.table-toolbar'),document.querySelector('.admin-tabs')]:[])];
       const bounds=()=>controls.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]});
       const before=bounds();scroller.scrollTop=scroller.scrollHeight;
       return {view,before,after:bounds(),offset:scroller.scrollTop,height:scroller.clientHeight,scrollHeight:scroller.scrollHeight};
@@ -94,13 +95,31 @@ def run():
     for role in ('login','admin','faculty','checker'):
      ctx=browser.new_context(viewport=dict(width=width,height=height),reduced_motion='reduce')
      ctx.route('**/*',lambda route:route.abort())
-     page=ctx.new_page();page.set_default_timeout(4000);page.on('pageerror',lambda e:errors.append(str(e)));open_source(page,role);page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
+     page=ctx.new_page();page.set_default_timeout(4000);page.on('pageerror',lambda e:errors.append(str(e)));open_source(page,role);
+     if role=='login':
+      page.evaluate("const i=document.getElementById('intro');i.hidden=false;i.classList.remove('leaving')")
+      launch=page.evaluate("""() => {
+       const box=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+       return {content:box('.intro-content'),figures:box('.intro-dancers'),cta:box('#skip-intro'),width:innerWidth,height:innerHeight};
+      }""")
+      overlap=lambda a,b:a['left']<b['right']-1 and a['right']>b['left']+1 and a['top']<b['bottom']-1 and a['bottom']>b['top']+1
+      if overlap(launch['content'],launch['figures']) or overlap(launch['content'],launch['cta']) or overlap(launch['figures'],launch['cta']):failures.append(dict(launchOverlap=launch))
+      if any(b['left'] < -1 or b['right'] > width+1 or b['top'] < -1 or b['bottom'] > height+1 for b in (launch['content'],launch['figures'],launch['cta'])):failures.append(dict(launchOverflow=launch))
+      reports.append(dict(launch=launch))
+      page.screenshot(path=str(out/f'launch-{width}x{height}.png'))
+      if width in (390,640):
+       page.emulate_media(reduced_motion='no-preference')
+       for frame in (0,350,1100,2600):
+        page.evaluate('ms=>document.getAnimations().forEach(a=>{a.pause();a.currentTime=ms})',frame)
+        page.screenshot(path=str(out/f'launch-{width}x{height}-motion-{frame}.png'))
+       page.emulate_media(reduced_motion='reduce')
+     page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
      measure(page,role,view,width,height)
      if role=='login':
       page.evaluate("document.getElementById('google-browser-signin').hidden=false")
       measure(page,role,'login-native-browser-fallback',width,height)
-     if width in (390,1366) and role in ('login','admin','faculty'):
+     if width in (390,1366):
       page.screenshot(path=str(out/f'{role}-{width}.png'))
      if role=='admin':
       measure_scroll(page,'students')
@@ -109,9 +128,11 @@ def run():
        if target=='station':page.locator('#switch-station').click() if page.locator('#switch-station').is_visible() else page.evaluate("document.querySelector('[data-view=station]').click()")
        else:page.locator(selector).click()
        page.wait_for_timeout(70);measure(page,role,target,width,height)
+       if width in (390,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
        if target=='entries':measure_scroll(page,'entries')
       for tab in ('registrations','admissions','checkers','updates'):
        page.locator('#admin-nav').click();page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
+       if width in (390,1366):page.screenshot(path=str(out/f'admin-tab-{tab}-{width}.png'))
        if tab=='updates':
         # The Android bridge exposes this same control. Exercise its layout
         # without opening a real device picker or sending an import request.

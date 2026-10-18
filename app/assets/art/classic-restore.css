@@ -35,3 +35,58 @@ input,select{background:#17121b;border-color:#6f465c;border-radius:12px;color:va
 
 .station-card,.faculty-station{background:linear-gradient(145deg,#2c1e2d,#19141f);border-color:#744659;color:var(--ink)}
 .station-card .station-action{color:var(--gold)}
+
+/* Sculpted original-brand surfaces: lighting is decorative; geometry stays stable. */
+:root{--line:#d8ac792a;--muted:#c8b3bf;--shadow-low:0 3px 0 #100a13,0 10px 24px #0005;--shadow-high:0 8px 0 #0e0911,0 24px 44px #0007}
+.app-shell{background:radial-gradient(ellipse at 13% 0,#8b365435,transparent 50%),radial-gradient(ellipse at 95% 60%,#57364225,transparent 65%)}
+.topbar{position:relative;border-bottom-color:#e5be7d24;box-shadow:0 8px 18px -14px #000c}
+.panel,.scanner-panel,.station-card,.faculty-station,.crafted-login{background:radial-gradient(ellipse at 12% 0,#99546a25,transparent 62%),linear-gradient(145deg,#302332,#1b1521);border:1px solid #c18d6a3b;box-shadow:inset 0 1px 0 #ffe9c91c,inset 0 -1px 0 #0005,var(--shadow-low)}
+.stats article,.report-stat{background:linear-gradient(145deg,#382936,#211824);border:1px solid #d8ac7930;box-shadow:inset 0 1px #fff0d91c,0 4px 0 #110b15,0 10px 20px #0004}
+.stats strong,.report-stat strong{text-shadow:0 2px 0 #120c18,0 0 18px #e5be7d14}
+input,select{box-shadow:inset 0 2px 5px #0007,0 1px #ffe4be0b;border-color:#9f677b9c}
+input:focus,select:focus{border-color:var(--gold);box-shadow:inset 0 2px 5px #0006,0 0 0 3px #e5be7d18}
+.primary{background:linear-gradient(155deg,#ffe6b8 0%,#e8c188 48%,#c99557 100%);box-shadow:inset 0 1px #fff6dc,0 4px 0 #805134,0 9px 16px #0005}
+.secondary,.icon-button,.avatar{background:linear-gradient(155deg,#4c3043,#291d2f);box-shadow:inset 0 1px #f5d3b421,0 3px 0 #100b15,0 7px 14px #0003;border-color:#b7826870}
+.button:active{transform:translateY(2px);box-shadow:inset 0 1px #ffffff13,0 1px 0 #100b15,0 3px 6px #0003}
+.mobile-nav{background:linear-gradient(#17111c,#1e1521);box-shadow:0 -12px 24px -20px #000d;border-top:1px solid #dbb08424}
+.mobile-nav button.selected,.admin-tabs button.selected{background:linear-gradient(145deg,#71354d,#3b2036);border-color:#d7a36d65;box-shadow:inset 0 1px #f5d7b12b,0 3px 0 #100b15;color:#ffe0aa}
+.mobile-nav button:focus-visible,.admin-tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+dialog{background:radial-gradient(ellipse at 0 0,#8d4a5e30,transparent 58%),linear-gradient(145deg,#302232,#1b1521);box-shadow:inset 0 1px #ffe9c92b,var(--shadow-high);border-color:#d7a36d80}
+dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
+/* Official vector marks already have alpha. Remove only their added UI backplates. */
+.institution-wordmark,.crafted-login>.official-logo,.official-logo,.brand.official-header .header-logo{background:transparent!important;padding:0;border-radius:0;box-shadow:none}
+.brand.official-header>.classic-header-logo{box-shadow:none;border-radius:0}
+.rows-scroll,#checker-list,#desk-records{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-padding-block:12px}
+#checker-list,#desk-records{flex:1}
+.rows-scroll thead{background:#291d2a;box-shadow:0 2px 8px #0004}
+.list-status{flex-shrink:0;min-height:30px;padding:9px 2px 0;font-size:11px;line-height:1.4;color:var(--muted)}
+
+/* Launch has three real layout regions, so figures never cross the logo or CTA. */
+.intro{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:max(18px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 25%,#742a4c66,transparent 62%),linear-gradient(155deg,#241221,#100d15)}
+.intro-content{grid-column:1;grid-row:1;position:relative;align-self:center;justify-self:center;width:100%;margin:0;gap:8px;z-index:3}
+.intro-content>.official-logo{width:min(230px,66vw);height:28px;margin:0;flex:none;animation:none}
+.intro-content .event-wordmark-hero.classic-event-mark{width:min(208px,32vh,54vw);max-height:none;aspect-ratio:1;filter:drop-shadow(0 7px 12px #0007)}
+.intro-content .eyebrow{font-size:10px;color:#e5be7d;display:block}
+.intro-content .intro-tagline,.intro-content p:not(.eyebrow){color:#ead0bb;font-size:14px;line-height:1.25}
+.intro-content .pill{color:#f5d4a3;background:#4e283754;border-color:#bd905652}
+.intro-dancers{grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:min(520px,100%);height:100%;min-height:0;justify-self:center;align-self:stretch;overflow:hidden;isolation:isolate}
+.intro .dancer-stage{position:relative;inset:auto;bottom:auto;left:auto;right:auto;width:100%;height:100%;min-height:0;max-height:none;animation:figure-arrive .7s ease both;transform-origin:50% 95%}
+.intro .dancer-stage-right{animation-delay:.08s}
+.intro .dancer-stage>.dancer{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 8px 5px #0007);animation:figure-breathe 3s 1s ease-in-out infinite;transform-origin:50% 95%}
+.intro .dancer-stage-right>.dancer{animation-delay:1.25s}
+.intro .intro-skip{grid-column:1;grid-row:3;position:relative;inset:auto;left:auto;right:auto;bottom:auto;transform:none;justify-self:center;min-width:180px;min-height:46px;margin:4px 0 0;background:linear-gradient(155deg,#ffe6b8,#d9aa6d);color:#281620;border-color:#ffe3a6;box-shadow:inset 0 1px #fff4d5,0 4px 0 #805134,0 10px 20px #0005}
+.intro .intro-skip:active{transform:translateY(2px)}
+@keyframes figure-arrive{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes figure-breathe{50%{transform:translateY(-3px) rotate(.7deg)}}
+@media(max-height:560px) and (min-width:520px){.intro{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);grid-template-rows:minmax(0,1fr) auto;gap:8px 16px;padding:12px 22px}.intro-content{grid-column:1;grid-row:1;gap:5px}.intro-content>.official-logo{width:min(205px,33vw);height:24px}.intro-content .event-wordmark-hero.classic-event-mark{width:min(160px,42vh)}.intro-content .eyebrow{display:none}.intro-content .intro-tagline,.intro-content p:not(.eyebrow){font-size:12px}.intro-dancers{grid-column:2;grid-row:1;width:100%}.intro .intro-skip{grid-column:1/-1;grid-row:2;min-height:42px;margin:0}}
+@media(max-height:600px) and (max-width:519px){.intro-content .event-wordmark-hero.classic-event-mark{width:min(150px,28vh)}.intro-content .eyebrow{display:none}.intro-content .pill{display:none}.intro-content>.official-logo{height:24px}.intro{gap:6px;padding-block:12px}}
+@media(prefers-reduced-motion:reduce){.intro .dancer-stage,.intro .dancer-stage>.dancer{animation:none!important;transform:none!important}.intro-content .event-wordmark-hero.classic-event-mark{filter:none}}
+.institution-wordmark,.crafted-login>.official-logo,.official-logo,.brand.official-header .header-logo{border:0}
+#view-desk.desk-list-mode{overflow:hidden;min-height:0}
+#view-desk.desk-list-mode>.panel-heading,#view-desk.desk-list-mode>.stats{flex-shrink:0}
+#view-desk.desk-list-mode .desk-workspace{flex:1 1 0;min-height:0;overflow:hidden}
+#view-desk.desk-list-mode .desk-tabs{flex-shrink:0}
+#view-desk.desk-list-mode .desk-list-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#desk-list-panel>.panel-heading,#desk-list-panel>.table-toolbar,.list-footer{flex-shrink:0}
+.list-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px}
+.list-footer .list-status{padding-top:0;min-height:0}.list-footer .button{flex-shrink:0}

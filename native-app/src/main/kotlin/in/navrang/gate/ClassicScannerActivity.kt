@@ -1,18 +1,16 @@
 package `in`.navrang.gate
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -23,7 +21,6 @@ class ClassicScannerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContent {
             val state by model.state.collectAsStateWithLifecycle()
             LaunchedEffect(state.ready, state.profile?.canScan) {
@@ -35,22 +32,13 @@ class ClassicScannerActivity : ComponentActivity() {
                     if (state.pending > 0) confirmClose = true else finish()
                 }
             }
-            MaterialTheme(
-                colorScheme = darkColorScheme(
-                    primary = Color(0xffe5be7d), onPrimary = Color(0xff201219),
-                    background = Color(0xff100d15), surface = Color(0xff211923),
-                    onSurface = Color(0xfff9e9dc), secondary = Color(0xffdcb071)
-                ),
-                shapes = Shapes(
-                    small = RoundedCornerShape(9.dp), medium = RoundedCornerShape(12.dp),
-                    large = RoundedCornerShape(18.dp)
-                )
-            ) {
+            ClassicScannerTheme {
                 Surface(Modifier.fillMaxSize()) {
-                    Column(Modifier.fillMaxSize().systemBarsPadding()) {
-                        Row(Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    BackHandler { close() }
+                    Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
+                        Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                             Image(painterResource(R.drawable.app_icon), "Navrang", Modifier.size(44.dp))
-                            Text("Navrang · live scanner", Modifier.padding(12.dp))
+                            Text("Navrang · live scanner", Modifier.weight(1f).padding(horizontal = 12.dp), style = MaterialTheme.typography.titleMedium)
                             TextButton(onClick = close, enabled = state.held == null) { Text("Close") }
                         }
                         if (state.ready && state.profile?.canScan == true) {
@@ -63,7 +51,7 @@ class ClassicScannerActivity : ComponentActivity() {
                     state.held?.let { result ->
                         AlertDialog(
                             onDismissRequest = {}, title = { Text(result.title) },
-                            text = { ReceiptText(result) },
+                            text = { ClassicScanReceipt(result) },
                             confirmButton = {
                                 Button(onClick = model::acknowledge) {
                                     Text(if (result.pending) "Acknowledge · still pending" else "Acknowledge")
@@ -78,7 +66,6 @@ class ClassicScannerActivity : ComponentActivity() {
                         confirmButton = { TextButton(onClick = ::finish) { Text("Return to station") } },
                         dismissButton = { TextButton(onClick = { confirmClose = false }) { Text("Keep scanning open") } }
                     )
-                    BackHandler { close() }
                 }
             }
         }

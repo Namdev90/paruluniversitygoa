@@ -485,8 +485,8 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
 
     fun submit(raw: String) {
         if (mutable.value.held != null || mutable.value.profile?.canScan != true) return
-        val id = raw.trim().uppercase()
-        if (!Regex("[A-Z0-9]{8}").matches(id)) {
+        val id = exactScannerId(raw)
+        if (id == null) {
             outcomes.receive(
                 ScanResult("", "invalid", "", "Use the exact eight-character ticket ID."),
                 SystemClock.elapsedRealtime(),

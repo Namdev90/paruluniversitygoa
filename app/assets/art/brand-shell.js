@@ -16,9 +16,10 @@
  function brandLine(target){if(!target)return;target.replaceChildren(universityMark(),eventMark('event-wordmark-small'));target.classList.add('official-brand-line');}
  const intro=document.querySelector('.intro-content'),heading=intro?.querySelector('h1');
  if(heading){heading.classList.add('visually-hidden');heading.before(eventMark('event-wordmark-hero'));}
+ const dancerRow=el('div',null,'intro-dancers');dancerRow.setAttribute('aria-hidden','true');document.querySelector('.intro-content')?.after(dancerRow);
  for(const side of ['left','right']){
   const dancer=document.querySelector('.intro>.dancer-'+side);if(!dancer)continue;
-  const stage=el('div',null,'dancer-stage dancer-stage-'+side);dancer.before(stage);stage.append(dancer);
+  const stage=el('div',null,'dancer-stage dancer-stage-'+side);dancerRow.append(stage);stage.append(dancer);
  }
  const header=document.querySelector('.brand'),oldIcon=header?.querySelector(':scope>img');
  if(oldIcon){oldIcon.classList.add('classic-header-logo');header.classList.add('official-header');}

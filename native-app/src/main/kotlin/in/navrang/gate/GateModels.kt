@@ -140,9 +140,14 @@ data class Receipt(
     val actualAt: String,
     val observedAt: String,
     val note: String,
+    val source: String = "",
 ) {
     val correction
         get() = basis == "organizer_confirmed"
+
+    val hasScanDetails
+        get() = checker.isNotBlank() || recordedAt.isNotBlank() || actualAt.isNotBlank() ||
+            observedAt.isNotBlank() || note.isNotBlank() || source.isNotBlank() || seq > 0 || correction
 
     val timeLabel
         get() = if (correction) "Correction recorded" else "Entry confirmed"
@@ -162,6 +167,7 @@ data class Receipt(
                 o.text("actualAdmittedAt"),
                 o.text("observedScanAt"),
                 o.text("note"),
+                o.text("source"),
             )
     }
 }
@@ -290,12 +296,50 @@ data class DeskCase(
     }
 }
 
+/** Only fields actually returned for this authorized scan. Never joins a local roster. */
+data class ScanRecordDetails(
+    val amount: String,
+    val quantity: String,
+    val refund: String,
+    val description: String,
+    val eligible: Boolean?,
+    val reason: String,
+    val paymentAt: String,
+    val paymentMethod: String,
+    val paymentReference: String,
+    val source: String,
+) {
+    val hasValues
+        get() = eligible != null || listOf(amount, quantity, refund, description, reason,
+            paymentAt, paymentMethod, paymentReference, source).any { it.isNotBlank() }
+
+    companion object {
+        fun from(o: JSONObject) = ScanRecordDetails(
+            o.text("amount"),
+            o.text("quantity"),
+            o.text("refund"),
+            o.text("description"),
+            if (o.opt("eligible") is Boolean) o.getBoolean("eligible") else null,
+            o.text("reason"),
+            o.text("paymentAt"),
+            o.text("paymentMethod"),
+            o.text("paymentReference"),
+            o.text("source"),
+        )
+    }
+}
+
+/** No truncation: an overlong pasted ID must never verify a different ticket. */
+internal fun exactScannerId(raw: String): String? =
+    raw.trim().uppercase(Locale.ROOT).takeIf { Regex("[A-Z0-9]{8}").matches(it) }
+
 data class ScanResult(
     val id: String,
     val code: String,
     val name: String,
     val message: String,
     val receipt: Receipt? = null,
+    val record: ScanRecordDetails? = null,
 ) {
     val confirmed
         get() = code == "admitted"
@@ -325,6 +369,7 @@ data class ScanResult(
                 e?.text("name") ?: o.optJSONObject("record")?.text("name") ?: "",
                 o.text("message"),
                 e?.let(Receipt::from),
+                o.optJSONObject("record")?.let(ScanRecordDetails::from),
             )
         }
     }

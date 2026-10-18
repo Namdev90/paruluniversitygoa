@@ -15,6 +15,24 @@ object RegistrationImport {
     private const val MAX_MEMBER = 16 * 1024 * 1024
     private const val MAX_EXPANDED = 32 * 1024 * 1024
 
+    /** Match GateApi's exact UTF-8 JSON envelope before showing import confirmation. */
+    fun payload(records: JSONArray): JSONObject {
+        val payload = json(
+            "eventId" to "O9KL3",
+            "source" to "Administrator document import",
+            "records" to records,
+        )
+        val bytes = json("action" to "import", "payload" to payload).toString().toByteArray(Charsets.UTF_8)
+        try {
+            require(bytes.size <= MAX_FILE) {
+                "Import expands beyond the server's 8 MiB request limit. Split it into smaller files."
+            }
+        } finally {
+            bytes.fill(0)
+        }
+        return payload
+    }
+
     fun readBounded(input: InputStream, limit: Int = MAX_FILE): ByteArray {
         val out = ByteArrayOutputStream()
         val b = ByteArray(16384)

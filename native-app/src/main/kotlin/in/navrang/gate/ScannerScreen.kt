@@ -3,6 +3,7 @@ package `in`.navrang.gate
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.SystemClock
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
@@ -19,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -32,6 +34,28 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = { vm.navigate(Destination.Checker) }) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
+    var exactIdOpen by remember(s.profile?.scope) { mutableStateOf(false) }
+    var inspectedResult by remember(s.profile?.scope) { mutableStateOf<ScanResult?>(null) }
+    LaunchedEffect(s.result, s.held) {
+        // A required issue acknowledgement always takes priority over optional detail.
+        if (s.held != null) inspectedResult = null
+        else if (inspectedResult != null && inspectedResult?.id == s.result?.id)
+            inspectedResult = s.result
+    }
+    BackHandler(enabled = exactIdOpen && s.held == null && inspectedResult == null) {
+        exactIdOpen = false
+    }
+    if (inspectedResult != null && s.held == null) {
+        val result = inspectedResult!!
+        AlertDialog(
+            onDismissRequest = { inspectedResult = null },
+            title = { Text(result.title) },
+            text = { ClassicScanReceipt(result) },
+            confirmButton = {
+                TextButton(onClick = { inspectedResult = null }) { Text("Back to camera") }
+            },
+        )
+    }
     var permission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -43,14 +67,27 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
             permission = it
         }
     if (!permission) {
-        Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Text("Camera access is needed to scan ticket QR codes.")
             Button(onClick = { request.launch(Manifest.permission.CAMERA) }) {
                 Text("Allow camera")
             }
-            OutlinedButton(onClick = exit) {
-                Text("Use exact ticket ID")
+            if (!exactIdOpen) OutlinedButton(onClick = { exactIdOpen = true }) {
+                Text("Find by ticket ID")
             }
+            s.result?.let { result ->
+                ClassicScanOutcomeCard(result) { inspectedResult = result }
+            }
+            if (exactIdOpen) ScannerExactIdPanel(
+                enabled = s.held == null && s.profile?.canScan == true,
+                onVerify = vm::submit,
+                onClose = { exactIdOpen = false },
+                cameraAvailable = false,
+            )
+            TextButton(onClick = exit, enabled = s.held == null) { Text("Return to station") }
         }
         return
     }
@@ -66,7 +103,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
     }
-    val held by rememberUpdatedState(s.held != null || s.profile?.canScan != true)
+    val held by rememberUpdatedState(s.held != null || s.profile?.canScan != true || exactIdOpen || inspectedResult != null)
     DisposableEffect(owner, preview) {
         val worker = Executors.newSingleThreadExecutor()
         val active = AtomicBoolean(true)
@@ -226,26 +263,68 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
             camera = null
         }
     }
+    ClassicScannerCameraLayout(
+        s = s,
+        exactIdOpen = exactIdOpen,
+        onExactIdOpen = { exactIdOpen = it },
+        onVerify = vm::submit,
+        onDetails = { inspectedResult = it },
+        status = when {
+            exactIdOpen -> "Camera open · QR reading paused for exact ID"
+            inspectedResult != null -> "Camera open · QR reading paused for details"
+            else -> status
+        },
+        torchMode = torchMode,
+        hasFlash = camera?.cameraInfo?.hasFlashUnit() == true,
+        onTorch = {
+            torchMode = (torchMode + 1) % 3
+            torch = torchMode == 1
+            camera?.cameraControl?.enableTorch(torch)
+        },
+        zoom = zoom,
+        maxZoom = maxZoom,
+        onZoom = {
+            zoom = it
+            camera?.cameraControl?.setZoomRatio(it)
+        },
+        onFocus = { point ->
+            camera?.cameraControl?.startFocusAndMetering(
+                FocusMeteringAction.Builder(preview.meteringPointFactory.createPoint(point.x, point.y)).build()
+            )
+            status = "Focusing · hold steady"
+        },
+        previewContent = { AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize()) },
+    )
+}
+
+/** The real scanner layout is also rendered with a clearly synthetic preview in UI tests. */
+@Composable
+internal fun ClassicScannerCameraLayout(
+    s: GateState,
+    exactIdOpen: Boolean,
+    onExactIdOpen: (Boolean) -> Unit,
+    onVerify: (String) -> Unit,
+    onDetails: (ScanResult) -> Unit,
+    status: String,
+    torchMode: Int,
+    hasFlash: Boolean,
+    onTorch: () -> Unit,
+    zoom: Float,
+    maxZoom: Float,
+    onZoom: (Float) -> Unit,
+    onFocus: (Offset) -> Unit,
+    previewContent: @Composable BoxScope.() -> Unit,
+) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val controlsHeight = maxHeight * .55f
+        val controlsHeight = maxHeight * (if (exactIdOpen) .7f else .55f)
         val frameSize = minOf(220.dp, maxHeight * .35f)
         Column(Modifier.fillMaxSize()) {
             Box(
-                Modifier.weight(1f).fillMaxWidth().background(Color.Black).pointerInput(camera) {
-                    detectTapGestures { point ->
-                        camera
-                            ?.cameraControl
-                            ?.startFocusAndMetering(
-                                FocusMeteringAction.Builder(
-                                        preview.meteringPointFactory.createPoint(point.x, point.y)
-                                    )
-                                    .build()
-                            )
-                        status = "Focusing · hold steady"
-                    }
+                Modifier.weight(1f).fillMaxWidth().background(Color.Black).pointerInput(onFocus) {
+                    detectTapGestures { point -> onFocus(point) }
                 }
             ) {
-                AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
+                previewContent()
                 Surface(
                     color = Color.Black.copy(alpha = .72f),
                     contentColor = Color.White,
@@ -267,15 +346,18 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                s.result?.let { OutcomeCard(it) }
+                s.result?.let { result ->
+                    ClassicScanOutcomeCard(result) { onDetails(result) }
+                }
+                if (exactIdOpen) ScannerExactIdPanel(
+                    enabled = s.held == null && s.profile?.canScan == true,
+                    onVerify = onVerify,
+                    onClose = { onExactIdOpen(false) },
+                )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     OutlinedButton(
-                        onClick = {
-                            torchMode = (torchMode + 1) % 3
-                            torch = torchMode == 1
-                            camera?.cameraControl?.enableTorch(torch)
-                        },
-                        enabled = camera?.cameraInfo?.hasFlashUnit() == true,
+                        onClick = onTorch,
+                        enabled = hasFlash,
                     ) {
                         Text(
                             when (torchMode) {
@@ -286,22 +368,19 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                         )
                     }
                     TextButton(
-                        onClick = {
-                            zoom = 1f
-                            camera?.cameraControl?.setZoomRatio(1f)
-                        }
+                        onClick = { onZoom(1f) }
                     ) {
                         Text("Reset zoom")
                     }
-                    TextButton(onClick = exit) { Text("Exact ID") }
+                    TextButton(
+                        onClick = { onExactIdOpen(!exactIdOpen) },
+                        enabled = s.held == null,
+                    ) { Text(if (exactIdOpen) "Hide ID" else "Find ID") }
                 }
                 if (maxZoom > 1f)
                     Slider(
                         value = zoom,
-                        onValueChange = {
-                            zoom = it
-                            camera?.cameraControl?.setZoomRatio(it)
-                        },
+                        onValueChange = onZoom,
                         valueRange = 1f..minOf(maxZoom, 5f),
                     )
                 Text(

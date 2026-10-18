@@ -27,7 +27,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  protected final void nativeNotice(String text){try{event(new JSONObject().put("type","notice").put("data",new JSONObject().put("message",text)));}catch(Exception ignored){}}
  protected final void nativeError(String text){error(text);}
  @Override public void onCreate(Bundle saved){
-  super.onCreate(saved);getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);GateReadiness.volume(this);readiness=new GateReadiness(this);GateFeedback.init(this);if(updatesEnabled())GateUpdater.init(this);else GateUpdater.setAutomatic(this,false);
+  super.onCreate(saved);getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);GateReadiness.volume(this);readiness=new GateReadiness(this);GateFeedback.init(this);if(updatesEnabled())GateUpdater.init(this);else GateUpdater.setAutomatic(this,false);
   try{runtime=GateRuntime.get(this);}catch(Exception e){showMessage("Could not open saved data. Keep app data.\n\n"+e.getMessage());return;}
   getWindow().setStatusBarColor(Color.rgb(16,13,21));getWindow().setNavigationBarColor(Color.rgb(16,13,21));getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
   FrameLayout frame=new FrameLayout(this);
