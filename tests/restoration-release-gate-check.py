@@ -35,9 +35,10 @@ class RestorationGate(unittest.TestCase):
         (self.root / 'runtime.txt').write_text('verified fixture')
         self.git('init', '-q')
         source = self.commit()
-        self.approval = {'approvedBy':'owner','approvedAt':'2026-10-18T18:57:30+05:30',
+        self.approval = {'releaseApproved':True,'approvedBy':'owner','approvedAt':'2026-10-18T18:57:30+05:30',
                          'instruction':'restore original design and logo; retain features',
-                         'versionName':'0.7.8','versionCode':16,'verifiedSourceCommit':source}
+                         'versionName':'0.7.8','versionCode':16,'verifiedSourceCommit':source,
+                         'approvedSourceCommit':source,'deviceAcceptance':'VERIFIED','deviceEvidence':'Synthetic fixture evidence'}
         self.save(); self.commit()
 
     def test_current_owner_scoped_clean_release(self):
@@ -47,6 +48,12 @@ class RestorationGate(unittest.TestCase):
         self.approval.update(versionName='0.7.7', versionCode=15)
         self.save(); self.commit()
         with self.assertRaisesRegex(SystemExit, 'owner instruction'):
+            require_restoration_ready(self.root)
+
+    def test_implementation_request_is_not_publication_approval(self):
+        self.approval['releaseApproved'] = False
+        self.save(); self.commit()
+        with self.assertRaisesRegex(SystemExit, 'publication approval'):
             require_restoration_ready(self.root)
 
     def test_missing_owner_instruction(self):
@@ -61,6 +68,33 @@ class RestorationGate(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, 'code changed'):
             require_restoration_ready(self.root)
 
+    def test_unverified_device_acceptance_is_held(self):
+        self.approval.update(deviceAcceptance='UNVERIFIED', deviceEvidence='')
+        self.save(); self.commit()
+        with self.assertRaisesRegex(SystemExit, 'device acceptance'):
+            require_restoration_ready(self.root)
+
+    def test_old_version_device_waiver_is_held(self):
+        self.approval.update(deviceAcceptance='SKIPPED_BY_OWNER', deviceEvidence='', verificationWaiver={
+            'approvedBy':'owner','instruction':'synthetic approval','approvedAt':'synthetic time',
+            'versionName':'0.7.7','versionCode':15,'sourceCommit':self.approval['verifiedSourceCommit']})
+        self.save(); self.commit()
+        with self.assertRaisesRegex(SystemExit, 'fresh owner waiver'):
+            require_restoration_ready(self.root)
+
+    def test_current_source_version_device_waiver_is_accepted(self):
+        self.approval.update(deviceAcceptance='SKIPPED_BY_OWNER', deviceEvidence='', verificationWaiver={
+            'approvedBy':'owner','instruction':'synthetic approval','approvedAt':'synthetic time',
+            'versionName':'0.7.8','versionCode':16,'sourceCommit':self.approval['verifiedSourceCommit']})
+        self.save(); self.commit()
+        require_restoration_ready(self.root)
+
+    def test_publication_approval_must_name_the_source(self):
+        self.approval['approvedSourceCommit'] = '1' * 40
+        self.save(); self.commit()
+        with self.assertRaisesRegex(SystemExit, 'publication approval must name'):
+            require_restoration_ready(self.root)
+
     def test_dirty_tree_is_held(self):
         (self.root / 'notes.txt').write_text('uncommitted')
         with self.assertRaisesRegex(SystemExit, 'working tree'):
@@ -68,6 +102,7 @@ class RestorationGate(unittest.TestCase):
 
     def test_nonancestor_source_is_held(self):
         self.approval['verifiedSourceCommit'] = '0' * 40
+        self.approval['approvedSourceCommit'] = '0' * 40
         self.save(); self.commit()
         with self.assertRaisesRegex(SystemExit, 'source ancestor'):
             require_restoration_ready(self.root)
@@ -75,6 +110,7 @@ class RestorationGate(unittest.TestCase):
     def test_substituted_logo_is_held_after_other_checks_pass(self):
         (self.root / 'app/assets/art/app-icon.png').write_bytes(b'not the original logo')
         self.approval['verifiedSourceCommit'] = self.commit()
+        self.approval['approvedSourceCommit'] = self.approval['verifiedSourceCommit']
         self.save(); self.commit()
         with self.assertRaisesRegex(SystemExit, 'logo bytes changed'):
             require_restoration_ready(self.root)

@@ -133,16 +133,20 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   JSONObject auth=runtime.sessions.read();if(pendingLogoutToken==null&&auth!=null)pendingLogoutToken=auth.optString("token","");
   runtime.sessions.beginChange();runtime.db.clearTemporary();runOnUiThread(()->{clearExport();clearReport();});
   runtime.requests.execute(()->{
+   final String token;
    try{
     if(!runtime.sessions.clearDurably())throw new IOException("Could not persist sign-out.");
     getSharedPreferences("navrang-pkce",MODE_PRIVATE).edit().clear().commit();clearCredentialProvider();
-    final String token; synchronized(MainActivity.this){token=pendingLogoutToken;pendingLogoutToken=null;}
-    apiResponse(id,200,new JSONObject().put("ok",true).put("signedOut",true));
-    runtime.emit("auth",new JSONObject());
-    if(token!=null&&!token.isEmpty())try{runtime.api.call("logout",new JSONObject(),token);}catch(Exception ignored){}
+    synchronized(MainActivity.this){token=pendingLogoutToken;pendingLogoutToken=null;clearingSignOut=false;}
    }catch(Exception failure){
+    synchronized(MainActivity.this){clearingSignOut=false;}
     try{apiResponse(id,0,new JSONObject().put("ok",false).put("error","Sign-out could not be saved. Private access is blocked. Retry sign out."));}catch(Exception ignored){}
-   }finally{synchronized(MainActivity.this){clearingSignOut=false;}}
+    return;
+   }
+   try{apiResponse(id,200,new JSONObject().put("ok",true).put("signedOut",true));}catch(Exception ignored){}
+   runtime.emit("auth",new JSONObject());
+   // Revoking the captured old token must not block a later identity's local sign-out.
+   if(token!=null&&!token.isEmpty())try{runtime.api.call("logout",new JSONObject(),token);}catch(Exception ignored){}
   });
  }
  private final class Bridge {
