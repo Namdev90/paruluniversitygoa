@@ -43,3 +43,16 @@ Download data precedes Attendance overview on phones. Reports has an explicit re
 The reviewed SQL repair and matching Edge deployment were successfully read back. The hosted portal's authenticated admin report summary returned 793 admitted, comprising 775 registration-master admissions and 18 organizer-confirmed admissions. The owner supplied the successful live CSV export screenshot and explicitly confirmed downloading works. This is administrator/user acceptance; it does not claim tests under a separately granted faculty identity, real Android document picker, or physical camera/upgrade tests.
 
 The owner's physical-device checks remain deferred until after publication, marked `SKIPPED_BY_OWNER`. All signing, archive integrity, normal repository and public-download verification requirements remain. The prior signed local APK belongs to the earlier source and must not be published as this corrected candidate. Rebuild from this source plus documentation-only approval.
+
+## Original-key APK publication receipt
+
+Runtime source: `275c0cfd64d13ab1e78523bcc02d91715adc328c`. Approval checkout: `1a1a5551dc941f8fda84b95baf550455785d62e5`. All three final workflows passed: [general](https://github.com/Namdev90/paruluniversitygoa/actions/runs/39170015319), [responsive/control/export](https://github.com/Namdev90/paruluniversitygoa/actions/runs/39170015288), [Android](https://github.com/Namdev90/paruluniversitygoa/actions/runs/39170015284). Local native build, 80 Android tests, lint, original-key signing, signature and packaged source checks passed.
+
+- Package `in.navrang.gate`; version `0.7.9`; versionCode `17`; minSdk `24`; targetSdk `37`.
+- Signed APK: `Navrang-Gate-0.7.9.apk`, 22,630,853 bytes.
+- SHA-256: `f52a215fc326d4d824b6868859c9d8b05d8102fd01f6f04747848a94c1cf2729`.
+- Original signer: `0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce`.
+- Packaged HTML/report CSS matches the reviewed runtime source exactly. All sixteen earlier APKs and license remain byte-identical.
+- The hosted phone download-layout correction is published separately as Site version 11. No account grants or attendance/payment records were changed for this release.
+
+The APK and manifest become public only when this publication commit is merged. Independent public byte/signature/manifest verification follows merge; this preparation receipt does not itself claim that final check. Physical-device acceptance remains SKIPPED_BY_OWNER, not passed.

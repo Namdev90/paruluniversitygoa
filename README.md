@@ -5,13 +5,12 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.8.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.9.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
 </div>
 
-> **Release status:** **0.7.8 · Android code 16** restores the original burgundy/gold interface and gold Navrang logo. It keeps the original signing identity, existing update channel, current native sign-in/scanning and data/security protections. Google branding remains deferred. Device, upgrade/reboot, performance and hosted acceptance checks were skipped under the owner's explicit 0.7.8 release approval and remain unverified. See [the signed release record](docs/RESTORATION-RELEASE-0.7.8.md).
+> **Release status:** **0.7.9 · Android code 17** includes reachable phone report downloads, the original burgundy/gold design, native scanning and update protections. Signed with the original identity. Physical-device checks remain deferred by the owner; see [the release record](docs/RESTORATION-RELEASE-0.7.9.md).
 
-**Next source candidate:** 0.7.9 / code 17 is allocated in the update PR and remains unpublished. See the [candidate changes and open acceptance gates](CHANGELOG.md#079-candidate--android-code-17--unpublished).
 
 ## Original Navrang interface
 

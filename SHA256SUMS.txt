@@ -1,3 +1,4 @@
+f52a215fc326d4d824b6868859c9d8b05d8102fd01f6f04747848a94c1cf2729  downloads/Navrang-Gate-0.7.9.apk
 b72cd7bdc99883cd9052f3873885073a153f8cb8c83293ffe7191040e415fc60  downloads/Navrang-Gate-0.7.8.apk
 cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a  downloads/Navrang-Gate-0.7.7.apk
 a3502d76c94655c3b47daf79aeab220d19d692818eb12e6a06d366ff2b5c80f2  downloads/Navrang-Gate-0.7.6.apk
