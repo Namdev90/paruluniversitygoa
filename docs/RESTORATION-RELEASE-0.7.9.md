@@ -33,3 +33,13 @@ Use the [current release procedure](RELEASE-PROCEDURE.md) in the retained origin
 The normal `tools/build.py` creates a signed candidate only after its source/approval/artwork gates. `tools/prepare-release.py` is a separate publication-preparation step. Verify the exact signed APK, backend/report acceptance, and canonical public artifact/updater before announcing release. The published channel remains 0.7.8/code16 until that succeeds.
 
 All sixteen historical APKs, their checksums and the MIT license remain unchanged. Historical GitHub Releases and the hosted portal are separate coordinated publication steps. After release, carry out and record the deferred physical-device checks without relabelling them as already passed.
+
+## Phone report-download correction — 19 October 2026
+
+The owner reported that report downloads were below the visible phone area and explicitly requested a fix and publication, confirming that CSV downloading works. Runtime source is now `275c0cfd64d13ab1e78523bcc02d91715adc328c`; it supersedes the earlier frozen source only for the reviewed report-layout correction and reachability tests. The original source and approval history above remain preserved.
+
+Download data precedes Attendance overview on phones. Reports has an explicit remaining-height scroll container inside the fixed header/navigation. Desktop retains its overview/download columns. Report routing, export logic, account permissions and records are unchanged by this UI correction. An independent reviewer cleared the final bounded-height correction. Fresh CI must pass before publication.
+
+The reviewed SQL repair and matching Edge deployment were successfully read back. The hosted portal's authenticated admin report summary returned 793 admitted, comprising 775 registration-master admissions and 18 organizer-confirmed admissions. The owner supplied the successful live CSV export screenshot and explicitly confirmed downloading works. This is administrator/user acceptance; it does not claim tests under a separately granted faculty identity, real Android document picker, or physical camera/upgrade tests.
+
+The owner's physical-device checks remain deferred until after publication, marked `SKIPPED_BY_OWNER`. All signing, archive integrity, normal repository and public-download verification requirements remain. The prior signed local APK belongs to the earlier source and must not be published as this corrected candidate. Rebuild from this source plus documentation-only approval.
