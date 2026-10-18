@@ -4,11 +4,11 @@
   "instruction": "approved bypass handoff",
   "versionName": "0.7.8",
   "versionCode": 16,
-  "verifiedSourceCommit": "26462bc981e9b64a70095392c6d23e024dee99f4",
+  "verifiedSourceCommit": "3549c1983f24eaaa95efbcc74cd51e81e2862212",
   "releaseApproved": true,
   "deviceAcceptance": "SKIPPED_BY_OWNER",
   "releaseNote": "Owner explicitly approved publication and bypass of remaining handoff acceptance holds for 0.7.8/code16. Unperformed device/upgrade/performance/hosted acceptance checks remain unverified. Original-key, exact artifact identity, anti-rollback, production data/security and normal repository protections remain enforced.",
-  "approvedSourceCommit": "26462bc981e9b64a70095392c6d23e024dee99f4",
+  "approvedSourceCommit": "3549c1983f24eaaa95efbcc74cd51e81e2862212",
   "deviceEvidence": "",
   "restorationInstruction": "go back to do original design material design is bad; keep all the things intact think like i never said that; go back to old logo",
   "restorationRequestedAt": "2026-10-18T18:57:30+05:30",
@@ -18,7 +18,7 @@
     "instruction": "approved bypass handoff",
     "versionName": "0.7.8",
     "versionCode": 16,
-    "sourceCommit": "26462bc981e9b64a70095392c6d23e024dee99f4",
+    "sourceCommit": "3549c1983f24eaaa95efbcc74cd51e81e2862212",
     "scope": "Remaining real-device sign-in/camera, installed-upgrade/reboot, hardware/accessibility/performance and hosted backend/portal acceptance holds; skipped, not passed."
   }
 }
