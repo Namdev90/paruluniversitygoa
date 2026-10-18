@@ -1,5 +1,8 @@
 name: Transfer verified signed native APK
 on:
+  pull_request:
+    branches: [codex/native-compose-rebuild]
+    types: [opened, synchronize, reopened]
   push:
     branches: [codex/stage-native-0.7.7]
     paths: ['.github/workflows/navrang-signed-transfer.yml']
@@ -7,7 +10,7 @@ permissions:
   contents: read
 jobs:
   transfer:
-    if: github.repository == 'Namdev90/paruluniversitygoa' && github.ref == 'refs/heads/codex/stage-native-0.7.7'
+    if: github.repository == 'Namdev90/paruluniversitygoa' && (github.ref == 'refs/heads/codex/stage-native-0.7.7' || (github.head_ref == 'codex/stage-native-0.7.7' && github.event.pull_request.head.repo.full_name == 'Namdev90/paruluniversitygoa'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -44,5 +47,3 @@ jobs:
           assert result["sha"]==expected["blob"]
           print(json.dumps({"verifiedSignedApkBlob":result["sha"],"sha256":expected["sha256"],"size":len(data)}))
           PY
-
-# Transfer only previously verified signed bytes; never execute repository code.
