@@ -19,7 +19,7 @@ public final class GateUpdater {
  private static final int JOB=3404,NOTICE=3405;private static final String CHANNEL="navrang-updates";
  private static final ExecutorService work=Executors.newSingleThreadExecutor();private static final AtomicBoolean running=new AtomicBoolean();
  private static final CopyOnWriteArrayList<Listener> listeners=new CopyOnWriteArrayList<>();private static final Handler ui=new Handler(Looper.getMainLooper());
- public static volatile boolean scanActive=false;private static volatile boolean downloading=false;private static volatile int progress=0;private static volatile String message="";private static volatile Intent confirmation;private static volatile int confirmationSession=-1;private static java.lang.ref.WeakReference<Activity> installerActivity=new java.lang.ref.WeakReference<>(null);
+ public static volatile boolean scanActive=false;private static volatile boolean downloading=false;private static volatile int progress=0;private static volatile String message="",installationMessage="";private static volatile Intent confirmation;private static volatile int confirmationSession=-1;private static java.lang.ref.WeakReference<Activity> installerActivity=new java.lang.ref.WeakReference<>(null);
  private static SharedPreferences prefs(Context c){return c.getSharedPreferences("navrang-updates",0);}
  public static void add(Listener l){listeners.addIfAbsent(l);}public static void remove(Listener l){listeners.remove(l);}
  public static int current(Context c){try{return c.getPackageManager().getPackageInfo(c.getPackageName(),0).versionCode;}catch(Exception e){return 0;}}
@@ -27,7 +27,8 @@ public final class GateUpdater {
  private static File file(Context c){return new File(c.getFilesDir(),"navrang-update.apk");}
  private static JSONObject release(Context c){try{return new JSONObject(prefs(c).getString("release","{}"));}catch(Exception e){return new JSONObject();}}
  public static boolean automatic(Context c){return prefs(c).getBoolean("automatic",true);}
- public static JSONObject status(Context c){int installing;try{installing=GateRuntime.get(c).db.updateSession()<0?0:1;}catch(Exception e){installing=-1;}JSONObject r=release(c);boolean available=r.optInt("versionCode")>current(c),ready=available&&prefs(c).getInt("readyCode",0)==r.optInt("versionCode")&&file(c).isFile();try{return new JSONObject().put("currentVersion",version(c)).put("available",available).put("ready",ready).put("installing",installing!=0).put("versionName",r.optString("versionName")).put("downloading",downloading).put("progress",progress).put("automatic",automatic(c)).put("notifications",((NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE)).areNotificationsEnabled()).put("message",message.isEmpty()?(installing<0?"Could not check Android installation. Tap Finish app update before scanning.":installing>0?"An Android app update is unfinished. Tap Finish app update to resume or safely clear it before scanning.":ready?"Update ready. Install when your station is idle.":available?"A new version is available.":"Your app is up to date."):message);}catch(Exception e){return new JSONObject();}}
+ private static void pendingInstallationMessage(String value){message="";installationMessage=value;}
+ public static JSONObject status(Context c){int installing;try{installing=GateRuntime.get(c).db.updateSession()<0?0:1;}catch(Exception e){installing=-1;}if(installing==0)installationMessage="";JSONObject r=release(c);boolean available=r.optInt("versionCode")>current(c),ready=available&&prefs(c).getInt("readyCode",0)==r.optInt("versionCode")&&file(c).isFile();try{return new JSONObject().put("currentVersion",version(c)).put("available",available).put("ready",ready).put("installing",installing!=0).put("versionName",r.optString("versionName")).put("downloading",downloading).put("progress",progress).put("automatic",automatic(c)).put("notifications",((NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE)).areNotificationsEnabled()).put("message",message.isEmpty()?(installing>0&&!installationMessage.isEmpty()?installationMessage:installing<0?"Could not check Android installation. Tap Finish app update before scanning.":installing>0?"An Android app update is unfinished. Tap Finish app update to resume or safely clear it before scanning.":ready?"Update ready. Install when your station is idle.":available?"A new version is available.":"Your app is up to date."):message);}catch(Exception e){return new JSONObject();}}
  public static void publish(Context c){JSONObject state=status(c);ui.post(()->{for(Listener l:listeners)l.updated(state);});}
  public static void init(Context c){schedule(c);if(automatic(c))check(c,false,false);}
  public static void setAutomatic(Context c,boolean enabled){prefs(c).edit().putBoolean("automatic",enabled).apply();schedule(c);publish(c);if(enabled)check(c,true,false);}
@@ -56,7 +57,7 @@ public final class GateUpdater {
   GateDb db=GateRuntime.get(c).db;
   synchronized(db){
    if(db.updateSession()<0||!db.isUpdateSession(confirmationSession)||installationBlocked(c)||activity.isFinishing()||activity.isDestroyed()||!activity.hasWindowFocus()||confirmation==null)return false;
-   Intent next=confirmation;activity.startActivity(new Intent(next));message="Confirm the update in Android to finish.";return true;
+   Intent next=confirmation;activity.startActivity(new Intent(next));pendingInstallationMessage("Confirm the update in Android to finish.");return true;
   }
  }
  private static IntentSender installerResult(Context c,int id){
@@ -73,9 +74,9 @@ public final class GateUpdater {
      // Old Android releases cannot safely recommit a session already handed to PackageManager.
      // Cancel the interrupted attempt, and retain its fence until Android proves it is gone.
      pi.abandonSession(id);
-     message=db.updateSession()<0?"Interrupted update cleared. Tap Install update to retry.":"Android is still finishing the previous update. Finish or cancel it before scanning.";
+     if(db.updateSession()<0)message="Interrupted update cleared. Tap Install update to retry.";else pendingInstallationMessage("Android is still finishing the previous update. Finish or cancel it before scanning.");
     }
-   }catch(Exception e){message="Finish or cancel the current Android app update before scanning. Tap Install update to retry confirmation.";}
+   }catch(Exception e){pendingInstallationMessage("Finish or cancel the current Android app update before scanning. Tap Install update to retry confirmation.");}
    finally{publish(c);}
   });
  }
@@ -88,7 +89,7 @@ public final class GateUpdater {
    confirmation=null;confirmationSession=-1;
    if(activeSession>=0){
     if(activeDb.isRecoveredUpdateSession(activeSession))recoverInstallation(c,activeDb,activeSession);
-    else{message="Finish or cancel the current Android app update before starting another.";publish(c);}
+    else{pendingInstallationMessage("Finish or cancel the current Android app update before starting another.");publish(c);}
     return;
    }
    if(!status(c).optBoolean("ready"))throw new IOException();
@@ -97,31 +98,33 @@ public final class GateUpdater {
    }
    message="Verifying update…";publish(c);
    work.execute(()->{
-    PackageInstaller.Session session=null;GateDb installDb=null;int id=-1;
+    PackageInstaller.Session session=null;PackageInstaller pi=null;GateDb installDb=null;int id=-1;
     try{
-     JSONObject r=release(c);verify(c,file(c),r);PackageInstaller pi=c.getPackageManager().getPackageInstaller();
+     JSONObject r=release(c);verify(c,file(c),r);installDb=GateRuntime.get(c).db;pi=c.getPackageManager().getPackageInstaller();
      PackageInstaller.SessionParams p=new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);p.setAppPackageName(c.getPackageName());p.setSize(file(c).length());if(Build.VERSION.SDK_INT>=31)p.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED);
      id=pi.createSession(p);session=pi.openSession(id);
      try(InputStream in=new FileInputStream(file(c));OutputStream out=session.openWrite("Navrang.apk",0,file(c).length())){byte[] b=new byte[32768];int n;while((n=in.read(b))!=-1)out.write(b,0,n);session.fsync(out);}
-     GateDb db=GateRuntime.get(c).db;installDb=db;
+     GateDb db=installDb;
      synchronized(db){
       // queue() uses this same lock, so a request cannot appear between this check and commit.
       if(installationBlocked(c)){session.abandon();return;}
       // Keep admissions fenced after releasing this lock: Android may replace the process later.
-      if(!db.pauseForUpdate(id)){message="Finish or cancel the current Android app update before starting another.";session.abandon();return;}
+      if(!db.pauseForUpdate(id)){pendingInstallationMessage("Finish or cancel the current Android app update before starting another.");session.abandon();return;}
       session.commit(installerResult(c,id));
      }
-     message="Confirm the update in Android to finish.";
+     pendingInstallationMessage("Confirm the update in Android to finish.");
     }catch(Exception e){
      message="Could not install this update. Retry from your account.";
-     if(session!=null)try{session.abandon();}catch(Exception ignored){}
+     // createSession() can succeed even when storage failure prevents opening a handle.
+     if(installDb!=null)installDb.recoverInterruptedUpdate(id);
+     if(pi!=null&&id>=0)try{pi.abandonSession(id);}catch(Exception ignored){}
      // Some Android versions cannot abandon an install already handed to PackageManager.
      // Reconcile actual absence; never release the fence merely because abandon() returned.
      if(installDb!=null)try{installDb.updateSession();}catch(Exception ignored){}
     }
     finally{if(session!=null)session.close();publish(c);}
    });
-  }catch(GateDb.UpdateInProgressException e){message="Could not check the Android app update. Finish or cancel it before scanning.";publish(c);}
+  }catch(GateDb.UpdateInProgressException e){pendingInstallationMessage("Could not check the Android app update. Finish or cancel it before scanning.");publish(c);}
   catch(Exception e){message="No verified update is ready yet.";publish(c);}
  }
  public static void installationResult(Context c,Intent intent){
@@ -131,12 +134,14 @@ public final class GateUpdater {
    GateDb db=GateRuntime.get(c).db;
    synchronized(db){
     // A delayed result from an older session cannot release a newer admission fence.
-    if(!db.isUpdateSession(id))return;
-    if(state!=PackageInstaller.STATUS_PENDING_USER_ACTION)db.resumeAfterUpdate(id);
+    boolean tracked=db.isUpdateSession(id);
+    // A status refresh may already have removed a completed session before its broadcast arrives.
+    if(!tracked&&(id<0||state==PackageInstaller.STATUS_PENDING_USER_ACTION||id!=confirmationSession))return;
+    if(tracked&&state!=PackageInstaller.STATUS_PENDING_USER_ACTION)db.resumeAfterUpdate(id);
    }
-  }catch(Exception e){message="Could not check the Android app update. Finish or cancel it before scanning.";publish(c);return;}
+  }catch(Exception e){pendingInstallationMessage("Could not check the Android app update. Finish or cancel it before scanning.");publish(c);return;}
   if(state==PackageInstaller.STATUS_PENDING_USER_ACTION){
-   confirmationSession=id;confirmation=intent.getParcelableExtra(Intent.EXTRA_INTENT);message="Tap Install update to open Android confirmation.";
+   confirmationSession=id;confirmation=intent.getParcelableExtra(Intent.EXTRA_INTENT);pendingInstallationMessage("Tap Install update to open Android confirmation.");
    final Activity foreground=installerActivity.get();
    if(foreground!=null&&!foreground.isFinishing()&&!foreground.isDestroyed()&&foreground.hasWindowFocus()&&confirmation!=null){
     ui.post(()->{try{if(!launchConfirmation(c,foreground))notifyReady(c,true);}catch(Exception e){notifyReady(c,true);}finally{publish(c);}});

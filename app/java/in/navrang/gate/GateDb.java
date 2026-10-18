@@ -86,6 +86,8 @@ public final class GateDb extends SQLiteOpenHelper {
   if(!recoverUpdateSessions())throw new UpdateInProgressException();
   return sessionId>=0&&updateSessions.contains(sessionId);
  }
+ // A created session can outlive a failed open/write/commit; make cleanup retryable without restart.
+ public synchronized void recoverInterruptedUpdate(int sessionId){if(sessionId>=0){updateSessions.add(sessionId);recoveredUpdateSessions.add(sessionId);}}
  public synchronized boolean isRecoveredUpdateSession(int sessionId){return isUpdateSession(sessionId)&&recoveredUpdateSessions.contains(sessionId);}
  // Only a matching terminal callback proves completion; abandon() alone may be asynchronous.
  public synchronized void resumeAfterUpdate(int sessionId){if(isUpdateSession(sessionId)){updateSessions.remove(sessionId);recoveredUpdateSessions.remove(sessionId);}}
