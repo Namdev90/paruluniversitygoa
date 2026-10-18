@@ -23,6 +23,8 @@ public final class ScannerAssistCheck {
     }
     public static void main(String[] args) throws Exception {
         decodeFixtures();
+        frameBoundaries();
+        rotatedEdgeZoom();
         ScannerQrReader.Attempt small = candidate(450, 450, 100), edge = candidate(20, 450, 100), none = blank();
         check(small.fitsZoom(1.2f), "centred small candidate has safe room");
         check(!edge.fitsZoom(1.2f), "off-centre candidate must not be clipped by zoom");
@@ -60,6 +62,55 @@ public final class ScannerAssistCheck {
         check(step(read, 500, false, false, true, small, 1, 4, false, true, true, false).zoom == 0, "recent successful read suppresses zoom");
         check(!step(read, 1000, false, false, true, small, 1, 4, false, true, true, false).focus, "recent successful read suppresses focus");
         System.out.println("PASS native automatic camera: " + checks + " synthetic decoder and bounded-assistance checks.");
+    }
+
+    private static void frameBoundaries() {
+        ScannerFrameGate gate = new ScannerFrameGate();
+        long captured = gate.capture();
+        check(gate.accepts(captured, 100, 200, true, true, false), "fresh active frame is accepted");
+        check(!gate.accepts(captured, 100, 1700, true, true, false), "slow decoded work expires");
+        check(!gate.accepts(captured, 100, 99, true, true, false), "negative frame age is rejected");
+        for (String transition : new String[] {"pause/resume", "ID open/close", "details open/close", "profile scope"}) {
+            long old = gate.capture(); gate.invalidate();
+            check(!gate.accepts(old, 100, 200, true, true, false), "old callback rejected after " + transition);
+            check(!gate.observeRead(old, 100, 200, true, true, false, "SYNTH001"), "stale read does not consume latch after " + transition);
+            ScannerFrameGate fresh = new ScannerFrameGate(); long rejected = fresh.capture(); fresh.invalidate();
+            check(!fresh.observeRead(rejected, 100, 200, true, true, false, "SYNTH001"), "pre-transition read rejected " + transition);
+            check(fresh.observeRead(fresh.capture(), 200, 201, true, true, false, "SYNTH001"), "fresh same QR accepted after rejected old work " + transition);
+            fresh.invalidate();
+            check(!fresh.observeRead(fresh.capture(), 300, 301, true, true, false, "SYNTH001"), "acknowledging delivered QR does not resubmit it " + transition);
+            check(gate.accepts(gate.capture(), 200, 201, true, true, false), "fresh generation accepted after " + transition);
+        }
+        ScannerFrameGate expiry = new ScannerFrameGate();
+        check(!expiry.observeRead(expiry.capture(), 100, 1700, true, true, false, "SYNTH001"), "expired queued read does not consume latch");
+        check(expiry.observeRead(expiry.capture(), 1800, 1801, true, true, false, "SYNTH001"), "fresh same QR follows an expired queued read");
+        expiry.observeRead(expiry.capture(), 1900, 1901, true, true, false, null);
+        expiry.observeRead(expiry.capture(), 2600, 2601, true, true, false, null);
+        check(expiry.observeRead(expiry.capture(), 2700, 2701, true, true, false, "SYNTH001"), "delivered QR rearms after actual observed absence");
+        check(!gate.accepts(gate.capture(), 100, 200, false, true, false), "disposed camera cannot deliver");
+        check(!gate.accepts(gate.capture(), 100, 200, true, false, false), "background camera cannot deliver");
+        check(!gate.accepts(gate.capture(), 100, 200, true, true, true), "held result cannot deliver or adjust optics");
+    }
+
+    private static void rotatedEdgeZoom() {
+        ScannerQrReader.Attempt q = new ScannerQrReader.Attempt(null, Arrays.asList(
+            new ResultPoint(500, 735), new ResultPoint(570.7107f, 805.7107f),
+            new ResultPoint(429.2893f, 805.7107f)), 1000, 1000);
+        check(!q.fitsZoom(1.2f), "fourth rotated corner and quiet zone must remain in frame");
+        check(step(new ScannerAssist(), 0, false, false, false, q, 1, 4, false, true, true, false).zoom == 0,
+            "automatic zoom rejects concrete 45 degree bottom-edge crop");
+        for (int degrees : new int[] {0, 30, 45, 90, 135, 180, 270}) {
+            double angle = Math.toRadians(degrees); float u = (float)Math.cos(angle) * 100, v = (float)Math.sin(angle) * 100;
+            for (float[] center : new float[][] {{500, 500}, {100, 500}, {900, 500}, {500, 100}, {500, 900}}) {
+                float x = center[0] - (u - v) / 2, y = center[1] - (v + u) / 2;
+                ScannerQrReader.Attempt rotated = new ScannerQrReader.Attempt(null, Arrays.asList(
+                    new ResultPoint(x, y), new ResultPoint(x + u, y + v), new ResultPoint(x - v, y + u)), 1000, 1000);
+                check(rotated.fitsZoom(1.2f) == (center[0] == 500 && center[1] == 500), "conservative rotated full-code bounds " + degrees);
+            }
+        }
+        ScannerQrReader.Attempt uncertain = new ScannerQrReader.Attempt(null, Arrays.asList(
+            new ResultPoint(400, 400), new ResultPoint(500, 410), new ResultPoint(600, 420)), 1000, 1000);
+        check(!uncertain.fitsZoom(1.2f), "uncertain non-QR finder geometry does not trigger zoom");
     }
 
     private static void decodeFixtures() throws Exception {

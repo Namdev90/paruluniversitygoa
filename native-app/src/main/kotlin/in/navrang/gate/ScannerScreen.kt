@@ -38,6 +38,8 @@ import java.util.concurrent.atomic.AtomicLong
 internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = { vm.navigate(Destination.Checker) }) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
+    val frameGate = remember { ScannerFrameGate() }
+    val currentScope by rememberUpdatedState(s.profile?.scope)
     var exactIdOpen by remember(s.profile?.scope) { mutableStateOf(false) }
     var inspectedResult by remember(s.profile?.scope) { mutableStateOf<ScanResult?>(null) }
     LaunchedEffect(s.result, s.held) {
@@ -47,16 +49,17 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
             inspectedResult = s.result
     }
     BackHandler(enabled = exactIdOpen && s.held == null && inspectedResult == null) {
+        frameGate.invalidate()
         exactIdOpen = false
     }
     if (inspectedResult != null && s.held == null) {
         val result = inspectedResult!!
         AlertDialog(
-            onDismissRequest = { inspectedResult = null },
+            onDismissRequest = { frameGate.invalidate(); inspectedResult = null },
             title = { Text(result.title) },
             text = { ClassicScanReceipt(result) },
             confirmButton = {
-                ClassicScannerButton(onClick = { inspectedResult = null }) { Text("Back to camera") }
+                ClassicScannerButton(onClick = { frameGate.invalidate(); inspectedResult = null }) { Text("Back to camera") }
             },
         )
     }
@@ -127,7 +130,8 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
         }
     }
     val held by rememberUpdatedState(s.held != null || s.profile?.canScan != true || exactIdOpen || inspectedResult != null)
-    LaunchedEffect(held, camera) {
+    LaunchedEffect(held, camera, s.profile?.scope) {
+        frameGate.invalidate()
         if (held) {
             assist.paused()
             torch = false
@@ -146,6 +150,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                 foreground.set(true)
             } else if (event == Lifecycle.Event.ON_PAUSE || event == Lifecycle.Event.ON_STOP) {
                 foreground.set(false)
+                frameGate.invalidate()
                 assist.paused()
                 torch = false
                 camera?.cameraControl?.enableTorch(false)
@@ -156,7 +161,6 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
         }
         owner.lifecycle.addObserver(lifecycleObserver)
         val main = ContextCompat.getMainExecutor(context)
-        val latch = ScanLatch()
         var provider: ProcessCameraProvider? = null
         val future = ProcessCameraProvider.getInstance(context)
         GateUpdater.scanActive = true
@@ -178,8 +182,10 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                     var lastHint = 0L
                     var frameBytes = ByteArray(0)
                     analyzer.setAnalyzer(worker) { frame ->
+                        val now = SystemClock.elapsedRealtime()
+                        val frameGeneration = frameGate.capture()
+                        val frameScope = currentScope
                         try {
-                            val now = SystemClock.elapsedRealtime()
                             if (!active.get() || !foreground.get() || held || now - last < 100) return@setAnalyzer
                             last = now
                             val plane = frame.planes[0]
@@ -193,23 +199,22 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                             for (y in 0 until height) for (x in 0 until width) data[y * width + x] =
                                 buffer.get(base + y * plane.rowStride + x * plane.pixelStride)
                             val found = ScannerQrReader.inspect(data, width, height)
-                            val fresh = latch.observe(found.value, now)
-                            if (fresh && found.value != null) {
-                                main.execute {
-                                    if (active.get() && foreground.get() && !held) {
+                            if (frameScope != currentScope || !frameGate.accepts(frameGeneration, now, SystemClock.elapsedRealtime(), active.get(), foreground.get(), held)) return@setAnalyzer
+                            val health = if (now - lastHint > 500 && found.value == null) {
+                                lastHint = now
+                                CameraHealth.measure(data, width, height)
+                            } else null
+                            main.execute {
+                                // Final authorization/freshness gate precedes latch observation.
+                                // Delivered QR values stay latched across acknowledgement/resume.
+                                if (frameScope == currentScope && frameGate.accepts(frameGeneration, now, SystemClock.elapsedRealtime(), active.get(), foreground.get(), held)) {
+                                    val fresh = frameGate.observeRead(frameGeneration, now, SystemClock.elapsedRealtime(), active.get(), foreground.get(), held, found.value)
+                                    if (fresh && found.value != null) {
                                         assist.read(now)
                                         GateFeedback.play(context, "scan")
                                         vm.scanned(found.value)
                                         status = "QR read · awaiting server confirmation"
-                                    }
-                                }
-                            } else if (now - lastHint > 500) {
-                                lastHint = now
-                                val health = CameraHealth.measure(data, width, height)
-                                main.execute {
-                                    // Recheck after queueing: ID entry, a held result, or backgrounding
-                                    // must pause camera adjustments as well as QR submission.
-                                    if (active.get() && foreground.get() && !held && SystemClock.elapsedRealtime() - now < 1500) {
+                                    } else if (health != null) {
                                         val c = camera
                                         val decision = assist.inspect(
                                             now, true, health.dark(), health.luminance > 165, health.soft(),
@@ -237,7 +242,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
                             }
                         } catch (_: Exception) {
                             main.execute {
-                                if (active.get() && foreground.get() && !held)
+                                if (frameScope == currentScope && frameGate.accepts(frameGeneration, now, SystemClock.elapsedRealtime(), active.get(), foreground.get(), held))
                                     status = "Could not read frame. Hold steady or use exact ID."
                             }
                         } finally {
@@ -262,6 +267,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
         )
         onDispose {
             active.set(false)
+            frameGate.invalidate()
             foreground.set(false)
             owner.lifecycle.removeObserver(lifecycleObserver)
             assist.paused()
@@ -277,9 +283,9 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
     ClassicScannerCameraLayout(
         s = s,
         exactIdOpen = exactIdOpen,
-        onExactIdOpen = { exactIdOpen = it },
+        onExactIdOpen = { frameGate.invalidate(); exactIdOpen = it },
         onVerify = vm::submit,
-        onDetails = { inspectedResult = it },
+        onDetails = { frameGate.invalidate(); inspectedResult = it },
         status = when {
             exactIdOpen -> "Camera open · QR reading paused for exact ID"
             inspectedResult != null -> "Camera open · QR reading paused for details"

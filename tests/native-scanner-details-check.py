@@ -16,10 +16,15 @@ class ClassicScannerContract(unittest.TestCase):
         self.assertIn('s.held != null || s.profile?.canScan != true || exactIdOpen || inspectedResult != null', scanner)
         self.assertEqual(scanner.count('onVerify = vm::submit'), 2)
         self.assertIn('onClick = { onExactIdOpen(!exactIdOpen) }', scanner)
-        self.assertIn('onExactIdOpen = { exactIdOpen = it }', scanner)
+        self.assertIn('onExactIdOpen = { frameGate.invalidate(); exactIdOpen = it }', scanner)
         self.assertNotIn('onClick = exit) { Text("Exact ID")', scanner)
         self.assertIn('if (!active.get() || !foreground.get() || held || now - last < 100)', scanner)
-        self.assertIn('if (active.get() && foreground.get() && !held)', scanner)
+        self.assertIn('frameGate.accepts(frameGeneration, now, SystemClock.elapsedRealtime(), active.get(), foreground.get(), held)', scanner)
+        self.assertIn('val frameGeneration = frameGate.capture()', scanner)
+        self.assertIn('val fresh = frameGate.observeRead(', scanner)
+        self.assertNotIn('latch.observe(', scanner)
+        self.assertGreaterEqual(scanner.count('frameGate.accepts(frameGeneration'), 3)
+        self.assertIn('frameScope == currentScope', scanner)
         # Opening the ID panel must not become a camera-effect key.
         effect = scanner.split('DisposableEffect(', 1)[1].split(')', 1)[0]
         self.assertNotIn('exactId', effect)
