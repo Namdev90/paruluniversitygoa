@@ -192,3 +192,10 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 .admin-tabs button:active{transform:translateY(1px)}
 .admin-tabs button:focus-visible{outline:2px solid #f4cf91;outline-offset:-3px}
 @media(max-width:360px){.admin-tabs button{padding-inline:3px}}
+
+/* A saved Help Desk list has a definite viewport and never collapses its controls.
+   Compact heights can scroll the whole panel; the records retain their own scroll. */
+#view-desk.desk-list-mode{height:100%;overflow-y:auto}
+#view-desk.desk-list-mode .desk-workspace{flex:1 0 auto;overflow:visible}
+#view-desk.desk-list-mode .desk-list-panel{flex:1 0 auto}
+#view-desk.desk-list-mode #desk-records{flex:1 1 112px;min-height:112px}

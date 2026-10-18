@@ -162,6 +162,7 @@ def run():
      filename=f'review-{role}-{state}-{width}.png'
      page.screenshot(path=str(out/filename))
      review_shots.append(dict(file=filename,role=role,state=state,width=width,height=height,synthetic=True,renderer='Chromium source UI with read-only mocked Android bridge' if page.evaluate('window.fixtureNativeBridge') else 'Chromium source UI',capture='viewport after real UI navigation/scroll'))
+     (out/'review-shots.json').write_text(json.dumps(review_shots,indent=2))
     def finish(ctx,page):
      unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
     def dialog(page,trigger,dialog_id,state,close_id,lower=None):
@@ -292,6 +293,22 @@ def run():
        else:page.locator(selector).click()
        page.wait_for_timeout(70);measure(page,role,target,width,height)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
+       if target=='desk':
+        page.evaluate('window.fixtureDeskPopulated=true')
+        page.locator('#desk-saved').click()
+        page.wait_for_function("document.querySelectorAll('#desk-records .desk-record').length===2")
+        measure(page,role,'desk-saved',width,height)
+        measure_control(page,'#desk-refresh','Help Desk refresh')
+        measure_control(page,'#desk-records .button','Help Desk Review')
+        list_height=page.locator('#desk-records').evaluate('e=>e.clientHeight')
+        if list_height<111:failures.append(dict(collapsedHelpDeskList=list_height,width=width,height=height))
+        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-desk-saved-{width}.png'))
+        # Real pointer interaction catches clipping/overlays that DOM visibility misses.
+        page.locator('#desk-records .button').first.click()
+        page.locator('#desk-review-dialog').wait_for(state='visible')
+        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-desk-review-{width}.png'))
+        page.locator('#desk-review-close').click()
+        page.locator('#desk-new').click()
        if target=='entries':
         measure_control(page,'#entry-coverage','Entry list footer',minimum=0,scroll=False)
         measure_scroll(page,'entries')
@@ -312,7 +329,11 @@ def run():
     if width in (390,1366):capture_review_states(width,height)
    (out/'review-shots.json').write_text(json.dumps(review_shots,indent=2))
    browser.close()
- finally:pass
+ except Exception as exc:
+  (out/'failure.json').write_text(json.dumps(dict(error=str(exc),type=type(exc).__name__,cases=len(reports),failures=failures,errors=errors,unexpected=unexpected),indent=2))
+  raise
+ finally:
+  (out/'review-shots.json').write_text(json.dumps(review_shots,indent=2))
  result=dict(cases=len(reports),failures=failures,errors=errors,unexpected=unexpected,measurements=reports)
  (out/'results.json').write_text(json.dumps(result,indent=2))
  print(json.dumps(dict(cases=len(reports),failures=len(failures),errors=errors,unexpected=unexpected),indent=2))
