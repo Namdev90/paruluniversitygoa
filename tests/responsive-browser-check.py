@@ -137,11 +137,11 @@ def run():
      const view=document.getElementById('view-reports');
      const controls=[document.querySelector('.topbar'),document.querySelector('.mobile-nav')];
      const bounds=()=>controls.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]});
-     const before=bounds();view.scrollTop=view.scrollHeight;const offset=view.scrollTop;view.scrollTop=0;
-     return {before,after:bounds(),offset,height:view.clientHeight,scrollHeight:view.scrollHeight,downloadsFirst:!!(document.getElementById('report-downloads').compareDocumentPosition(document.getElementById('report-overview'))&Node.DOCUMENT_POSITION_FOLLOWING)};
+     const before=bounds();const rect=view.getBoundingClientRect(),main=document.querySelector('main').getBoundingClientRect();const bounded=rect.height>0&&rect.top>=main.top-1&&rect.bottom<=main.bottom+1;view.scrollTop=view.scrollHeight;const offset=view.scrollTop;view.scrollTop=0;
+     return {before,after:bounds(),bounded,offset,height:view.clientHeight,scrollHeight:view.scrollHeight,downloadsFirst:!!(document.getElementById('report-downloads').compareDocumentPosition(document.getElementById('report-overview'))&Node.DOCUMENT_POSITION_FOLLOWING)};
     }""")
     reports.append(dict(reportDownloadLayout=result))
-    if not result['downloadsFirst'] or result['scrollHeight']>result['height']+1 and result['offset']<=0 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):
+    if not result['bounded'] or not result['downloadsFirst'] or result['scrollHeight']>result['height']+1 and result['offset']<=0 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):
      failures.append(dict(unreachableReportDownloads=result))
    def measure_scroll(page,view):
     result=page.evaluate("""view=>{
