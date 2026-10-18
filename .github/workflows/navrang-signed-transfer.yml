@@ -44,3 +44,5 @@ jobs:
           assert result["sha"]==expected["blob"]
           print(json.dumps({"verifiedSignedApkBlob":result["sha"],"sha256":expected["sha256"],"size":len(data)}))
           PY
+
+# Transfer only previously verified signed bytes; never execute repository code.
