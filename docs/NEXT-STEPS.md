@@ -13,6 +13,12 @@ Baseline: **0.7.8 / code 16**, published 18 October 2026. Preserve this APK, eve
 - Deepen Android integration where measured lifecycle/interaction improvements justify it. Preserve session compatibility, native sign-in, scanning, import/export, sound, haptics, readiness and update recovery.
 - Refresh the hosted portal, README, feature catalogue and synthetic screenshots together, while distinguishing source changes from actual portal deployment.
 
+## Implemented in the candidate source
+
+Screenshots and screen capture are no longer blocked by the application's window flags in either shipping host. This supersedes the historical native checkpoint's `FLAG_SECURE` description; an older installed APK still needs the new signed update. Android/device policy can independently restrict capture. Synthetic tests check both shipping windows; physical recording remains a device acceptance item.
+
+The candidate also includes the reviewed transparent in-app wordmark, scroll/search lists, in-camera exact-ID entry, available receipt details, automatic camera assistance and repaired report generators. Final combined rendered evidence, device acceptance and signed publication remain separate gates.
+
 ## Evidence before the next update
 
 1. Run relevant regression, security/data-integrity and release-policy checks against the final source, then render/test each affected page, modal and result state at phone/tablet/laptop widths and short heights.

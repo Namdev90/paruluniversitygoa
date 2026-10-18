@@ -15,6 +15,11 @@ ENTRIES = [dict(ticketId=r['id'],name=r['name'],checker='Demo Checker',checkerId
 PROFILE = {'admin':dict(role='admin',name='Synthetic Administrator',active=True,reports=True,scanner=True,helpdesk=True,station='',nameConfirmed=True),
  'faculty':dict(role='checker',name='Demo Faculty',checkerId='22222222-2222-4222-8222-222222222222',method='google',active=True,reports=True,scanner=False,helpdesk=False,station='',nameConfirmed=True),
  'checker':dict(role='checker',name='Demo Checker',checkerId='11111111-1111-4111-8111-111111111111',method='google',active=True,reports=False,scanner=True,helpdesk=False,station='checker',nameConfirmed=True)}
+PROFILE.update({
+ 'helpdesk':dict(role='checker',name='Synthetic Help Desk',checkerId='33333333-3333-4333-8333-333333333333',method='google',active=True,reports=False,scanner=False,helpdesk=True,station='helpdesk',nameConfirmed=True),
+ 'pending':dict(role='checker',name='Synthetic New Staff',checkerId='44444444-4444-4444-8444-444444444444',method='google',active=True,reports=False,scanner=False,helpdesk=False,station='',nameConfirmed=True),
+ 'newstaff':dict(role='checker',name='Checker',checkerId='55555555-5555-4555-8555-555555555555',method='google',active=True,reports=False,scanner=False,helpdesk=False,station='',nameConfirmed=False)})
+DESK_RECORDS = [dict(id=f'synthetic-case-{i}',ticket_id=f'DESK{i:04d}',status=status,version=1,created_at=STAMP,created_by_name='Synthetic Help Desk',details=dict(name=f'Synthetic Visitor {i}',email=f'visitor{i}@example.invalid',phone='0000000000',quantity=1)) for i,status in ((1,'pending'),(2,'approved'))]
 STATS = dict(total=60,eligible=60,admitted=40,remaining=20,blocked=0,lastMinute=0,lastFiveMinutes=0,duplicateAttempts=2,blockedAttempts=1)
 SUMMARY = dict(registered=12,eligible=12,blocked=0,attended=9,registeredAttended=8,organizerConfirmed=1,noShow=4,serverIssues=1,issueTickets=1,duplicateAttempts=2,pendingHelpDesk=0,generatedAt=STAMP)
 def run():
@@ -31,11 +36,11 @@ def run():
   if path.suffix in ('.png','.jpg','.webp','.svg'):
    images['art/'+path.name]='data:'+mimetypes.guess_type(path.name)[0]+';base64,'+base64.b64encode(path.read_bytes()).decode()
  for src,data in images.items():markup=markup.replace('src="'+src+'"','src="'+data+'"')
- reports=[]; failures=[]; errors=[]; unexpected=[]
+ reports=[]; failures=[]; errors=[]; unexpected=[]; review_shots=[]
  try:
   with sync_playwright() as pw:
    browser=pw.chromium.launch(headless=True,executable_path=os.getenv('NAVRANG_CHROMIUM','/usr/bin/chromium'),args=['--no-sandbox','--disable-dev-shm-usage'])
-   def open_source(page,role):
+   def open_source(page,role,mocked_native=False):
     # Host navigation is restricted here. This local render uses the unchanged
     # DOM/CSS/JS source with fixture-only storage/transport, not production login.
     page.set_content(markup)
@@ -49,22 +54,50 @@ def run():
       Object.defineProperty(HTMLImageElement.prototype,'src',{get:prop.get,set(value){prop.set.call(this,f.images[value]||value);}});
       const realTimeout=window.setTimeout.bind(window);window.setTimeout=(fn,ms,...args)=>fn?.name==='endIntro'?0:realTimeout(fn,ms,...args);
       window.AudioContext=undefined;window.webkitAudioContext=undefined;
-      window.fixtureCalls=[];window.fixtureUnexpected=[];
+      window.fixtureCalls=[];window.fixtureUnexpected=[];window.fixtureReportMode='normal';window.fixtureDeskPopulated=false;
       window.fetch=async(url,options)=>{
        const body=options?.body?JSON.parse(options.body):{};const action=body.action||'config';window.fixtureCalls.push(action);
        let value;
        if(action==='config')value={eventId:'O9KL3',googleEnabled:true,pollMs:2000};
        else if(action==='me')value=f.profile;
        else if(action==='sync')value=f.role==='admin'?{dataRevision:1,records:f.records,entries:f.entries,cursor:8,hasMore:false,source:'Synthetic UI fixture',stats:f.stats,checkers:[{id:'11111111-1111-4111-8111-111111111111',name:'Demo Checker',method:'google',email:'checker@example.invalid',active:true,scanner:true,helpdesk:false,station:'checker',entries:8}]}:{staffSummary:true,scanner:f.role==='checker',dataRevision:-1,cursor:0,hasMore:false,records:null,entries:[],stats:{ownScans:f.role==='checker'?8:0,totalEntries:9}};
-       else if(action==='reports-summary')value={stats:f.summary};
+       else if(action==='reports-summary'){
+        if(['unavailable','denied'].includes(window.fixtureReportMode))return new Response(JSON.stringify({ok:false,error:window.fixtureReportMode==='denied'?'Reporting access is not approved for this account.':'Report service temporarily unavailable. Refresh to retry.'}),{status:window.fixtureReportMode==='denied'?403:503});
+        value={stats:window.fixtureReportMode==='empty'?Object.fromEntries(Object.entries(f.summary).map(([k,v])=>[k,typeof v==='number'?0:v])):f.summary};
+       }
+       else if(action==='reports-members'&&window.fixtureReportMode==='members-unavailable')return new Response(JSON.stringify({ok:false,error:'Synthetic member service unavailable'}),{status:503});
        else if(action==='reports-members')value={members:[{id:'22222222-2222-4222-8222-222222222222',name:'Demo Faculty',email:'faculty@example.invalid',nameConfirmed:true,active:true,teacher:true,scanner:false,helpdesk:false}]};
-       else if(action==='helpdesk-list')value={records:[],total:0,stats:{total:0,pending:0,approved:0,rejected:0}};
-       else if(action==='reports-export')value={kind:body.payload.kind,rows:f.records.slice(0,8).map(r=>({'Ticket ID':r.id,'Name':r.name,'Attendance':'Attended'})),count:8,generatedAt:f.summary.generatedAt};
+       else if(action==='helpdesk-list')value=window.fixtureDeskPopulated?{records:f.deskRecords,total:f.deskRecords.length,stats:{total:2,pending:1,approved:1,rejected:0}}:{records:[],total:0,stats:{total:0,pending:0,approved:0,rejected:0}};
+       else if(action==='reports-export')value={kind:body.payload.kind,rows:window.fixtureReportMode==='empty'?[]:f.records.slice(0,8).map(r=>({'Ticket ID':r.id,'Name':r.name,'Attendance':'Attended'})),count:window.fixtureReportMode==='empty'?0:8,generatedAt:f.summary.generatedAt};
        else if(action==='logout')value={signedOut:true};
        else {window.fixtureUnexpected.push(action);return new Response(JSON.stringify({ok:false,error:'Disallowed fixture request'}),{status:400});}
        return new Response(JSON.stringify({ok:true,...value}),{status:200});
       };
-    }""",dict(role=role,profile=PROFILE.get(role),records=RECORDS,entries=ENTRIES,stats=STATS,summary=SUMMARY,images=images))
+      window.fixtureNativeBridge=!!f.nativeBridge;
+      if(f.nativeBridge){
+       // Read-only bridge fixture: actual shared UI chooses its own native-only
+       // controls. No permissions, picker, credentials, camera or device APIs run.
+       const blocked=action=>{window.fixtureUnexpected.push('Native.'+action);throw Error('Disallowed native fixture operation: '+action);};
+       window.Native={
+        local(action){
+         if(action==='session')return JSON.stringify({ok:true,data:{profile:f.profile}});
+         if(action==='snapshot')return JSON.stringify({ok:true,data:{deviceId:'synthetic-native-preview',dataRevision:1,cursor:40,source:'Synthetic UI fixture',lastSync:f.summary.generatedAt,stats:f.stats,localCount:f.records.length,pending:0,legacyCount:0,entries:f.entries.slice(0,15)}});
+         return blocked('local:'+action);
+        },
+        api(action,payload,id){
+         window.fetch('fixture://native-api',{body:JSON.stringify({action,payload:JSON.parse(payload)})}).then(async response=>{
+          window.onApiResponse(JSON.stringify({id,status:response.status,body:await response.json()}));
+         }).catch(()=>window.onApiResponse(JSON.stringify({id,status:500,body:{ok:false,error:'Synthetic bridge failure'}})));
+        },
+        readiness(action){if(!['status','startup'].includes(action))return blocked('readiness:'+action);return JSON.stringify({native:true,camera:false,notifications:false,fullVolume:true,vibration:true,adaptiveBrightness:true});},
+        update(action){if(!['status','background'].includes(action))return blocked('update:'+action);return JSON.stringify({currentVersion:'0.7.8',available:false,ready:false,automatic:true,notifications:false,message:'Synthetic preview: no update is available.'});},
+        destination(value){if(value)return blocked('destination');return f.role==='admin'?'admin':'login';},
+        feedback(){},
+        googleLogin(){return blocked('googleLogin');},googleBrowserLogin(){return blocked('googleBrowserLogin');},
+        scan(){return blocked('scan');},submit(){return blocked('submit');},importRegistrations(){return blocked('importRegistrations');}
+       };
+      }
+    }""",dict(role=role,profile=PROFILE.get(role),records=RECORDS,entries=ENTRIES,stats=STATS,summary=SUMMARY,images=images,deskRecords=DESK_RECORDS,nativeBridge=mocked_native))
     for script in scripts:page.evaluate((assets/script).read_text())
     page.wait_for_timeout(50)
    def measure(page,role,view,width,height):
@@ -111,6 +144,108 @@ def run():
     page.mouse.wheel(0,300);page.wait_for_timeout(80)
     parent_after=parent.evaluate('e=>e.scrollTop')
     if abs(parent_after-parent_before)>1:failures.append(dict(scrollEscapedRows=view,before=parent_before,after=parent_after))
+   def capture_review_states(width,height):
+    """Actual UI clicks/scrolls and fixture responses only; no visual substitutions.
+    Extra states use fresh contexts so existing geometry assertions stay unchanged.
+    No form that mutates staff, registrations, payments or credentials is submitted.
+    """
+    def fresh(role,mocked_native=False):
+     ctx=browser.new_context(viewport=dict(width=width,height=height),reduced_motion='reduce',accept_downloads=True)
+     ctx.route('**/*',lambda route:route.abort())
+     page=ctx.new_page();page.set_default_timeout(5000);page.on('pageerror',lambda e:errors.append(str(e)));open_source(page,role,mocked_native)
+     page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()")
+     page.wait_for_timeout(650)
+     return ctx,page
+    def shot(page,role,state,anchor=None):
+     if anchor:page.locator(anchor).first.scroll_into_view_if_needed()
+     page.wait_for_timeout(100)
+     filename=f'review-{role}-{state}-{width}.png'
+     page.screenshot(path=str(out/filename))
+     review_shots.append(dict(file=filename,role=role,state=state,width=width,height=height,synthetic=True,renderer='Chromium source UI with read-only mocked Android bridge' if page.evaluate('window.fixtureNativeBridge') else 'Chromium source UI',capture='viewport after real UI navigation/scroll'))
+    def finish(ctx,page):
+     unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
+    def dialog(page,trigger,dialog_id,state,close_id,lower=None):
+     page.locator(trigger).first.click();page.locator(dialog_id).wait_for(state='visible')
+     shot(page,'admin',state)
+     if lower:shot(page,'admin',state+'-lower',lower)
+     page.locator(close_id).click();page.locator(dialog_id).wait_for(state='hidden')
+    ctx,page=fresh('login')
+    for role in ('helpdesk','faculty'):
+     page.locator(f'[data-login-role="{role}"]').click()
+     shot(page,'login',role)
+    page.locator('#show-admin-login').click();shot(page,'login','administrator')
+    page.locator('#show-checker-login').click();finish(ctx,page)
+    ctx,page=fresh('admin')
+    dialog(page,'#registration-rows .table-link','#student-dialog','registration-details','#close-student','#dialog-details dd:last-child')
+    page.locator('#registration-rows .table-link').first.click();page.locator('#edit-student').click()
+    shot(page,'admin','edit-registration');shot(page,'admin','edit-registration-lower','#ticket-editor button')
+    page.locator('#close-editor').click()
+    page.locator('#reports-nav').click();page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
+    shot(page,'admin','reports-evidence-caveat','#report-caveat')
+    shot(page,'admin','reports-download-controls','#report-kind')
+    shot(page,'admin','reports-access-management','#report-teachers')
+    page.evaluate("window.fixtureReportMode='empty';NavrangReports.refresh()")
+    page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
+    shot(page,'admin','reports-empty-summary','#report-stats')
+    page.locator('#report-kind').select_option('pending')
+    with page.expect_download() as waiting:page.locator('#report-csv').click()
+    assert waiting.value.failure() is None
+    page.wait_for_function("document.getElementById('report-status').textContent.includes('Column headers prepared')")
+    shot(page,'admin','reports-empty-download','#report-status')
+    for mode in ('members-unavailable','unavailable','denied'):
+     page.evaluate("mode=>{window.fixtureReportMode=mode;return NavrangReports.refresh()}",mode)
+     shot(page,'admin','reports-'+mode,'#report-teachers' if mode=='members-unavailable' else '#report-status')
+     if mode!='members-unavailable':assert page.locator('#report-csv').is_disabled()
+    page.evaluate("window.fixtureReportMode='normal';NavrangReports.refresh()")
+    page.locator('#desk-nav').click();shot(page,'admin','helpdesk-form-lower','#desk-submit')
+    page.locator('#desk-saved').click();page.wait_for_function("document.getElementById('desk-records').textContent.includes('No saved records')")
+    shot(page,'admin','helpdesk-saved-empty')
+    page.evaluate('window.fixtureDeskPopulated=true;NavrangDesk.refresh(true)')
+    page.wait_for_function("document.querySelectorAll('#desk-records .desk-record').length===2")
+    shot(page,'admin','helpdesk-saved-list')
+    dialog(page,'#desk-records .button','#desk-review-dialog','helpdesk-payment-review','#desk-review-close','#desk-reject')
+    page.locator('#desk-records .desk-record-info').first.click()
+    shot(page,'admin','helpdesk-saved-record');shot(page,'admin','helpdesk-saved-record-lower','#desk-submit')
+    page.locator('#desk-close-record').click()
+    page.locator('[data-view="account"]').click()
+    # Android readiness is deliberately hidden in the browser and is not fabricated.
+    if page.locator('#readiness-panel').is_visible():shot(page,'admin','account-readiness','#readiness-panel')
+    shot(page,'admin','account-update-settings','#automatic-updates')
+    page.locator('#admin-nav').click();page.locator('[data-admin-tab="checkers"]').click()
+    dialog(page,'#checker-list .checker-row button','#staff-dialog','staff-access','#close-staff','#staff-access-form button')
+    dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
+    page.locator('[data-admin-tab="updates"]').click()
+    dialog(page,'#add-registration','#edit-dialog','add-registration','#close-editor','#ticket-editor button')
+    dialog(page,'#password-open','#password-dialog','password-dialog','#close-password')
+    finish(ctx,page)
+    ctx,page=fresh('faculty')
+    page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
+    shot(page,'faculty','reports-download-controls','#report-kind')
+    shot(page,'faculty','reports-evidence-caveat','#report-caveat')
+    page.locator('[data-view="account"]').click();shot(page,'faculty','account')
+    finish(ctx,page)
+    # Native-only shared-web controls, with a separately labelled mocked bridge.
+    # Android OS permission prompts, file pickers and real camera remain excluded.
+    ctx,page=fresh('admin',mocked_native=True)
+    page.locator('[data-view="account"]').click()
+    assert page.locator('#readiness-panel').is_visible()
+    shot(page,'mock-native-admin','account-readiness','#readiness-panel')
+    shot(page,'mock-native-admin','account-update-settings','#automatic-updates')
+    page.locator('#admin-nav').click();page.locator('[data-admin-tab="updates"]').click()
+    assert page.locator('#import-registration').is_visible()
+    shot(page,'mock-native-admin','import-controls','#import-registration')
+    finish(ctx,page)
+    ctx,page=fresh('login',mocked_native=True)
+    assert page.locator('#google-browser-signin').is_visible()
+    shot(page,'mock-native-login','browser-sign-in','#google-browser-signin')
+    finish(ctx,page)
+    for role in ('helpdesk','pending','newstaff'):
+     ctx,page=fresh(role);shot(page,role,'initial')
+     if role=='helpdesk':
+      shot(page,role,'form-lower','#desk-submit');page.locator('#desk-saved').click()
+      page.wait_for_function("document.getElementById('desk-records').textContent.includes('No saved records')")
+      shot(page,role,'saved-empty')
+     finish(ctx,page)
    sizes=[tuple(map(int,size.split('x'))) for size in args.sizes.split(',')]
    for width,height in sizes:
     for role in ('login','admin','faculty','checker'):
@@ -173,6 +308,9 @@ def run():
         page.evaluate("document.getElementById('import-registration').hidden=false")
         measure(page,role,'admin-updates-native-import',width,height)
      unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
+   for width,height in sizes:
+    if width in (390,1366):capture_review_states(width,height)
+   (out/'review-shots.json').write_text(json.dumps(review_shots,indent=2))
    browser.close()
  finally:pass
  result=dict(cases=len(reports),failures=failures,errors=errors,unexpected=unexpected,measurements=reports)

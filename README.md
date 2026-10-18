@@ -85,7 +85,7 @@ The project retains **16 published APK versions** from 0.1.0 through the 0.7.7 n
 | `downloads/`, `updates/` | Published APK archive and actual update manifest |
 | `docs/` | Features, operations, original signing handoff, sources and verification |
 
-Created by **Namdev Shirodkar** for Navrang gate operations at Parul University Goa. Institutional/event marks remain their owners' artwork. Audio and asset provenance are documented in [asset notes](app/assets/art/ASSET-NOTES.md). No broader institutional endorsement or certification is implied.
+Created by **Namdev Shirodkar** for Navrang gate operations at Parul University Goa. Institutional/event marks remain their owners' artwork. Current logo provenance is documented in [artwork notes](docs/ARTWORK.md); historical audio and asset sources remain in [asset notes](app/assets/art/ASSET-NOTES.md). No broader institutional endorsement or certification is implied.
 
 ## License and artwork
 

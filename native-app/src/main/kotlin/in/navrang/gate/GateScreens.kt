@@ -662,11 +662,12 @@ internal fun SettingsScreen(s: GateState, vm: GateViewModel, update: (String) ->
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
-            Toggle("Automatic updates", s.update["automatic"] == "true", !BuildConfig.DEBUG) {
-                update("auto")
-            }
+            Text(
+                if (BuildConfig.DEBUG) "Updates are disabled in the internal build."
+                else "Automatic checks and downloads: always on. Android confirms installation."
+            )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { update("check") }) { Text("Check") }
+                OutlinedButton(onClick = { update("check") }, enabled = !BuildConfig.DEBUG) { Text("Check") }
                 if (s.update["available"] == "true" && s.update["ready"] != "true")
                     Button(onClick = { update("download") }) { Text("Download") }
                 if (s.update["ready"] == "true" || s.update["installing"] == "true")

@@ -21,13 +21,13 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  private String pendingLogoutToken;private boolean clearingSignOut;
  protected Class<? extends Activity> scannerActivity(){return ScanActivity.class;}
  protected void clearCredentialProvider(){}
- protected boolean updatesEnabled(){return true;}
+ protected boolean updatesEnabled(){return GateUpdater.automatic(this);}
  protected void browserGoogleLogin(){googleLogin();}
  protected void importRegistrations(){error("Use the updated Android app to import registration files.");}
  protected final void nativeNotice(String text){try{event(new JSONObject().put("type","notice").put("data",new JSONObject().put("message",text)));}catch(Exception ignored){}}
  protected final void nativeError(String text){error(text);}
  @Override public void onCreate(Bundle saved){
-  super.onCreate(saved);getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);GateReadiness.volume(this);readiness=new GateReadiness(this);GateFeedback.init(this);if(updatesEnabled())GateUpdater.init(this);else GateUpdater.setAutomatic(this,false);
+  super.onCreate(saved);getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);GateReadiness.volume(this);readiness=new GateReadiness(this);GateFeedback.init(this);GateUpdater.init(this);
   try{runtime=GateRuntime.get(this);}catch(Exception e){showMessage("Could not open saved data. Keep app data.\n\n"+e.getMessage());return;}
   getWindow().setStatusBarColor(Color.rgb(16,13,21));getWindow().setNavigationBarColor(Color.rgb(16,13,21));getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
   FrameLayout frame=new FrameLayout(this);
@@ -224,7 +224,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   }
 
  }
- @Override public void onResume(){super.onResume();if(readiness!=null)readiness.resume();if(web!=null)web.onResume();if(runtime!=null){runtime.add(this);runtime.resume();JSONObject current=runtime.sessions.read();runtime.emit("profile",current==null?new JSONObject():current.optJSONObject("profile"));runtime.emit("readiness",GateReadiness.status(this));runtime.refresh();}GateUpdater.add(this);GateUpdater.publish(this);if(GateUpdater.automatic(this))GateUpdater.check(this,false,false);}
+ @Override public void onResume(){super.onResume();if(readiness!=null)readiness.resume();if(web!=null)web.onResume();if(runtime!=null){runtime.add(this);runtime.resume();JSONObject current=runtime.sessions.read();runtime.emit("profile",current==null?new JSONObject():current.optJSONObject("profile"));runtime.emit("readiness",GateReadiness.status(this));runtime.refresh();}GateUpdater.add(this);GateUpdater.publish(this);if(updatesEnabled()&&GateUpdater.automatic(this))GateUpdater.check(this,false,false);}
  @Override public void onPause(){if(readiness!=null)readiness.pause();GateUpdater.remove(this);if(runtime!=null){runtime.remove(this);runtime.pause();}if(web!=null)web.onPause();super.onPause();}
  @Override public void onDestroy(){clearExport();clearReport();if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}super.onDestroy();}
  @Override public void onBackPressed(){if(web==null){finish();return;}web.evaluateJavascript("window.onBackRequested && window.onBackRequested();",null);}

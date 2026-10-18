@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the production updater's install boundaries with deterministic Android fakes.
 
-The real GateUpdater and UpdatePolicy are compiled, including verification, install,
+The real GateUpdater and UpdatePolicy are compiled, including scheduling, checks, downloads, verification, install,
 callback, and notification code. Platform effects are observed rather than performed.
 No APK is built/installed and no server or device is contacted.
 """
@@ -53,12 +53,12 @@ public class JSONObject {
 }''',
 "android/content/Context.java": '''package android.content;import java.io.*;import android.app.*;import android.app.job.*;import android.content.pm.*;
 public class Context {public static final String NOTIFICATION_SERVICE="notification",JOB_SCHEDULER_SERVICE="jobs";
- public final PackageManager packages=new PackageManager();public final NotificationManager notifications=new NotificationManager();private final SharedPreferences prefs=new SharedPreferences();public File files;
- public Context getApplicationContext(){return this;}public PackageManager getPackageManager(){return packages;}public String getPackageName(){return "in.navrang.gate";}
+ public final PackageManager packages=new PackageManager();public final NotificationManager notifications=new NotificationManager();public final JobScheduler jobs=new JobScheduler();public final ApplicationInfo appInfo=new ApplicationInfo();public String packageName="in.navrang.gate";private final SharedPreferences prefs=new SharedPreferences();public File files;
+ public Context getApplicationContext(){return this;}public PackageManager getPackageManager(){return packages;}public String getPackageName(){return packageName;}public ApplicationInfo getApplicationInfo(){return appInfo;}
  public File getFilesDir(){return files;}public SharedPreferences getSharedPreferences(String name,int mode){return prefs;}
- public Object getSystemService(String name){return NOTIFICATION_SERVICE.equals(name)?notifications:new JobScheduler();}
+ public Object getSystemService(String name){return NOTIFICATION_SERVICE.equals(name)?notifications:jobs;}
 }''',
-"android/content/ComponentName.java": "package android.content;public class ComponentName {public ComponentName(Context context,Class<?> type){}}",
+"android/content/ComponentName.java": "package android.content;public class ComponentName {public final Class<?> type;public ComponentName(Context context,Class<?> type){this.type=type;}}",
 "android/content/IntentSender.java": "package android.content;public class IntentSender {}",
 "android/content/Intent.java": '''package android.content;import java.util.*;public class Intent {
  public static final String EXTRA_INTENT="intent";public static final int FLAG_ACTIVITY_NEW_TASK=1;public Class<?> target;public String action;private final Map<String,Object> extras=new HashMap<>();
@@ -67,6 +67,7 @@ public class Context {public static final String NOTIFICATION_SERVICE="notificat
  public Intent putExtra(String key,Object value){extras.put(key,value);return this;}public int getIntExtra(String key,int fallback){return (Integer)extras.getOrDefault(key,fallback);}
  @SuppressWarnings("unchecked") public <T>T getParcelableExtra(String key){return (T)extras.get(key);}
 }''',
+"android/content/pm/ApplicationInfo.java": "package android.content.pm;public class ApplicationInfo {public static final int FLAG_DEBUGGABLE=2;public int flags;}",
 "android/content/pm/Signature.java": "package android.content.pm;public class Signature {public byte value=1;public byte[] toByteArray(){return new byte[]{value};}}",
 "android/content/pm/SigningInfo.java": "package android.content.pm;public class SigningInfo {public Signature[] getApkContentsSigners(){return new Signature[]{new Signature()};}}",
 "android/content/pm/PackageInfo.java": '''package android.content.pm;public class PackageInfo {public int versionCode;public String versionName="1.0.0",packageName="in.navrang.gate";
@@ -111,13 +112,14 @@ public class PackageInstaller {
 }''',
 "android/app/NotificationChannel.java": "package android.app;public class NotificationChannel {public NotificationChannel(String id,String name,int importance){}}",
 "android/app/NotificationManager.java": '''package android.app;public class NotificationManager {public static final int IMPORTANCE_DEFAULT=1;public Notification last;
- public boolean areNotificationsEnabled(){return true;}public void createNotificationChannel(NotificationChannel channel){}public void notify(int id,Notification value){last=value;}}
+ public boolean enabled=true;public boolean areNotificationsEnabled(){return enabled;}public void createNotificationChannel(NotificationChannel channel){}public void notify(int id,Notification value){last=value;}}
 ''',
 "android/app/job/JobInfo.java": '''package android.app.job;import android.content.ComponentName;public class JobInfo {public static final int NETWORK_TYPE_ANY=1;
- public static class Builder {public Builder(int id,ComponentName c){}public Builder setRequiredNetworkType(int value){return this;}public Builder setPeriodic(long period,long flex){return this;}
- public Builder setPersisted(boolean value){return this;}public JobInfo build(){return new JobInfo();}}
+ public int id,network;public long period,flex;public boolean persisted;public ComponentName component;
+ public static class Builder {private final JobInfo job=new JobInfo();public Builder(int id,ComponentName c){job.id=id;job.component=c;}public Builder setRequiredNetworkType(int value){job.network=value;return this;}public Builder setPeriodic(long period,long flex){job.period=period;job.flex=flex;return this;}
+ public Builder setPersisted(boolean value){job.persisted=value;return this;}public JobInfo build(){return job;}}
 }''',
-"android/app/job/JobScheduler.java": "package android.app.job;public class JobScheduler {public void cancel(int id){}public void schedule(JobInfo job){}}",
+"android/app/job/JobScheduler.java": "package android.app.job;import java.util.*;public class JobScheduler {public final Map<Integer,JobInfo> pending=new HashMap<>();public int scheduled,cancelled;public void cancel(int id){cancelled++;pending.remove(id);}public int schedule(JobInfo job){scheduled++;pending.put(job.id,job);return 1;}}",
 "in/navrang/gate/MainActivity.java": "package in.navrang.gate;public class MainActivity {}",
 "in/navrang/gate/UpdateJob.java": "package in.navrang.gate;public class UpdateJob {}",
 "in/navrang/gate/UpdateReceiver.java": "package in.navrang.gate;public class UpdateReceiver {}",
@@ -140,9 +142,15 @@ public class PackageInstaller {
  public static GateRuntime get(Context c)throws Exception{if(unavailable)throw new Exception("cannot open runtime");return instance;}
 }''',
 "NativeUpdaterPendingCheck.java": r'''import in.navrang.gate.*;import android.app.*;import android.content.*;import android.content.pm.*;import android.os.Handler;
-import org.json.JSONObject;import java.io.*;import java.nio.file.*;import java.lang.reflect.*;import java.util.*;import java.util.concurrent.*;
+import org.json.JSONObject;import java.net.*;import android.app.job.*;import java.io.*;import java.nio.file.*;import java.lang.reflect.*;import java.util.*;import java.util.concurrent.*;
 public class NativeUpdaterPendingCheck {
  static int checks;static final List<String> failures=new ArrayList<>();
+ static volatile String manifest="";static volatile int metadataRequests,apkRequests;
+ static void fakeNetwork(){URL.setURLStreamHandlerFactory(protocol->new URLStreamHandler(){protected URLConnection openConnection(URL url)throws IOException {
+  if(!url.toString().equals(UpdatePolicy.MANIFEST)&&!url.toString().equals(UpdatePolicy.ROOT+"downloads/Navrang-Gate-1.0.1.apk"))throw new AssertionError("Unexpected network target: "+url);
+  boolean metadata=url.toString().equals(UpdatePolicy.MANIFEST);if(metadata)metadataRequests++;else apkRequests++;
+  return new HttpURLConnection(url){public void connect(){}public void disconnect(){}public boolean usingProxy(){return false;}public int getResponseCode(){return 200;}public InputStream getInputStream(){return new ByteArrayInputStream(metadata?manifest.getBytes(java.nio.charset.StandardCharsets.UTF_8):new byte[100000]);}};
+ }});}
  static void check(boolean ok,String reason){checks++;if(!ok)failures.add(reason);}
  static Field field(String name)throws Exception{Field f=GateUpdater.class.getDeclaredField(name);f.setAccessible(true);return f;}
  static ExecutorService worker()throws Exception{return (ExecutorService)field("work").get(null);}
@@ -151,7 +159,7 @@ public class NativeUpdaterPendingCheck {
   settle();GateRuntime.instance=null;GateRuntime.unavailable=false;GateUpdater.scanActive=false;field("confirmation").set(null,null);field("confirmationSession").set(null,-1);field("message").set(null,"");field("installationMessage").set(null,"");field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(null));
   Activity a=new Activity();a.files=Files.createTempDirectory("updater-fixture-").toFile();a.files.deleteOnExit();File apk=new File(a.files,"navrang-update.apk");Files.write(apk.toPath(),new byte[100000]);apk.deleteOnExit();
   JSONObject release=new JSONObject().put("packageName",UpdatePolicy.APP_ID).put("versionCode",2).put("versionName","1.0.1").put("apkUrl",UpdatePolicy.ROOT+"downloads/Navrang-Gate-1.0.1.apk").put("size",100000L).put("sha256",UpdatePolicy.hash(apk));
-  a.getSharedPreferences("navrang-updates",0).edit().putString("release",release.toString()).putInt("readyCode",2).apply();GateRuntime.instance=new GateRuntime(a);return a;
+  manifest=release.toString();metadataRequests=0;apkRequests=0;a.getSharedPreferences("navrang-updates",0).edit().putString("release",manifest).putInt("readyCode",2).apply();GateRuntime.instance=new GateRuntime(a);return a;
  }
  static void restart(Activity a)throws Exception{settle();field("message").set(null,"");field("installationMessage").set(null,"");GateRuntime.instance=new GateRuntime(a);GateUpdater.scanActive=false;field("confirmation").set(null,null);field("confirmationSession").set(null,-1);field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(null));}
  static int staged(Activity a,String target)throws Exception{PackageInstaller.SessionParams p=new PackageInstaller.SessionParams(1);p.setAppPackageName(target);return a.packages.installer.createSession(p);}
@@ -161,8 +169,34 @@ public class NativeUpdaterPendingCheck {
  static Intent terminal(int id,int state){return new Intent().putExtra(PackageInstaller.EXTRA_SESSION_ID,id).putExtra(PackageInstaller.EXTRA_STATUS,state);}
  static boolean queueRejected(){try{GateRuntime.instance.db.queue("RACE0001","checker");return false;}catch(Exception e){return e.getClass().getSimpleName().equals("UpdateInProgressException")&&e.getMessage().contains("Finish or cancel");}}
  static void remember(Activity a)throws Exception{field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(a));}
- public static void main(String[] args)throws Exception {try{
-  Activity a=fixture();GateRuntime.instance.db.pending=2;GateUpdater.install(a);settle();check(a.packages.installer.created==0,"existing pending requests must block installation before a session is created");check(message(a).contains("unconfirmed"),"blocked pending entries need an actionable explanation");check(GateRuntime.instance.db.pending==2,"deferring installation must retain every pending request");
+ public static void main(String[] args)throws Exception {fakeNetwork();try{
+  Activity a=fixture();SharedPreferences settings=a.getSharedPreferences("navrang-updates",0);settings.edit().putBoolean("automatic",false).putString("unrelated","preserve").apply();new File(a.files,"navrang-update.apk").delete();a.notifications.enabled=false;
+  check(GateUpdater.automatic(a),"old saved false must never disable the release policy, even before initialization");
+  GateUpdater.init(a);settle();
+  check(settings.getBoolean("automatic",false),"release initialization migrates the old opt-out preference");
+  check("preserve".equals(settings.getString("unrelated","")),"update initialization must not alter unrelated settings");
+  check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"release initialization must check and download a verified APK despite old false");
+  check(a.packages.installer.created==0&&a.launched.isEmpty(),"automatic download must not initiate Android installation");
+  check(a.notifications.last==null&&!GateUpdater.status(a).optBoolean("notifications"),"notification denial remains respected while download stays available in Account");
+  JobInfo job=a.jobs.pending.get(3404);check(job!=null&&job.persisted&&job.network==JobInfo.NETWORK_TYPE_ANY&&job.period==15*60*1000L&&job.flex==5*60*1000L&&job.component.type==UpdateJob.class,"release schedule must retain the persisted periodic network job and interval");
+  GateUpdater.setAutomatic(a,false);settle();check(GateUpdater.automatic(a)&&settings.getBoolean("automatic",false)&&a.jobs.pending.size()==1&&a.jobs.cancelled==0,"legacy off requests cannot disable policy or remove the scheduled job");
+  check(metadataRequests==1&&apkRequests==1,"legacy setting call must retain foreground check throttle");
+  restart(a);GateUpdater.init(a);settle();check(GateUpdater.automatic(a)&&a.jobs.pending.size()==1&&a.jobs.pending.get(3404).persisted,"restart must preserve automatic policy and a single persisted job");
+  check(metadataRequests==1,"restart must preserve the existing five-minute foreground throttle");
+  a=fixture();a.getSharedPreferences("navrang-updates",0).edit().putBoolean("automatic",false).apply();new File(a.files,"navrang-update.apk").delete();restart(a);GateUpdater.background(a);settle();
+  check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"a direct persisted-job wake must check/download despite old false without host init");
+  check(a.packages.installer.created==0,"background checks/downloads never silently create an installer session");
+  a=fixture();GateUpdater.scanActive=true;GateUpdater.init(a);GateUpdater.background(a);GateUpdater.check(a,true,true);settle();check(metadataRequests==0&&apkRequests==0&&a.jobs.pending.size()==1,"scanner priority defers every update request while preserving future scheduling");
+  for(String build:new String[]{"internal","debuggable","internal-debuggable"}){
+   a=fixture();if(build.contains("internal"))a.packageName="in.navrang.gate.internal";if(build.contains("debuggable"))a.appInfo.flags=ApplicationInfo.FLAG_DEBUGGABLE;
+   a.getSharedPreferences("navrang-updates",0).edit().putBoolean("automatic",true).apply();a.jobs.schedule(new JobInfo.Builder(3404,new ComponentName(a,UpdateJob.class)).setPersisted(true).build());
+   GateUpdater.init(a);GateUpdater.setAutomatic(a,true);GateUpdater.check(a,true,true);GateUpdater.background(a);GateUpdater.install(a);GateUpdater.installationResult(a,callback());settle();
+   check(!GateUpdater.automatic(a)&&!GateUpdater.status(a).optBoolean("automatic")&&!GateUpdater.status(a).optBoolean("ready"),build+" cannot advertise release updating");
+   check(a.jobs.pending.isEmpty()&&a.jobs.cancelled>0,build+" initialization must cancel any stale update job");
+   check(metadataRequests==0&&apkRequests==0&&a.packages.installer.created==0&&a.launched.isEmpty()&&a.notifications.last==null,build+" cannot check/download/install or launch confirmation even through direct calls");
+  }
+  a=fixture();a.packages.allowed=false;GateUpdater.install(a);settle();check(a.packages.installer.created==0&&a.launched.isEmpty(),"unknown-source permission still requires the user-controlled Android settings flow");
+  a=fixture();GateRuntime.instance.db.pending=2;GateUpdater.install(a);settle();check(a.packages.installer.created==0,"existing pending requests must block installation before a session is created");check(message(a).contains("unconfirmed"),"blocked pending entries need an actionable explanation");check(GateRuntime.instance.db.pending==2,"deferring installation must retain every pending request");
   a=fixture();GateUpdater.scanActive=true;GateUpdater.install(a);settle();check(a.packages.installer.created==0,"active scanner still blocks installation");
   a=fixture();GateRuntime.unavailable=true;GateUpdater.install(a);settle();check(a.packages.installer.created==0,"unavailable runtime must fail closed before installation");
   a=fixture();GateRuntime.instance.db.unreadable=true;GateUpdater.install(a);settle();check(a.packages.installer.created==0,"unreadable pending count must fail closed before installation");
@@ -237,7 +271,7 @@ public class NativeUpdaterPendingCheck {
   a=fixture();a.packages.installer.failOpen=true;GateUpdater.install(a);settle();check(a.packages.installer.session.abandoned==1&&a.packages.installer.getMySessions().isEmpty(),"created session must be abandoned even if opening its handle fails");restart(a);check(!queueRejected(),"failed open cleanup must not orphan a recovery fence on restart");
   a=fixture();a.packages.installer.failOpen=true;a.packages.installer.session.failAbandon=true;GateUpdater.install(a);settle();check(queueRejected(),"failed open plus failed cleanup must fence the known orphan in this process");GateUpdater.install(a);settle();check(a.packages.installer.created==1,"failed open retries must not accumulate orphan sessions");a.packages.installer.failOpen=false;a.packages.installer.session.failAbandon=false;GateUpdater.install(a);settle();check(a.packages.installer.created==1&&a.packages.installer.getMySessions().isEmpty()&&!queueRejected(),"explicit recovery can clear the failed-open orphan without implicitly creating another install");
   if(!failures.isEmpty())throw new AssertionError(failures.size()+" of "+checks+" checks failed:\n - "+String.join("\n - ",failures));
-  System.out.println("PASS actual GateUpdater: "+checks+" checks for pending safety, process/reboot recovery, cancellation/query failures, commit/confirmation races, notification routing, and unchanged APK authorization.");
+  System.out.println("PASS actual GateUpdater: "+checks+" checks for persistent release updates, internal/debug isolation, pending safety, process/reboot recovery, cancellation/query failures, commit/confirmation races, notification routing, and unchanged APK authorization.");
  }finally{worker().shutdownNow();}}
 }''',
 }

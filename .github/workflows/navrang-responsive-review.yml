@@ -7,8 +7,13 @@ on:
       - 'app/assets/art/brand-shell*'
       - 'app/assets/art/classic-restore.css'
       - 'app/assets/art/app-icon.png'
+      - 'app/assets/art/navrang-transparent.png'
       - 'app/assets/index.html'
       - 'app/assets/gate.js'
+      - 'app/assets/client.js'
+      - 'app/assets/reports.js'
+      - 'app/assets/report-export.js'
+      - 'tests/teacher-reports*'
       - 'tests/responsive-browser-check.py'
       - 'server/tests/responsive*'
       - 'docs/**'
@@ -75,11 +80,14 @@ jobs:
         with:
           python-version: '3.12'
       - run: npm ci --ignore-scripts
-      - run: python -m pip install playwright==1.64.0
+      - run: python -m pip install playwright==1.64.0 openpyxl==3.1.5 pypdf==6.10.0
       - run: python -m playwright install --with-deps chromium
       - name: Render all roles with synthetic transport only
         run: |
           NAVRANG_CHROMIUM="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')" python tests/responsive-browser-check.py --output .build/classic-visual
+      - name: Download and parse every faculty report with synthetic transport
+        run: |
+          NAVRANG_CHROMIUM="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')" python tests/teacher-reports-browser-check.py --output .build/classic-visual/report-downloads
       - uses: actions/upload-artifact@v4
         if: always()
         with:

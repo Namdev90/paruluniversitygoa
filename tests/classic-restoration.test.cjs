@@ -10,8 +10,8 @@ test('restored shell uses the original logo without removing faculty routes or f
  const w=dom.window;
  w.GateClient={profile:()=>({role:'admin',active:true,reports:true}),on(){},api:async()=>({ok:true})};
  w.eval(read('app/assets/art/brand-shell.js'));
- assert.equal(w.document.querySelector('.brand>.classic-header-logo').getAttribute('src'),'art/app-icon.png');
- assert.equal(w.document.querySelector('.intro-content .classic-event-logo').getAttribute('src'),'art/app-icon.png');
+ assert.equal(w.document.querySelector('.brand>.classic-header-logo').getAttribute('src'),'art/navrang-transparent.png');
+ assert.equal(w.document.querySelector('.intro-content .classic-event-logo').getAttribute('src'),'art/navrang-transparent.png');
  assert.ok(w.document.getElementById('station-faculty'));
  assert.ok(w.document.getElementById('reports-nav'));
  assert.ok(w.document.querySelector('#admin-registrations .rows-scroll'));

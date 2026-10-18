@@ -5,6 +5,7 @@ import subprocess
 
 ORIGINAL_LOGO_SHA256 = 'b3c9bec6b50d466c244e5b127b87cace038a16d3a236303f4b141e5ea285de9a'
 
+TRANSPARENT_WORDMARK_SHA256 = 'e2356c668cf4199af0ba48e734ace438df3279ef3d27686e884b6352d239ad3f'
 
 def require_restoration_ready(root):
     release = json.loads((root / 'release.json').read_text())
@@ -39,3 +40,6 @@ def require_restoration_ready(root):
         raise SystemExit('Restoration held: commit and verify the working tree first.')
     if hashlib.sha256((root / 'app/assets/art/app-icon.png').read_bytes()).hexdigest() != ORIGINAL_LOGO_SHA256:
         raise SystemExit('Restoration held: the original Navrang logo bytes changed.')
+
+    if hashlib.sha256((root / 'app/assets/art/navrang-transparent.png').read_bytes()).hexdigest() != TRANSPARENT_WORDMARK_SHA256:
+        raise SystemExit('Restoration held: the approved transparent wordmark bytes changed.')
