@@ -5,7 +5,7 @@
  if(location.hash==='#desk')C.destination?.('desk');
  const pendingResults=new Map(),pendingAcknowledged=new Set();
  let model=emptyModel(),uiGeneration=0,pollRun=0,previousRole=C.profile()?.role||'';function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
- const titles={home:'Navrang Gate',entries:'Entry log',account:'Your station',admin:'Admin console',login:'Navrang Gate',desk:'Help Desk',station:'Choose your station'};
+ const titles={home:'Navrang Gate',entries:'Entry log',account:'Your station',admin:'Admin console',login:'Navrang Gate',desk:'Help Desk',station:'Choose your station',reports:'Teacher Reports'};
  const initials=name=>(name||'NG').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
  const when=at=>at?new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(at)):'—';
  const money=amount=>amount==null?'Review':'₹'+Number(amount).toLocaleString('en-IN',{maximumFractionDigits:2});
@@ -13,7 +13,8 @@
  function station(p=C.profile()){if(!p)return '';if(p.station!=null)return p.station;return p.scanner!==false&&!p.helpdesk?'checker':p.scanner===false&&p.helpdesk?'helpdesk':'';}
  const canScan=()=>!!C.profile()?.active&&(isAdmin()||station()==='checker'&&C.profile()?.scanner!==false);
  const canDesk=()=>!!C.profile()?.active&&(isAdmin()||station()==='helpdesk'&&C.profile()?.helpdesk===true);
- const assignedView=()=>isAdmin()?'admin':needsName(C.profile())?'station':canScan()?'home':canDesk()?'desk':'station';
+ const canReports=()=>isAdmin()||!!C.profile()?.active&&C.profile()?.reports===true;
+ const assignedView=()=>isAdmin()?'admin':needsName(C.profile())?'station':canScan()?'home':canDesk()?'desk':canReports()?'reports':'station';
  const pageSize=()=>Math.max(2,Math.min(8,Math.floor((innerHeight-490)/54)));
  function feedback(kind){if(typeof C.feedback==='function')C.feedback(kind,true);}
  let noticeTimer;function notice(text){clearTimeout(noticeTimer);$('notice').textContent=text;$('notice').hidden=false;if(!/client ID|client secret|organizer.s attention/i.test(text))noticeTimer=setTimeout(()=>{$('notice').hidden=true},9000)}
@@ -23,26 +24,26 @@
  function close(id){const d=$(id);if(d.close)d.close();else d.removeAttribute('open');delete d.dataset.modal}
  async function busy(button,work){if(button.disabled)return;const generation=uiGeneration;button.disabled=true;button.setAttribute('aria-busy','true');try{return await work()}catch(e){if(generation===uiGeneration)notice(e.message)}finally{button.disabled=false;button.removeAttribute('aria-busy');if(button===$('manual-submit'))button.disabled=held||!canScan()||needsName(C.profile())}}
  function destination(){return C.destination?.()||'home'}
- function needsName(p){return p?.role==='checker'&&p.method==='google'&&p.nameConfirmed===false}
+ function needsName(p){return p?.role==='checker'&&p.method==='google'&&p.nameConfirmed===false&&!p.reports}
  function renderAuth(){
   const p=C.profile(),admin=isAdmin();if(previousRole==='admin'&&!admin){uiGeneration++;pollRun++;syncBusy=false;clearAdminView()}previousRole=p?.role||'';document.body.classList.toggle('login-mode',!p||view==='login');$('main-nav').hidden=!p;$('admin-nav').hidden=!admin;
   if(!canScan()&&lastResult){queuedResults=[];releaseResult();}
   $('scan').disabled=!canScan()||needsName(p)||held;$('manual-submit').disabled=!canScan()||needsName(p)||held;
-  $('scan-nav').hidden=!canScan();$('entries-nav').hidden=!admin;$('desk-nav').hidden=!canDesk();$('switch-station').hidden=!admin;document.querySelector('[data-view=station]').hidden=!admin&&(canScan()||canDesk());$('name-form').querySelector('button').textContent=needsName(p)||!station()?'Save name & choose station':'Save real name';
+  $('scan-nav').hidden=!canScan();$('entries-nav').hidden=!admin;$('desk-nav').hidden=!canDesk();$('reports-nav').hidden=!canReports();$('switch-station').hidden=!admin;document.querySelector('[data-view=station]').hidden=!admin&&(canScan()||canDesk()||canReports());$('name-form').querySelector('button').textContent=needsName(p)||!station()?'Save name & choose station':'Save real name';
   $('home-stats').classList.toggle('staff-stats',!admin);$('home-total-label').textContent=admin?'Registered':'My scans';$('home-entered-label').textContent=admin?'Entered':'Total entries';$('home-remaining-card').hidden=!admin;$('device-strip').hidden=!admin;$('desk-staff-stats').hidden=admin||!p?.active;
   $('account').textContent=initials(p?.name);$('welcome').textContent=p?'Welcome, '+p.name.split(' ')[0]+'.':'Ready to welcome.';
-  if(p){$('checker-name').textContent=p.name;$('checker-access').textContent=admin?'Administrator · all stations':p.active?[(p.scanner!==false?'Checker':''),(p.helpdesk?'Help Desk':'')].filter(Boolean).join(' + ')+' · '+(p.method==='google'?'Google verified':'assigned staff code'):'Waiting for Namdev to assign access.';}
+  if(p){$('checker-name').textContent=p.name;$('checker-access').textContent=admin?'Administrator · all stations':p.active?[(p.scanner!==false?'Checker':''),(p.helpdesk?'Help Desk':''),(p.reports?'Teacher Reports':'')].filter(Boolean).join(' + ')+' · '+(p.method==='google'?'Google verified':'assigned staff code'):'Waiting for Namdev to assign access.';}
   $('change-name').hidden=p?.role!=='checker'||p.method!=='google';$('admin-role-message').textContent=p&&!admin?'Administrator credentials are required here.':'';
   if(!p&&view!=='login')setView('login');
-  if(p&&(['admin','entries'].includes(view)&&!admin||['home','entries'].includes(view)&&(!canScan()||needsName(p))||view==='desk'&&(!canDesk()||needsName(p))||view==='station'&&!admin&&!needsName(p)&&(canScan()||canDesk())))setView(assignedView());
+  if(p&&(['admin','entries'].includes(view)&&!admin||['home','entries'].includes(view)&&(!canScan()||needsName(p))||view==='desk'&&(!canDesk()||needsName(p))||view==='reports'&&!canReports()||view==='station'&&!admin&&!needsName(p)&&(canScan()||canDesk()||canReports())))setView(assignedView());
   paintStations();
   if(needsName(p)&&introEnded&&!$('name-dialog').open){$('real-name').value=p.name==='Checker'?'':p.name;show('name-dialog')}
  }
  function setView(next){
-  if(!titles[next])next='home';if(!C.profile())next='login';if(C.profile()&&!isAdmin()&&(next==='admin'||next==='entries'||next==='station'&&station()&&(canScan()||canDesk())))next=assignedView();if(C.profile()&&((next==='home'&&!canScan())||(next==='desk'&&!canDesk())||needsName(C.profile())&&next!=='account'))next=assignedView();view=next;
+  if(!titles[next])next='home';if(!C.profile())next='login';if(C.profile()&&!isAdmin()&&(next==='admin'||next==='entries'||next==='station'&&(station()||canReports())&&(canScan()||canDesk()||canReports())))next=assignedView();if(C.profile()&&((next==='home'&&!canScan())||(next==='desk'&&!canDesk())||(next==='reports'&&!canReports())||needsName(C.profile())&&next!=='account'))next=assignedView();view=next;
   for(const name of Object.keys(titles))$('view-'+name).hidden=name!==next;
   for(const b of document.querySelectorAll('[data-view]')){const active=b.dataset.view===next;b.classList.toggle('selected',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')}document.querySelector('main').scrollTop=0;
-  $('page-title').textContent=titles[next];history.replaceState(null,'','#'+next);renderAuth();if(next==='admin')renderAdmin();if(next==='entries')renderLocal();if(next==='desk')globalThis.NavrangDesk?.refresh(true);
+  $('page-title').textContent=titles[next];history.replaceState(null,'','#'+next);renderAuth();if(next==='admin')renderAdmin();if(next==='entries')renderLocal();if(next==='desk')globalThis.NavrangDesk?.refresh(true);if(next==='reports')globalThis.NavrangReports?.refresh();
  }
  function paintStations(){const p=C.profile();if(!p)return;const chosen=station();$('station-title').textContent='Your station, '+p.name.split(' ')[0]+'.';$('station-copy').textContent=needsName(p)?'Save your real name to continue.':chosen&&!isAdmin()?'Station saved. Only Namdev can change it.':'Choose your station once. Namdev controls later changes.';
   for(const role of ['checker','helpdesk']){const allowed=!!p.active&&(isAdmin()||(role==='checker'?p.scanner!==false:p.helpdesk===true)),requested=p.requestedRole===role,b=$('station-'+role);b.hidden=!isAdmin()&&!!chosen&&chosen!==role;b.classList.toggle('ready',allowed);b.classList.toggle('requested',!allowed&&requested);b.disabled=needsName(p)||!isAdmin()&&!!chosen&&!allowed;$('station-'+role+'-status').textContent=allowed?'Access approved':requested?'Awaiting Namdev’s approval':'Admin approval required';$('station-'+role+'-action').textContent=allowed?(role==='checker'?'Start scanning →':'Open Help Desk →'):chosen?'Station saved':'Choose this station →';}
