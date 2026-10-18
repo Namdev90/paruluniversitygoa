@@ -13,6 +13,7 @@ import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 public final class GateSession {
  private final SharedPreferences prefs;
+ private String cachedEncrypted,cachedSession;
  private long generation=0;private final ResponseOrder profiles=new ResponseOrder();
  public synchronized long beginProfileRequest(){return profiles.begin();}
  public synchronized long generation(){return generation;}
@@ -28,17 +29,24 @@ public final class GateSession {
   return (SecretKey)store.getKey("navrang-session-v2",null);
  }
  public synchronized void save(String token,JSONObject profile)throws Exception{
-  JSONObject value=new JSONObject().put("token",token).put("profile",profile);
+  String value=new JSONObject().put("token",token).put("profile",profile).toString();
   Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.ENCRYPT_MODE,key());
-  String encoded=Base64.encodeToString(cipher.getIV(),Base64.NO_WRAP)+":"+Base64.encodeToString(cipher.doFinal(value.toString().getBytes(StandardCharsets.UTF_8)),Base64.NO_WRAP);
+  String encoded=Base64.encodeToString(cipher.getIV(),Base64.NO_WRAP)+":"+Base64.encodeToString(cipher.doFinal(value.getBytes(StandardCharsets.UTF_8)),Base64.NO_WRAP);
   if(!prefs.edit().putString("encrypted",encoded).commit())throw new java.io.IOException("Could not save sign-in securely.");
+  cachedEncrypted=encoded;cachedSession=value;
  }
  public synchronized JSONObject read(){
-  String raw=prefs.getString("encrypted","");if(raw.isEmpty())return null;
-  try{String[] parts=raw.split(":",2);Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key(),new GCMParameterSpec(128,Base64.decode(parts[0],Base64.NO_WRAP)));return new JSONObject(new String(c.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),StandardCharsets.UTF_8));}
-  catch(Exception e){return null;}
+  String raw=prefs.getString("encrypted","");
+  // Preferences are memory-backed. Decrypt only when their encrypted value changes,
+  // and return an isolated snapshot so callers cannot edit cached permissions.
+  if(!raw.equals(cachedEncrypted)){
+   cachedEncrypted=raw;cachedSession=null;
+   if(!raw.isEmpty())try{String[] parts=raw.split(":",2);Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key(),new GCMParameterSpec(128,Base64.decode(parts[0],Base64.NO_WRAP)));cachedSession=new String(c.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),StandardCharsets.UTF_8);}
+   catch(Exception ignored){cachedEncrypted=null;}
+  }
+  try{return cachedSession==null?null:new JSONObject(cachedSession);}catch(Exception e){cachedEncrypted=null;cachedSession=null;return null;}
  }
- public synchronized void clear(){beginChange();prefs.edit().remove("encrypted").commit();}
+ public synchronized void clear(){beginChange();prefs.edit().remove("encrypted").commit();cachedEncrypted=null;cachedSession=null;}
  public static boolean canSync(JSONObject session){JSONObject p=session==null?null:session.optJSONObject("profile");return p!=null&&p.optBoolean("active");}
  public static boolean canScan(JSONObject session){JSONObject p=session==null?null:session.optJSONObject("profile");return p!=null&&p.optBoolean("active")&&("admin".equals(p.optString("role"))||p.optBoolean("scanner",false)&&"checker".equals(p.optString("station")));}
  public static String actor(JSONObject session){if(session==null)return "";JSONObject p=session.optJSONObject("profile");if(p==null)return "";return "admin".equals(p.optString("role"))?"admin":p.optString("checkerId","");}

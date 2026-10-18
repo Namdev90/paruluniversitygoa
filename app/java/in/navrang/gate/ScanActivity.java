@@ -21,6 +21,8 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  private final Map<String,JSONObject> pendingResults=new HashMap<>();private final ScanTimeouts pendingTimes=new ScanTimeouts(2500);
  private final Runnable pendingWatch=()->checkPending();
  private final Handler handler=new Handler(Looper.getMainLooper());private final ExecutorService decoder=Executors.newSingleThreadExecutor();private final ScanLatch latch=new ScanLatch();
+ private final ExecutorService cameraWorker=Executors.newSingleThreadExecutor();private final Object cameraLock=new Object();
+ private Camera openingCamera;private boolean cameraOpening;private int cameraGeneration;
  private final Runnable autofocus=new Runnable(){public void run(){if(camera!=null&&active&&!continuous){focus();handler.postDelayed(this,1800);}}};
  private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
  private GradientDrawable box(int color,int stroke){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{color,color});d.setCornerRadius(dp(22));d.setStroke(dp(1),stroke);return d;}
@@ -53,7 +55,7 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  @Override public void surfaceDestroyed(SurfaceHolder h){ready=false;release();}
  @Override public void onResume(){super.onResume();if(runtime==null||!GateSession.canScan(runtime.sessions.read())){finish();return;}if(readiness!=null)readiness.resume();active=true;GateUpdater.scanActive=true;runtime.resume();foregroundRegistered=true;while(!backgroundResults.isEmpty())showResult(backgroundResults.remove());schedulePending();if(ready)openCamera();}
  @Override public void onPause(){if(readiness!=null)readiness.pause();active=false;GateUpdater.scanActive=false;release();if(runtime!=null&&foregroundRegistered){runtime.pause();foregroundRegistered=false;}super.onPause();}
- @Override public void onDestroy(){if(runtime!=null)runtime.remove(this);backgroundResults.clear();pendingResults.clear();if(issueDialog!=null)issueDialog.dismiss();decoder.shutdownNow();super.onDestroy();}
+ @Override public void onDestroy(){release();cameraWorker.shutdown();if(runtime!=null)runtime.remove(this);backgroundResults.clear();pendingResults.clear();if(issueDialog!=null)issueDialog.dismiss();decoder.shutdownNow();super.onDestroy();}
  @Override public void event(JSONObject e){if(("profile".equals(e.optString("type"))||"auth".equals(e.optString("type")))&&!GateSession.canScan(runtime.sessions.read())){runOnUiThread(()->{Toast.makeText(this,"Checker access changed. Choose your approved station.",Toast.LENGTH_LONG).show();finish();});return;}if(!"result".equals(e.optString("type")))return;JSONObject data=e.optJSONObject("data");if(data!=null)runOnUiThread(()->showResult(data));}
  private void showResult(JSONObject r){
   if(!active){if(!isFinishing()&&!isDestroyed())backgroundResults.add(r);return;}String code=r.optString("code"),id=r.optString("id");boolean admitted="admitted".equals(code),pending="pending".equals(code);
@@ -86,12 +88,35 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  }
  private void fail(){Toast.makeText(this,"Camera unavailable. Use exact ticket-ID entry on Home.",Toast.LENGTH_LONG).show();finish();}
  private void openCamera(){
-  if(camera!=null||!ready||!active)return;
-  try{int cameraId=0;Camera.CameraInfo info=new Camera.CameraInfo();for(int i=0;i<Camera.getNumberOfCameras();i++){Camera.getCameraInfo(i,info);if(info.facing==Camera.CameraInfo.CAMERA_FACING_BACK){cameraId=i;break;}}Camera.getCameraInfo(cameraId,info);camera=Camera.open(cameraId);camera.setErrorCallback((err,c)->{release();fail();});Camera.Parameters p=camera.getParameters();Camera.Size chosen=p.getPreviewSize();long best=Long.MAX_VALUE;List<Camera.Size> sizes=p.getSupportedPreviewSizes();if(sizes!=null)for(Camera.Size s:sizes){long d=Math.abs((long)s.width*s.height-1280L*720)+(long)(Math.abs((double)s.width/s.height-16.0/9)*300000);if(d<best){best=d;chosen=s;}}
-   previewWidth=chosen.width;previewHeight=chosen.height;p.setPreviewSize(previewWidth,previewHeight);p.setPreviewFormat(ImageFormat.NV21);continuous=false;List<String> modes=p.getSupportedFocusModes();if(modes!=null&&modes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)){p.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);continuous=true;}else if(modes!=null&&modes.contains(Camera.Parameters.FOCUS_MODE_AUTO))p.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-   camera.setParameters(p);int rot=getWindowManager().getDefaultDisplay().getRotation();int deg=rot==Surface.ROTATION_90?90:rot==Surface.ROTATION_180?180:rot==Surface.ROTATION_270?270:0;previewRotation=info.facing==Camera.CameraInfo.CAMERA_FACING_FRONT?(360-(info.orientation+deg)%360)%360:(info.orientation-deg+360)%360;camera.setDisplayOrientation(previewRotation);camera.setPreviewDisplay(surface.getHolder());camera.startPreview();fitPreview();lastRead=SystemClock.elapsedRealtime();lastHealth=0;darkFrames=brightFrames=0;nextFrame();if(!continuous)handler.postDelayed(autofocus,500);if(torchMode==1)setTorch(true);
-  }catch(Exception e){release();fail();}
+  if(camera!=null||cameraOpening||!ready||!active)return;
+  final int generation; synchronized(cameraLock){cameraOpening=true;generation=++cameraGeneration;}
+  final int rot=getWindowManager().getDefaultDisplay().getRotation();
+  final SurfaceHolder holder=surface.getHolder();
+  try{cameraWorker.execute(()->{
+   Camera opened=null;boolean handedOff=false;
+   try{
+    int cameraId=0;Camera.CameraInfo info=new Camera.CameraInfo();for(int i=0;i<Camera.getNumberOfCameras();i++){Camera.getCameraInfo(i,info);if(info.facing==Camera.CameraInfo.CAMERA_FACING_BACK){cameraId=i;break;}}Camera.getCameraInfo(cameraId,info);
+    opened=Camera.open(cameraId);opened.setErrorCallback((err,c)->runOnUiThread(()->{synchronized(cameraLock){if(generation!=cameraGeneration)return;}release();fail();}));
+    Camera.Parameters p=opened.getParameters();Camera.Size chosen=p.getPreviewSize();long best=Long.MAX_VALUE;List<Camera.Size> sizes=p.getSupportedPreviewSizes();if(sizes!=null)for(Camera.Size s:sizes){long d=Math.abs((long)s.width*s.height-1280L*720)+(long)(Math.abs((double)s.width/s.height-16.0/9)*300000);if(d<best){best=d;chosen=s;}}
+    final int width=chosen.width,height=chosen.height;p.setPreviewSize(width,height);p.setPreviewFormat(ImageFormat.NV21);List<String> modes=p.getSupportedFocusModes();final boolean continuousFocus=modes!=null&&modes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);if(continuousFocus)p.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);else if(modes!=null&&modes.contains(Camera.Parameters.FOCUS_MODE_AUTO))p.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+    int deg=rot==Surface.ROTATION_90?90:rot==Surface.ROTATION_180?180:rot==Surface.ROTATION_270?270:0;final int rotation=info.facing==Camera.CameraInfo.CAMERA_FACING_FRONT?(360-(info.orientation+deg)%360)%360:(info.orientation-deg+360)%360;
+    opened.setParameters(p);opened.setDisplayOrientation(rotation);opened.setPreviewDisplay(holder);opened.startPreview();
+    final Camera started=opened;final boolean cancelled;
+    synchronized(cameraLock){cancelled=generation!=cameraGeneration;if(!cancelled){openingCamera=started;handedOff=true;}}
+    if(cancelled){closeCamera(started);return;}
+    runOnUiThread(()->{
+     synchronized(cameraLock){if(generation!=cameraGeneration||openingCamera!=started)return;openingCamera=null;cameraOpening=false;camera=started;}
+     if(!active||!ready){release();return;}
+     previewWidth=width;previewHeight=height;previewRotation=rotation;continuous=continuousFocus;fitPreview();lastRead=SystemClock.elapsedRealtime();lastHealth=0;darkFrames=brightFrames=0;nextFrame();if(!continuous)handler.postDelayed(autofocus,500);if(torchMode==1)setTorch(true);
+    });
+   }catch(Exception e){
+    if(handedOff)synchronized(cameraLock){if(openingCamera==opened)openingCamera=null;else opened=null;}
+    closeCamera(opened);
+    runOnUiThread(()->{synchronized(cameraLock){if(generation!=cameraGeneration)return;cameraOpening=false;}if(active&&ready){release();fail();}});
+   }
+  });}catch(RejectedExecutionException ignored){synchronized(cameraLock){cameraOpening=false;}}
  }
+ private static void closeCamera(Camera closing){if(closing==null)return;try{closing.setOneShotPreviewCallback(null);closing.stopPreview();}catch(Exception ignored){}finally{try{closing.release();}catch(Exception ignored){}}}
  private void fitPreview(){if(surface==null||previewWidth<=0||previewHeight<=0)return;View parent=(View)surface.getParent();int w=parent.getWidth(),h=parent.getHeight();if(w<=0||h<=0)return;float ratio=previewRotation%180==0?(float)previewWidth/previewHeight:(float)previewHeight/previewWidth;int dw=w,dh=Math.round(w/ratio);if(dh<h){dh=h;dw=Math.round(h*ratio);}FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(dw,dh,Gravity.CENTER);surface.setLayoutParams(p);}
  private void nextFrame(){
   if(camera==null||!active)return;
@@ -116,5 +141,11 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
  private void setTorch(boolean on){if(camera==null)return;try{Camera.Parameters p=camera.getParameters();List<String> modes=p.getSupportedFlashModes();if(modes==null||!modes.contains(Camera.Parameters.FLASH_MODE_TORCH))return;p.setFlashMode(on?Camera.Parameters.FLASH_MODE_TORCH:Camera.Parameters.FLASH_MODE_OFF);camera.setParameters(p);torch=on;lastTorch=SystemClock.elapsedRealtime();}catch(Exception ignored){quality.setText("Torch unavailable · increase the ticket screen brightness");}}
  private void changeZoom(int direction,boolean automatic){if(camera==null)return;try{Camera.Parameters p=camera.getParameters();if(!p.isZoomSupported())return;List<Integer> ratios=p.getZoomRatios();int current=p.getZoom(),target=current;if(ratios==null||ratios.isEmpty())return;int desired=ratios.get(current)+(direction>0?25:-25);for(int i=0;i<ratios.size();i++){if(direction>0&&ratios.get(i)>=desired){target=i;break;}if(direction<0&&ratios.get(i)<=desired)target=i;}if(automatic&&ratios.get(target)>180)return;p.setZoom(Math.max(0,Math.min(p.getMaxZoom(),target)));camera.setParameters(p);zoomLabel.setText(String.format(java.util.Locale.US,"%.1f×",ratios.get(p.getZoom())/100.0));lastZoom=SystemClock.elapsedRealtime();focus();}catch(Exception ignored){}}
  private void resetZoom(){if(camera==null)return;try{Camera.Parameters p=camera.getParameters();if(p.isZoomSupported()){p.setZoom(0);camera.setParameters(p);zoomLabel.setText("1×");lastZoom=SystemClock.elapsedRealtime();}}catch(Exception ignored){}}
- private void release(){handler.removeCallbacksAndMessages(null);Camera closing=camera;camera=null;if(closing!=null){try{closing.setOneShotPreviewCallback(null);closing.stopPreview();}catch(Exception ignored){}finally{try{closing.release();}catch(Exception ignored){}}}torch=false;}
+ private void release(){
+  handler.removeCallbacksAndMessages(null);Camera closing=camera;camera=null;final Camera waiting;
+  synchronized(cameraLock){cameraGeneration++;cameraOpening=false;waiting=openingCamera;openingCamera=null;}
+  // Startup, cancellation cleanup and hardware release share one worker. UI
+  // callbacks from an older generation can never attach an abandoned camera.
+  if(closing!=null||waiting!=null)cameraWorker.execute(()->{closeCamera(closing);if(waiting!=closing)closeCamera(waiting);});torch=false;
+ }
 }

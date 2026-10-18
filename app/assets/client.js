@@ -2,15 +2,22 @@
  'use strict';
  const native=!!(root.Native&&typeof root.Native.local==='function'),L=root.NavrangLive,config=root.NavrangConfig;
  const callbacks=new Map(),listeners=new Set();let initPromise,draining=false,automaticRegion=false,authGeneration=0,profileSequence=0,appliedProfile=0,syncSequence=0,appliedStaffSync=0;
+ let nativeProfileLoaded=false,nativeProfile=null;
  const emit=(type,data)=>{for(const f of listeners)f({type,data});};
  function fail(message,status){const e=Error(message);e.status=status||0;return e;}
- function profile(){if(native){const r=JSON.parse(Native.local('session','{}'));return r.data?.profile||null;}try{return JSON.parse(sessionStorage.getItem('navrang-session')||'null')?.profile||null}catch{return null}}
+ function refreshNativeProfile(){
+  nativeProfileLoaded=true;nativeProfile=null;
+  try{const r=JSON.parse(Native.local('session','{}'));if(r.ok&&r.data?.profile)nativeProfile=JSON.stringify(r.data.profile);}catch{}
+ }
+ // Refresh at native state/response boundaries, not once per UI permission check.
+ // Each caller receives a copy; queued event payloads never become authoritative.
+ function profile(){if(native){if(!nativeProfileLoaded)refreshNativeProfile();return nativeProfile?JSON.parse(nativeProfile):null;}try{return JSON.parse(sessionStorage.getItem('navrang-session')||'null')?.profile||null}catch{return null}}
  function auth(){try{return JSON.parse(sessionStorage.getItem('navrang-session')||'null')}catch{return null}}
  function actor(p){return p?.role==='admin'?'admin':p?.checkerId||''}
  const accessScope=p=>JSON.stringify(p?.role==='admin'?['admin',!!p.active]:[p?.role,p?.checkerId,!!p?.active,p?.scanner!==false,!!p?.helpdesk,p?.station,p?.nameConfirmed!==false]);
  const canScan=p=>!!p?.active&&(p.role==='admin'||p.role==='checker'&&p.scanner!==false&&(p.station==null||p.station==='checker')&&(p.method!=='google'||p.nameConfirmed!==false));
- root.onApiResponse=raw=>{try{const r=JSON.parse(raw),cb=callbacks.get(r.id);if(cb){callbacks.delete(r.id);clearTimeout(cb.timer);r.body.ok?cb.resolve(r.body):cb.reject(fail(r.body.error||'Request failed.',r.status));}}catch{}};
- root.onGateEvent=raw=>{try{const e=JSON.parse(raw);if(e.type==='auth')authGeneration++;emit(e.type,e.data)}catch{}};
+ root.onApiResponse=raw=>{try{const r=JSON.parse(raw),cb=callbacks.get(r.id);if(cb){if(native)refreshNativeProfile();callbacks.delete(r.id);clearTimeout(cb.timer);r.body.ok?cb.resolve(r.body):cb.reject(fail(r.body.error||'Request failed.',r.status));}}catch{}};
+ root.onGateEvent=raw=>{try{const e=JSON.parse(raw);if(e.type==='auth')authGeneration++;if(native&&(e.type==='auth'||e.type==='profile'))refreshNativeProfile();emit(e.type,e.data)}catch{}};
  root.onNativeError=text=>emit('error',{message:text});
  root.onNativeSaved=name=>emit('notice',{message:'Saved '+name});
  async function api(action,payload={},sessionOverride){
@@ -77,7 +84,7 @@
   catch(e){if(drainGeneration===authGeneration&&canScan(profile()))emit('result',{code:'pending',id:currentJob?.ticketId,message:e.message+' No universal entry is confirmed.'});}
   finally{draining=false}
  }
- async function signOut(){const request=api('logout');resetMemory();if(!native)sessionStorage.removeItem('navrang-session');emit('auth',profile());await request;}
+ async function signOut(){const request=api('logout');resetMemory();if(native){nativeProfileLoaded=true;nativeProfile=null;}else sessionStorage.removeItem('navrang-session');emit('auth',profile());await request;}
  async function googleLogin(){
   if(native){Native.googleLogin();return}
   const cfg=await api('config');if(!cfg.googleEnabled)throw fail('Google sign-in awaits provider setup. Ask the admin for an assigned checker code.');
