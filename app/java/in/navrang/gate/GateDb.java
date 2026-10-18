@@ -1,5 +1,6 @@
 package in.navrang.gate;
 import android.content.Context;
+import android.content.pm.PackageInstaller;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -12,7 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 public final class GateDb extends SQLiteOpenHelper {
  private final Context context;
- public GateDb(Context c){super(c,null,null,1);context=c.getApplicationContext();getWritableDatabase();retireDiskCache();}
+ public GateDb(Context c){super(c,null,null,1);context=c.getApplicationContext();recoverUpdateSessions();getWritableDatabase();retireDiskCache();}
  private void retireDiskCache(){
   File old=context.getDatabasePath("navrang-live-v2.db");
   if(old.isFile()){
@@ -52,22 +53,50 @@ public final class GateDb extends SQLiteOpenHelper {
  private JSONArray list(String table,String order,String limit)throws JSONException{JSONArray out=new JSONArray();try(Cursor c=getReadableDatabase().rawQuery("SELECT json FROM "+table+" ORDER BY "+order+" "+limit,null)){while(c.moveToNext())out.put(new JSONObject(c.getString(0)));}return out;}
  // Include every actor: any unresolved RAM-only request would be lost on app replacement.
  public synchronized int pendingCount(){return count("outbox");}
- private int updateSession=-1;
+ // PackageInstaller owns durable sessions; rebuild the fence before this process admits scans.
+ private final Set<Integer> updateSessions=new HashSet<>(),recoveredUpdateSessions=new HashSet<>();
+ private boolean updateSessionsRecovered;
  public static final class UpdateInProgressException extends IllegalStateException {
   public UpdateInProgressException(){super("Finish or cancel the Android app update before scanning another ticket. This entry is not confirmed.");}
  }
- public synchronized boolean pauseForUpdate(int sessionId){
-  if(sessionId<0||updateSession!=-1||pendingCount()!=0)return false;
-  updateSession=sessionId;return true;
+ private boolean recoverUpdateSessions(){
+  if(updateSessionsRecovered)return true;
+  try{
+   for(PackageInstaller.SessionInfo info:context.getPackageManager().getPackageInstaller().getMySessions()){
+    String target=info.getAppPackageName();
+    // An unknown package can be a partially written self-update. Never infer that idle means done.
+    if(target==null||context.getPackageName().equals(target)){updateSessions.add(info.getSessionId());recoveredUpdateSessions.add(info.getSessionId());}
+   }
+   updateSessionsRecovered=true;return true;
+  }catch(Exception e){return false;}
  }
- public synchronized boolean isUpdateSession(int sessionId){return sessionId>=0&&updateSession==sessionId;}
- public synchronized void resumeAfterUpdate(int sessionId){if(isUpdateSession(sessionId))updateSession=-1;}
+ public synchronized int updateSession(){
+  if(!recoverUpdateSessions())throw new UpdateInProgressException();
+  try{
+   PackageInstaller installer=context.getPackageManager().getPackageInstaller();
+   for(Iterator<Integer> i=updateSessions.iterator();i.hasNext();){int id=i.next();if(installer.getSessionInfo(id)==null){i.remove();recoveredUpdateSessions.remove(id);}}
+  }catch(Exception e){throw new UpdateInProgressException();}
+  return updateSessions.isEmpty()?-1:updateSessions.iterator().next();
+ }
+ public synchronized boolean pauseForUpdate(int sessionId){
+  if(sessionId<0||updateSession()!=-1||pendingCount()!=0)return false;
+  updateSessions.add(sessionId);return true;
+ }
+ public synchronized boolean isUpdateSession(int sessionId){
+  if(!recoverUpdateSessions())throw new UpdateInProgressException();
+  return sessionId>=0&&updateSessions.contains(sessionId);
+ }
+ // A created session can outlive a failed open/write/commit; make cleanup retryable without restart.
+ public synchronized void recoverInterruptedUpdate(int sessionId){if(sessionId>=0){updateSessions.add(sessionId);recoveredUpdateSessions.add(sessionId);}}
+ public synchronized boolean isRecoveredUpdateSession(int sessionId){return isUpdateSession(sessionId)&&recoveredUpdateSessions.contains(sessionId);}
+ // Only a matching terminal callback proves completion; abandon() alone may be asynchronous.
+ public synchronized void resumeAfterUpdate(int sessionId){if(isUpdateSession(sessionId)){updateSessions.remove(sessionId);recoveredUpdateSessions.remove(sessionId);}}
  public synchronized JSONObject snapshot()throws JSONException{
   return new JSONObject().put("deviceId",meta("deviceId","")).put("dataRevision",Long.parseLong(meta("dataRevision","-1"))).put("cursor",Long.parseLong(meta("cursor","0"))).put("source",meta("source","")).put("lastSync",meta("lastSync","")).put("stats",new JSONObject(meta("stats","{}"))).put("localCount",count("tickets")).put("pending",count("outbox")).put("legacyCount",count("legacy_entries")).put("entries",list("entries","seq DESC","LIMIT 15"));
  }
  public synchronized JSONObject lookup(String id)throws JSONException{return new JSONObject().put("record",item("tickets",id)).put("entry",item("entries",id)).put("legacyEntry",item("legacy_entries",id));}
  public synchronized JSONObject queue(String ticket,String actor)throws JSONException{
-  if(updateSession!=-1)throw new UpdateInProgressException();
+  if(updateSession()!=-1)throw new UpdateInProgressException();
   if(!ticket.matches("[A-Z0-9]{8}")||actor.isEmpty())throw new IllegalArgumentException("Sign in and scan an exact eight-character ticket ID.");
   SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
   try{try(Cursor c=db.rawQuery("SELECT body FROM outbox WHERE actor=? AND ticket_id=?",new String[]{actor,ticket})){if(c.moveToFirst()){JSONObject p=new JSONObject(c.getString(0));db.setTransactionSuccessful();return p;}}

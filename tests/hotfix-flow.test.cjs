@@ -70,3 +70,15 @@ test('native private Help Desk results remain blocked after station access chang
   const next={...first,station:'checker',scanner:true,helpdesk:false};t.setProfile(next);t.emit('profile',next);deliver();await rejection;
  }finally{await tick();t.dom.window.close()}
 });
+
+for(const state of [
+ {installing:true,available:false,ready:false},
+ {installing:true,available:true,ready:false},
+ {installing:true,available:true,ready:false,downloading:true}
+])test('recovered Android installation remains reachable regardless of cached update '+JSON.stringify(state),async()=>{
+ const t=nativeApp(admin);const actions=[];try{
+  await tick();t.w.Native.update=action=>{actions.push(action);return JSON.stringify(state)};t.emit('update',state);
+  assert.equal(t.$('install-update').hidden,false);assert.equal(t.$('install-update').textContent,'Finish app update');assert.equal(t.$('update-banner').hidden,false);
+  t.$('install-update').click();assert.deepEqual(actions,['install'],'recovery must not be redirected to downloading');
+ }finally{await tick();t.dom.window.close()}
+});
