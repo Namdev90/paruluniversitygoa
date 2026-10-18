@@ -22,6 +22,11 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          # The hosted Android SDK already accepts the standard SDK license.
+          # Do not request the removed legacy tools package or unrelated add-on licenses.
+          accept-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - run: ./gradlew :native-app:assembleDebug :native-app:testDebugUnitTest :native-app:lintDebug
