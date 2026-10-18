@@ -8,10 +8,10 @@ async function until(work,label,timeout=45000){const end=Date.now()+timeout;whil
 function launch(factory,session,offlineFlag,requests){
  const errors=[],console=new VirtualConsole();console.on('jsdomError',e=>errors.push(e.message));
  const dom=new JSDOM(fs.readFileSync(ROOT+'/app/assets/index.html','utf8'),{url:'https://gate.test/#home',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:console});const w=dom.window;
- Object.defineProperty(w,'crypto',{value:webcrypto});w.TextEncoder=TextEncoder;w.AbortController=AbortController;w.indexedDB=factory;w.matchMedia=()=>({matches:true});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
+ Object.defineProperty(w,'crypto',{value:webcrypto});w.TextEncoder=TextEncoder;w.TextDecoder=TextDecoder;w.AbortController=AbortController;w.indexedDB=factory;w.matchMedia=()=>({matches:true});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
  if(session)w.sessionStorage.setItem('navrang-session',session);
  w.fetch=async(url,options)=>{const body=options?.body?JSON.parse(options.body):null;if(body)requests.push(body);if(offlineFlag.value)throw TypeError('Network unavailable');return fetch(url,options)};
- for(const file of ['vendor/xlsx.full.min.js','core.js','workbook.js','package.js','live-core.js','store.js','config.js','client.js','gate.js'])w.eval(fs.readFileSync(ROOT+'/app/assets/'+file,'utf8')+'\n//# sourceURL='+file);
+ for(const file of ['vendor/xlsx.full.min.js','vendor/pako_inflate.min.js','core.js','workbook.js','package.js','live-core.js','store.js','config.js','client.js','gate.js'])w.eval(fs.readFileSync(ROOT+'/app/assets/'+file,'utf8')+'\n//# sourceURL='+file);
  return{dom,w,errors};
 }
 test('live UI auth, local conversion and durable offline admission recovery',{skip:!enabled,timeout:150000},async t=>{
