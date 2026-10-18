@@ -16,3 +16,8 @@ Navrang-Backup*.json
 
 __pycache__/
 *.pyc
+
+.gradle/
+**/build/
+local.properties
+.kotlin/

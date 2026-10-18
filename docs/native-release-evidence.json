@@ -1,0 +1,208 @@
+{
+  "releaseApproved": true,
+  "verifiedSourceCommit": "38cc5a591091272939c9d85d08d8cc847a0a849e",
+  "screens": {
+    "N01": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N02": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N03": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N04": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N05": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N06": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N07": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N08": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N09": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N10": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N11": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N12": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N13": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N14": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N15": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N16": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N17": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    },
+    "N18": {
+      "status": "IMPLEMENTED—UNVERIFIED",
+      "evidence": "docs/NATIVE-PARITY.md"
+    }
+  },
+  "gates": {
+    "google_branding": {
+      "status": "DEFERRED_BY_USER",
+      "evidence": "docs/NATIVE-IMPLEMENTATION-2026-10-18.md#google-branding-deferral",
+      "note": "Deferred by explicit owner instruction; not verified. Credential Manager implementation retained; its device acceptance is separately waived for 0.7.7 below."
+    },
+    "credential_manager_device": {
+      "status": "SKIPPED_BY_OWNER",
+      "evidence": "docs/NATIVE-RELEASE-0.7.7.md#owner-instruction-and-verification-waiver",
+      "note": "Not run/verified. Explicitly waived for this source and release only."
+    },
+    "api24_device": {
+      "status": "SKIPPED_BY_OWNER",
+      "evidence": "docs/NATIVE-RELEASE-0.7.7.md#owner-instruction-and-verification-waiver",
+      "note": "Not run/verified. Explicitly waived for this source and release only."
+    },
+    "current_android_device": {
+      "status": "SKIPPED_BY_OWNER",
+      "evidence": "docs/NATIVE-RELEASE-0.7.7.md#owner-instruction-and-verification-waiver",
+      "note": "Not run/verified. Explicitly waived for this source and release only."
+    },
+    "original_key_upgrade": {
+      "status": "SKIPPED_BY_OWNER",
+      "evidence": "docs/NATIVE-RELEASE-0.7.7.md#owner-instruction-and-verification-waiver",
+      "note": "Not run/verified. Explicitly waived for this source and release only."
+    },
+    "installer_reboot": {
+      "status": "SKIPPED_BY_OWNER",
+      "evidence": "docs/NATIVE-RELEASE-0.7.7.md#owner-instruction-and-verification-waiver",
+      "note": "Not run/verified. Explicitly waived for this source and release only."
+    },
+    "performance_measurements": {
+      "status": "SKIPPED_BY_OWNER",
+      "evidence": "docs/NATIVE-RELEASE-0.7.7.md#owner-instruction-and-verification-waiver",
+      "note": "Not run/verified. Explicitly waived for this source and release only."
+    },
+    "portal_hosted": {
+      "status": "SKIPPED_BY_OWNER",
+      "evidence": "docs/NATIVE-RELEASE-0.7.7.md#owner-instruction-and-verification-waiver",
+      "note": "Not run/verified. Explicitly waived for this source and release only."
+    },
+    "backend_review": {
+      "status": "SKIPPED_BY_OWNER",
+      "evidence": "docs/NATIVE-RELEASE-0.7.7.md#owner-instruction-and-verification-waiver",
+      "note": "Not run/verified. Explicitly waived for this source and release only."
+    }
+  },
+  "releaseApproval": {
+    "approvedAt": "2026-10-18T17:02:35+05:30",
+    "instruction": "skip that and release",
+    "sourceCommitAtRequest": "62d40b01133b444cbc8e771e85a920b397261df7",
+    "approvedSourceCommit": "38cc5a591091272939c9d85d08d8cc847a0a849e",
+    "versionName": "0.7.7",
+    "versionCode": 15,
+    "scope": "Apply the owner release instruction to the native candidate, including verified review fixes; waive only the remaining acceptance evidence listed below. Original-key, package/signature/hash/version/anti-rollback, data/security and paid-domain boundaries remain enforced."
+  },
+  "approvalHistory": [
+    {
+      "approvedAt": "2026-10-18T16:55:03+05:30",
+      "sourceCommitAtRequest": "89147fb4c0153bd4e9e6a03115a144aea290bbe9",
+      "instruction": "release",
+      "scope": "Owner approval to release the native rebuild. Required verification, original-key, production-data and paid-domain boundaries remain in force."
+    }
+  ],
+  "verificationWaiver": {
+    "approvedBy": "owner",
+    "approvedAt": "2026-10-18T17:02:35+05:30",
+    "instruction": "skip that and release",
+    "reason": "Owner directed release after being told the remaining device, sign-in, upgrade/reboot, performance and coordinated backend/portal acceptance evidence was incomplete. These checks stay unverified, not falsely marked passed.",
+    "sourceCommit": "38cc5a591091272939c9d85d08d8cc847a0a849e",
+    "versionName": "0.7.7",
+    "versionCode": 15,
+    "screens": [
+      "N01",
+      "N02",
+      "N03",
+      "N04",
+      "N05",
+      "N06",
+      "N07",
+      "N08",
+      "N09",
+      "N10",
+      "N11",
+      "N12",
+      "N13",
+      "N14",
+      "N15",
+      "N16",
+      "N17",
+      "N18"
+    ],
+    "gates": [
+      "api24_device",
+      "backend_review",
+      "credential_manager_device",
+      "current_android_device",
+      "installer_reboot",
+      "original_key_upgrade",
+      "performance_measurements",
+      "portal_hosted"
+    ]
+  },
+  "automatedVerification": {
+    "sourceCommit": "38cc5a591091272939c9d85d08d8cc847a0a849e",
+    "nativeHostTests": {
+      "passed": 49,
+      "failed": 0,
+      "skipped": 0
+    },
+    "nodeTests": {
+      "passed": 165,
+      "skipped": 3
+    },
+    "legacyJavaChecks": 313,
+    "releasePolicyChecks": 7,
+    "nativeGateChecks": 11,
+    "releaseBuild": "assembleRelease, testDebugUnitTest and lintRelease passed on the final pinned source; final repeat completed in 29 seconds with 49 native host tests and zero failures/skips. No release-specific unit-test task is configured.",
+    "note": "verifiedSourceCommit pins automated source verification; it does not assert device or hosted-service acceptance."
+  },
+  "artifact": {
+    "versionName": "0.7.7",
+    "versionCode": 15,
+    "buildCommit": "2ce2b547aa133b092ccec26d9de57c58635713dd",
+    "size": 19823096,
+    "sha256": "cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a",
+    "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+    "packageName": "in.navrang.gate",
+    "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.7.apk"
+  }
+}

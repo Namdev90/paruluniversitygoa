@@ -1,3 +1,4 @@
+cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a  downloads/Navrang-Gate-0.7.7.apk
 a3502d76c94655c3b47daf79aeab220d19d692818eb12e6a06d366ff2b5c80f2  downloads/Navrang-Gate-0.7.6.apk
 5bdbf9ca0852488ab7ae51153a389215f05ad727b9b5b92b37f4dd840b36345b  downloads/Navrang-Gate-0.7.5.apk
 6cfb7fde090ff17bd6e0957d7eaddd66cef2cfaca971d1c215bba79ff696eecc  downloads/Navrang-Gate-0.7.4.apk
@@ -14,3 +15,4 @@ db817e09156ded802a8d8234800ae255585b3ab700dc01dd1b1f8ada1d712c86  downloads/Navr
 e02b744ea3c3a4add273360c82bb0b7835456e4ee87afa52e9fd9404946c999c  downloads/Navrang-Gate-Offline-0.1.0.apk
 8d8064c1636fdaef7189dd9055c7d59950a8940a12f2293956446ec3c109fd82  libs/core-3.5.3.jar
 cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41  app/assets/vendor/xlsx.full.min.js
+fa226c8e1e3556993260e6a5c1fe94e225da59b3418a06811fdc51d308f8bb43  app/assets/vendor/pako_inflate.min.js

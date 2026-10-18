@@ -1,10 +1,10 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 14,
-  "versionName": "0.7.6",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.6.apk",
-  "size": 1940814,
-  "sha256": "a3502d76c94655c3b47daf79aeab220d19d692818eb12e6a06d366ff2b5c80f2",
-  "notes": "Fixes slow button response by reusing isolated session snapshots instead of repeatedly reading and decrypting secure storage. Camera startup, configuration and cleanup run off the interface thread, with safe cancellation when leaving the scanner. Preserves checker approvals, server authorization, pending-scan recovery and update-installation safeguards.",
-  "publishedAt": "2026-10-18T04:00:40.452664+00:00"
+  "versionCode": 15,
+  "versionName": "0.7.7",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.7.apk",
+  "size": 19823096,
+  "sha256": "cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a",
+  "notes": "Native Android Compose rebuild with CameraX scanning, Credential Manager Google sign-in, stable search and pagination around scrollable student and entry lists, native registration, staff administration, reports and exports. Preserves server authorization, private session storage, original signing identity and installer recovery. Released at the owner's request with device sign-in, upgrade/reboot, performance and hosted backend/portal acceptance checks skipped; Google branding deferred.",
+  "publishedAt": "2026-10-18T13:09:35.076589+00:00"
 }

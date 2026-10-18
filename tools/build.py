@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Build the established Android app with its original signing identity."""
-import os,pathlib,shutil,subprocess,zipfile,json,runpy
+import os,pathlib,shutil,subprocess,zipfile,json,runpy,sys
 from release_policy import require_signing_key
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
+# The master handoff makes the native release the default; a legacy hotfix is a separate approval.
+if '--legacy-approved-hotfix' not in sys.argv:
+ runpy.run_path(str(ROOT/'tools/build-native.py'),run_name='__main__')
+ raise SystemExit(0)
 RELEASE=json.loads((ROOT/'release.json').read_text())
 key=ROOT/'signing'/'prototype-debug.p12'
 require_signing_key(key)
@@ -14,6 +18,14 @@ PLATFORM=pathlib.Path(os.environ.get('NAVRANG_ANDROID_JAR',str(SDK/'android-35'/
 ZXING=pathlib.Path(os.environ.get('NAVRANG_ZXING_JAR',str(SDK/'core-3.5.3.jar')))
 def run(*args):
  subprocess.run([str(a) for a in args],check=True)
+# Extract actual brochure pixels, including the launcher and native scanner mark.
+BRANDING=BUILD/'branding'
+run('java',ROOT/'tools'/'PrepareBrands.java',ROOT,BRANDING)
+RESOURCES=BUILD/'legacy-res'
+if RESOURCES.exists():shutil.rmtree(RESOURCES)
+shutil.copytree(ROOT/'app/res',RESOURCES)
+for name in ['navrang_wordmark.png','app_icon.png']:
+ shutil.copy2(BRANDING/'app/res'/'drawable'/name,RESOURCES/'drawable'/name)
 for d in ['classes','dex']:
  p=BUILD/d
  if p.exists():shutil.rmtree(p)
@@ -23,13 +35,15 @@ run('java','--module','jdk.compiler/com.sun.tools.javac.Main','-source','8','-ta
 with zipfile.ZipFile(BUILD/'classes.jar','w',zipfile.ZIP_DEFLATED) as z:
  for p in (BUILD/'classes').rglob('*.class'):z.write(p,p.relative_to(BUILD/'classes'))
 run(TOOLS/'d8','--release','--lib',PLATFORM,'--min-api','24','--output',BUILD/'dex',BUILD/'classes.jar',ZXING)
-run(TOOLS/'aapt2','compile','--dir',ROOT/'app/res','-o',BUILD/'resources.zip')
+run(TOOLS/'aapt2','compile','--dir',RESOURCES,'-o',BUILD/'resources.zip')
 assets=BUILD/'assets'
 if assets.exists():shutil.rmtree(assets)
 assets.mkdir()
-for name in ['index.html','style.css','core.js','live-core.js','config.js','gate-config.json','client.js','desk-core.js','desk.js','gate.js','local-schema.sql']:
+for name in ['index.html','style.css','core.js','live-core.js','config.js','gate-config.json','client.js','desk-core.js','desk.js','report-export.js','reports.js','gate.js','local-schema.sql']:
  shutil.copy2(ROOT/'app/assets'/name,assets/name)
 shutil.copytree(ROOT/'app/assets/art',assets/'art')
+for name in ['navrang-wordmark.png','app-icon.png']:
+ shutil.copy2(BRANDING/'app/assets'/'art'/name,assets/'art'/name)
 shutil.copytree(ROOT/'app/assets/audio',assets/'audio')
 run(TOOLS/'aapt2','link','-o',BUILD/'unsigned.apk','--manifest',ROOT/'app/AndroidManifest.xml','-I',PLATFORM,'-A',assets,'--min-sdk-version','24','--target-sdk-version','35','--version-code',RELEASE['versionCode'],'--version-name',RELEASE['versionName'],BUILD/'resources.zip')
 with zipfile.ZipFile(BUILD/'unsigned.apk','a',zipfile.ZIP_DEFLATED) as z:
@@ -40,5 +54,4 @@ run(TOOLS/'apksigner','sign','--ks',key,'--ks-pass','pass:android','--key-pass',
 run(TOOLS/'apksigner','verify','--verbose','--print-certs',apk)
 run(TOOLS/'aapt2','dump','badging',apk)
 print('APK:',apk,'bytes:',apk.stat().st_size)
-
 runpy.run_path(str(ROOT/'tools/prepare-release.py'),run_name='__main__')

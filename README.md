@@ -1,88 +1,88 @@
-# Navrang Gate · Parul University Goa
+<div align="center">
 
-Android QR entry and embedded administration for Navrang 2026.
+# Navrang Gate
+### Parul University Goa · Event entry and administration
 
-[Download Android 0.7.6](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.6.apk)
+**Scan confidently. Resolve exceptions. Report with evidence.**
 
-Install over the existing signed app. Student records remain on the server; the current app keeps temporary copies in memory only. The private original signing key is retained outside this repository. Android 7+ and WebView/Chrome86+ are required. Version 0.4 introduces the update client; older APKs need this one manual installation.
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.7.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [Release handoff](docs/RELEASE-HANDOFF-2026-10-18.md)
 
-## Current app
+</div>
 
-- Official horizontal **Parul University Goa** wordmark throughout, including the horizontal branding in the Navrang icon. The separate wordmark is the original vector from the university website, not a recreated text label.
-- Dark interface with a longer, skippable 6.2-second opening: isolated garba dancer artwork arrives from opposite sides over a custom stage. The poster is not the opening background. Kenney CC0 music/interface samples follow the reveal and stop when skipped. Sound is always enabled in the app; device policy still applies. Reduced motion is respected.
-- Refined controls and composited scan-line motion. Admin rows are retained when a two-second poll returns unchanged data, avoiding unnecessary list/button replacement.
-- Separate Google / assigned-code login and administrator login. Google sign-in is retained. Users save a real name such as Raju and choose their station once: Checker or Help Desk. The choice is saved server-side; later sign-ins open the assigned station directly. Only admin can change it. New Google accounts request access; only admin grants it. Existing approved checker access is preserved. Repeated sign-in reuses the account. Display names can coincide; immutable internal account keys preserve unique attribution. Google email remains private from other checkers.
-- Admin username **namdev** with the privately supplied password. Admin-only registration edits, entry/stats pages, named staff-code creation, real-name editing, Checker / Help Desk assignments, and access enable/suspend controls. Re-login does not undo suspension.
-- Simulation has been removed. Sample QR assets and the rehearsal module are excluded from the app. Organizer files are supplied privately in the working chat and applied to the server. Help Desk has an explicitly requested admin-only college CSV export; ordinary checkers have no import, export or backup tools.
+> **Release status:** **0.7.7 · Android code 15** is the native Compose release. The APK uses the original signing identity and the existing update channel. Google branding is deferred at the owner's request. Real-device sign-in, upgrade/reboot, performance and hosted backend/portal acceptance were skipped under the owner's explicit release instruction and remain unverified. See [the release record](docs/NATIVE-RELEASE-0.7.7.md).
 
-Version 0.6 removes the mute button and blue WebView tap/selection wash, adds warm beveled controls and a branded close dialog that warns about RAM-only pending work, and replaces the clipped shared dancer image with separate complete figures. Ten distinct bundled CC0 cues cover reads, outcomes and controls. A QR read sounds immediately; confirmed admission, duplicate, invalid code, payment issue and delayed connection warning have different cues. Sound loading and playback do not block scanning.
+## Native Compose application
 
-Version 0.7 adds the station picker and server-enforced separation: Help Desk-only staff cannot check in or download the checker roster, while Checker-only staff cannot read Help Desk contacts. Choosing a role requests access without granting it. Admin can create named codes for a specific station, and name/permission changes reach existing sessions. The Android scanner closes after access is revoked. Temporary test-code sessions expire server-side; production staff codes remain random and named. Student data is still RAM-only on devices.
+All N01–N18 workflows use native Kotlin/Compose, Material 3, CameraX and Credential Manager. Students and Entry log scroll independently while search and pagination stay fixed. Existing session security, role checks and installer recovery remain in place. [Implementation/history audit](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) · [Parity/evidence](docs/NATIVE-PARITY.md).
 
-Version 0.7.1 makes sign-out immediate, clears hidden forms, dialogs and temporary data when sessions expire or Help Desk access changes, and prevents delayed exports or old-session responses from resurfacing private details.
+The screenshots below are synthetic browser/legacy previews. They do not show the new native application.
 
-Version 0.7.2 locks the first station choice to the account and lets only admin reassign it. Ordinary staff receive only **My scans** (their own server-confirmed admissions) and **Total entries** (all confirmed admissions). Their sync response contains no roster, entry history, staff list, registration total, remaining count or payment statistics. The Android and browser clients discard previous bulk copies. Admin retains the full dashboard. Help Desk staff keep their own paged cases for the existing registration workflow.
+## A look at the work
 
-Version 0.7.3 fixes scanner pause/resume receipts and per-ticket pending deadlines, delayed account/permission responses, Help Desk search/save/review races and delayed CSV exports. It improves warm 3D controls, official Google sign-in artwork, touch targets, accessible dialogs and narrow-screen flow. Release tooling now refuses a missing/replaced signing identity, changed bytes under an existing APK version and update-channel rollback. See the [production review](docs/PRODUCTION-REVIEW-2026-10-17.md).
+<table><tr><td width="50%" align="center"><img src="docs/screenshots/login-mobile.webp" width="310" alt="Unreleased synthetic preview: official event marks, three staff entrances and separate Administration"><br><strong>One clear entrance for every responsibility</strong></td><td width="50%" align="center"><img src="docs/screenshots/admin-mobile.webp" width="310" alt="Unreleased synthetic preview: compact administrator dashboard and phone navigation"><br><strong>Gate control that remains readable on a phone</strong></td></tr></table>
 
-Version 0.7.4 is a focused hotfix for name/station-save acknowledgements racing native profile refresh, admin station navigation, queued scanner issues and late-confirmed receipt cards. It restores opening-button centering and popup fallbacks for older Android WebViews. Combined client/UI callback regression checks were added; live registrations and entry data are unchanged.
+![Unreleased synthetic desktop preview of Faculty Reports, showing sample totals and local download controls](docs/screenshots/faculty-desktop.webp)
 
-Version 0.7.5 (versionCode 13) includes merged PR #1, commit `734bb60eaf1e6373b116703c7278ef80aaddf6bf`: pending scan warnings recover when the final server response arrives, and Android installation waits for unresolved entry requests. Permissions, checker approvals and server behavior are unchanged.
+**All preview records are synthetic.** These are rendered candidate-source screens, not production attendance screenshots or evidence of a published APK. Original university/event artwork is retained; no attendee information or credentials are embedded in these images.
 
-## Gate operation
+## What Navrang Gate does
 
-Tap Start scanning or swipe down on its panel. Google/code checkers can enter the continuous scanner after successful sign-in and name setup. Each new QR is submitted automatically. A held QR is suppressed until it leaves view. Green means the server committed the admission receipt. One ticket grants one entry; no re-entry.
+| At the gate | At the Help Desk | For faculty and administration |
+|---|---|---|
+| Continuous Android QR scanning, exact-ID fallback, focus/torch/zoom aids and distinct feedback. | Named, server-saved registration cases with duplicate safeguards and administrator review. | Searchable registration/entry views, staff permissions, and candidate read-only attendance reports. |
+| Server-confirmed, single-use admissions; duplicate and pending outcomes remain explicit. | Payment and identity approval are deliberate; a case alone never authorizes entry. | CSV/XLSX datasets and PDF summaries distinguish evidence, missing records and organizer corrections. |
 
-A failed payment, unknown/invalid ticket or duplicate presents a manually acknowledged help-desk alert and pauses new submissions. An unresolved request gets a grace period before the same alert. Acknowledgment never authorizes entry. Repeated pending retries do not repeatedly interrupt an already acknowledged ticket; the final server result still appears.
+**Four roles, one permission model:** Checker · Help Desk · Faculty · Administrator. Faculty reporting is an approved read-only role in the candidate update. The administrator retains access to all stations and reports. Choosing a role in the interface never grants permission.
 
-The camera supports continuous/tap focus, inverted QR decoding, low-light torch assistance, bounded small-QR zoom, manual torch/zoom/reset, heuristic soft-image guidance, distinct local audio and scan vibration. These depend on the phone and are not a measured zero-failure guarantee. Use exact Transaction ID entry as fallback. O and 0 differ; staff compare the university ID separately.
+## Built for real gate conditions
 
-Lists use pages rather than an endless/sideways table. Physical layout, larger fonts and the keyboard still need review on the intended phones. Chota Namu appears as a labeled CN admin guide medallion, without an invented personal portrait.
+- **Accountable outcomes:** stable request IDs, immutable receipt attribution, queued problem notices and late-response recovery. Green means a committed admission—not just a decoded QR.
+- **Private by design:** server-owned records; RAM-only student copies; restricted staff summaries; guarded sign-out/late exports; no live roster, workbook or service secret in this repository or APK.
+- **Safe updates:** original signing identity, package/version/hash checks, scan priority and unresolved-installation guards. Merged PR #3 adds process/reboot recovery; phone validation is still required for its release.
 
-## Current organizer dataset
+The [feature catalogue](docs/FEATURES.md) documents major and small behaviours: camera cancellation, inverted QR handling, named codes, station locking, Help Desk races, report provenance, formula-safe exports, branding, reduced motion, readiness controls, installer recovery and more.
 
-The latest authorized workbook, dated **17 October 2026**, is applied privately and verified: **1,124 registrations, 1,041 eligible, 83 blocked**. It adds 127 records; all 997 prior canonical registrations are unchanged. No real attendee was admitted to test this update.
+## Reports that do not hide the exceptions
 
-Eligibility requires event O9KL3, successful transaction Description, amount at least INR100, quantity1 and no refund. Merchant PayOutStatus is not used for student eligibility. Only canonical ticket/name/payment fields are sent to the event server; workbook contact/card details are excluded. No real dataset, ticket QR or entry ledger is in the public repository/APK.
+The candidate provides twelve dataset views: complete master, admitted, eligible without verified entry, blocked, recorded issues, resolved issues, unresolved issues, duplicate attempts, gate activity, Help Desk cases, pending cases and **“Admitted — registration data missing.”**
 
-Dataset changes sync to connected apps without reinstalling. Scans validate directly against the indexed server ticket table. Staff fetch only the two counters; admin keeps an indexed in-memory view. No workbook parser runs during scanning. The shared Mumbai Supabase service serializes imports and admissions and preserves immutable receipts. Event tables are private/RLS-enabled; only the authenticated Edge API's internal service role can run their RPC. Google identities are verified with Supabase Auth. Admin access is separate from Google checker access.
+An organizer-confirmed admission is not presented as a payment verification. Unknown names and exact physical entry times stay unknown. “No verified entry” is not proof of absence. Duplicate scans are not extra people. See [reporting definitions](docs/FEATURES.md#faculty-reports--unreleased-app-candidate).
 
-Foreground updates poll every two seconds; check-in validates directly at the server. Unconfirmed requests are held in memory and retry with the same UUID while the process stays open. They do not survive force-close or process death. Re-scanning still cannot create a second admission because the server enforces one entry. Amber does not allow entry. Internet is needed for confirmation and Help Desk saves. Old persistent roster/receipt caches are retired when the new app starts; pending v0.4 requests are carried into temporary memory before the old cache is removed. Authentication tokens and non-student preferences remain encrypted/private as appropriate; student data and Help Desk drafts are never written to a local database or browser storage.
+## Current installation and access
 
-## Help Desk on Android and laptop
+Install the current signed APK over the existing app; keep the same package and signing identity. Android may ask you to allow installation from the download source. Android 7+ and WebView/Chrome 86+ are required. Sign in with Google or an assigned staff code, save your real name and wait for the administrator's station approval.
 
-Sign in with Google or an assigned staff code, save your name, then choose Help Desk from the station picker. The administrator can use the same admin login. Namdev assigns **Help Desk** to named staff in **Admin → Staff → Manage access**; Google sign-in alone does not grant either station permission. Requests appear first in the Admin staff list.
+The existing laptop portal is [Navrang Gate](https://navrang-gate-admin.namubhai.chatgpt.site). Its deployment is separate from a repository push; candidate screenshots do **not** establish that the hosted portal has been updated. The prepared browser companion must be deployed back to the same authorized site without changing its audience or access settings.
 
-The form captures only name, email, mobile number and quantity, matching the organizer’s reference. Email is required and prevents duplicate pending/approved Help Desk cases. The fee preview is ₹100 per person. Saving uses a UUID for safe same-request retries. The server records the staff identity, timestamps and a generated eight-character ticket ID when needed. Staff can read only their own saved cases. They cannot edit records, approve payment, authorize tickets or export contact details.
+## Development and verification
 
-Admin can view all cases, edit pending details, review or reject cases and download **Help Desk → Saved list → College CSV** for the college. The export includes all Help Desk records and attribution and protects spreadsheet formulas. Exporting is an explicit local download chosen by the admin; no file is sent to anyone automatically.
+```sh
+npm ci --ignore-scripts
+npm test
+npm run test:native
+python3 tests/sqlite-check.py
+python3 tools/package-web.py .build/web-portal
+```
 
-A pending case does not authorize entry. Admin explicitly confirms the person and ₹100 payment before approval publishes an eligible single-entry ticket and updates other stations. Quantity must be one for admission; register other people separately rather than sharing one entry ticket. For an existing ticket, original payment/entry data is preserved; any payment issue must first be corrected in Admin → Students and the same-person link explicitly confirmed. Later organizer file imports preserve approved Help Desk tickets. Each create/edit/review has a private server audit record and optimistic edit version.
+The web package includes every referenced script, including Faculty Reports. `tests/responsive-browser-check.py` provides fixture-only layout checks with Python Playwright and local Chromium; see the [verification record](docs/VERIFICATION-2026-10-18.md) for exact viewports and limitations. Hosted suites require their dedicated synthetic credentials/state; do not run them against real attendee records.
 
-Laptop portal: https://navrang-gate-admin.namubhai.chatgpt.site/#desk
+**For signing:** follow [the original-environment handoff](docs/RELEASE-HANDOFF-2026-10-18.md). Do not create a new key or upload one here. No CI workflow in this repository signs releases or needs signing secrets.
 
-## Station readiness
+## The development record
 
-Android starts with maximum app/media volume, enabled app sound and strong scan vibration. Ambient light drives activity-only brightness when the phone has a light sensor; otherwise normal system brightness is used. These controls do not change global brightness mode or bypass Do Not Disturb, fixed-volume policies or hardware limits. Account displays current readiness.
+The project progressed through **14 archived APK versions**, from the 0.1.0 offline prototype to 0.7.6's UI-thread and camera responsiveness fixes. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. Older architectures are documented, not silently restored.
 
-After the opening, Android requests camera and, on Android13+, notifications once. The phone owner must approve them; the app cannot auto-grant permissions or turn on blocked system channels. Account offers retry/settings buttons. No storage permission is required for Help Desk: exports use Android’s document picker, and registration saves require the server.
+## Project map
 
-## Automatic app updates
+| Location | Contents |
+|---|---|
+| `native-app/` | Kotlin/Compose Android screens, CameraX, Credential Manager, native imports/exports and synthetic UI tests |
+| `app/java/in/navrang/gate/` | Native scanner, sessions, runtime, document saving, readiness and updater |
+| `app/assets/` | Shared web interface, report generators and original/licensed artwork |
+| `server/` | Private-schema gate/report APIs, additive reporting migration and narrowly scoped historical reconciliation |
+| `tests/`, `server/tests/` | Regression harnesses, source rendering and data/security checks |
+| `tools/` | Packaging, original-art preparation, verification and guarded release tooling |
+| `downloads/`, `updates/` | Published APK archive and actual update manifest |
+| `docs/` | Features, operations, original signing handoff, sources and verification |
 
-From 0.4 onward, the app checks a repository release manifest, downloads signed updates in the background when allowed, and shows an in-app banner and optional notification. It waits/yields while the scanner is active. Installation also waits for all unconfirmed check-ins to finish, including manual submissions after the camera closes. It rechecks before committing the installer session and opening Android confirmation; update notifications return to the app for these checks. New scan submissions are explicitly rejected while Android installation is pending, and resume when it finishes or is cancelled. Keep the app open and connected until pending work resolves. Account contains status, manual Check, notification permission and automatic-download controls.
-
-APK size/hash, package name, higher version code and the installed signing certificate are checked before installation. Android may ask to allow installs from Navrang Gate and requires its install confirmation in this workflow. No silent forced replacement or live downloaded JavaScript is used. Entry data remains in the same app package.
-
-See [app update publishing](docs/APP-UPDATES.md). Increase `release.json`, build with the original key, then push the APK and generated `updates/latest.json`. `tools/build.py` prepares these release artifacts automatically. A source-only Git push does not create a signed release; no GitHub signing-secret workflow has been configured.
-
-## Checks and limits
-
-Run `npm ci --ignore-scripts`, then `npm test`. Run `npm run test:native` with Python 3 and a JDK for session caching, camera startup/cancellation, the native runtime, scanner-result/queue and updater-pending regression harnesses. These use deterministic platform fakes and do not install an APK. Set `NAVRANG_TEST_XLSX` and `NAVRANG_LATEST_XLSX` to the private organizer files for real-file regressions. `python tests/sqlite-check.py` checks the in-memory schema, transaction failure and request deduplication. Native QR, camera-hint, latch/PKCE/platform and update-channel policy checks are in `tests/qr`.
-
-Version 0.7.6 (versionCode 14) responsiveness fix: UI profile checks reuse an isolated in-memory snapshot, refreshed from the canonical Android session on profile/auth events and API responses. The native session decrypts only when its encrypted preferences change; logout, changed access and stale-response guards remain enforced. Camera opening/configuration and release run on a worker, with generation checks that discard and release cancelled startups. Controlled regression tests check repeated reads, permission invalidation, a stalled camera, duplicate launches and pause/destroy races. The signed 0.7.6 APK includes these changes; physical-phone response times still require an installed-build trial.
-
-This iteration passed 96 unit/DOM/data checks including Help Desk retries, role controls, session cleanup, CSV formula protection and the actual workbook comparison. A rollback-only database suite verifies authorization, contact isolation, versioned edits, approval, duplicate prevention, import preservation and auditing; it leaves no attendee fixtures. Ten native OAuth callback cases cover query/fragment errors, state checks, duplicate parameters and credential-safe messages. Ten previously passed native update-policy cases cover the existing update channel. Previously established QR decoding coverage includes exact, rotated, inverted, low-contrast, landscape and blank frames. The signed APK and public manifest/hash are checked before handoff. No mutating hosted admission test is run against real attendees.
-
-The supported rendered preview could not start due to an environment mount-permission failure. No physical Android was attached; the new opening, install/notification flow, camera and frame smoothness still need phone verification. Unit/DOM tests do not establish visual frame-rate or end-to-end Android update behavior.
-
-The full admin console is inside the APK and connects directly to Supabase. The existing public login Site is now the laptop companion for the same authenticated Help Desk and admin API. Its audience is preserved; personal data is behind app sign-in and server authorization. Historical v0.1–v0.3 docs/APKs are retained as history. Current next steps are in [the phone trial](docs/NEXT-STEPS.md); Google setup is in [provider setup](docs/GOOGLE-SIGNIN-SETUP.md).
+Created by **Namdev Shirodkar** for Navrang gate operations at Parul University Goa. Institutional/event marks remain their owners' artwork. Audio and asset provenance are documented in [asset notes](app/assets/art/ASSET-NOTES.md). No broader institutional endorsement or certification is implied.

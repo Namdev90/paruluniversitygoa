@@ -5,7 +5,10 @@ const publicKey=Deno.env.get('SUPABASE_ANON_KEY')!;
 let google=false,checked=0;
 const handler=createHandler({
  async rpc(action:string,payload:unknown,hash:string){
-  const r=await fetch(base+'/rest/v1/rpc/navrang_gate',{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:action,p:payload,p_token:hash}),signal:AbortSignal.timeout(15000)});
+  const report=action.startsWith('reports-');
+  const rpcName=report?'navrang_reports':'navrang_gate';
+  const dbAction=report?action.slice('reports-'.length):action;
+  const r=await fetch(base+'/rest/v1/rpc/'+rpcName,{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:dbAction,p:payload,p_token:hash}),signal:AbortSignal.timeout(15000)});
   if(!r.ok)throw Error('Database request failed');return r.json();
  },
  async googleUser(accessToken:string){

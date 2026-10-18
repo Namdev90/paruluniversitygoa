@@ -1,0 +1,117 @@
+/* Responsive release refinement: original white institutional mark needs a dark field.
+   No filters, recolouring, stretching, or fabricated replacement wordmarks. */
+.institution-wordmark,.brand.official-header .header-logo,
+.crafted-login>.official-logo,.intro-content>.official-logo{
+ background:#20241f;border:1px solid #ffffff12;object-fit:contain;
+}
+.intro-content>.official-logo{padding:7px 12px;border-radius:4px;height:48px}
+.app-shell{width:100%;max-width:1320px;padding-inline:clamp(12px,2.4vw,32px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.topbar{flex-shrink:0;height:auto;min-height:80px;padding-block:12px}
+.brand.official-header{flex:1 1 auto;min-width:0;gap:12px}
+.brand.official-header>div{min-width:0}
+.brand.official-header .header-logo{width:clamp(122px,24vw,194px);max-width:100%;height:33px}
+.top-actions{flex:0 0 auto;gap:8px}
+.connection{line-height:1.35;overflow-wrap:anywhere}
+main{min-height:0;padding-top:18px}
+.view{min-width:0;min-height:0;scrollbar-gutter:stable;overscroll-behavior-y:contain}
+.micro-note{font-size:12px;line-height:1.6}
+.login-role,.administrator-button,.mobile-nav button,.admin-tabs button,
+.table-link,.table-action,.crafted-login summary{
+ background-image:none;box-shadow:none;text-shadow:none;
+}
+.login-role{border-bottom:0}
+.login-role:not(.selected),.administrator-button,.admin-tabs button{background-color:transparent}
+.crafted-login summary{background:transparent;border:0;border-radius:0;color:var(--muted);padding:14px 0}
+.administrator-entry{margin-top:22px;border-radius:10px}
+.administrator-button{border:0;border-radius:0;min-height:62px;padding:4px 0}
+.mobile-nav{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%;overflow:visible;gap:3px;padding:8px 0 6px;flex-shrink:0}
+.mobile-nav button,.administrator-session .mobile-nav button{min-width:0;min-height:54px;padding:7px 3px;background:transparent;border:0;box-shadow:none;font-size:11px;line-height:1.2;overflow-wrap:anywhere}
+.mobile-nav button.selected{background:#30392d;color:#f2e1bd}
+.mobile-nav button span{display:block;margin-bottom:4px;font-size:19px}
+.administrator-session #admin-nav{border:1px solid #b5976966;color:#ebcb97}
+.admin-tabs button{border:0;border-bottom:2px solid transparent;box-shadow:none;font-size:13px}
+.admin-tabs button.selected{border-bottom-color:var(--gold);box-shadow:none}
+#admin-console{min-height:0;height:auto;display:flex;flex-direction:column;gap:12px}
+.admin-tab{flex:none;min-height:0;overflow:visible}
+.admin-tab .table-link{display:inline-block;background:transparent;border:0;box-shadow:none;border-radius:3px;min-height:36px;text-align:left;color:var(--ink);padding:5px 0;text-decoration:underline;text-decoration-color:#a7ab9850;text-underline-offset:3px;white-space:normal}
+.admin-tab .table-action{background:#303630;border:1px solid #596055;box-shadow:none;color:var(--ink);min-height:36px;border-radius:7px}
+th,td{overflow-wrap:anywhere}td{font-size:13px}
+.table-toolbar{min-width:0;gap:8px}.table-toolbar input{min-width:0;flex:1 1 auto}
+.report-view>.panel{flex:0 0 auto}.report-actions button{min-height:46px}
+.report-stat{min-width:0;overflow-wrap:anywhere}.report-member{gap:12px}
+.report-member>div{flex:1 1 160px;overflow-wrap:anywhere}
+.station-card,.faculty-station{min-width:0;height:auto;min-height:145px;overflow-wrap:anywhere}
+.station-card-copy strong{font-size:22px;line-height:1.2}
+#view-account>.panel{flex-shrink:0}
+dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overscroll-behavior:contain}
+@media(min-width:1100px){
+ .topbar{min-height:88px}.view{padding-right:5px}.crafted-login{max-width:540px}
+ .report-view{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr);align-content:start;align-items:start}
+ .report-view>.section-title{grid-column:1/-1}.report-view>#report-manage{grid-column:1/-1}
+ .report-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .station-options{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .mobile-nav{max-width:860px;align-self:center}.app-footer{padding-block:5px}
+}
+@media(max-width:480px){
+ .topbar{gap:6px;min-height:72px;padding-block:10px}
+ .official-header{gap:8px}.event-wordmark-header{width:64px}
+ .brand.official-header .header-logo{width:clamp(122px,36vw,164px);height:30px;padding:4px 5px}
+ .brand.official-header h1{font-size:13px;line-height:1.2}.top-actions{gap:5px}
+ .avatar{width:36px;min-width:36px;height:36px}.connection{max-width:42px!important;font-size:10px!important}
+ .crafted-login{padding:12px 4px 24px}.crafted-login h2{font-size:25px}
+ .login-role{grid-template-columns:96px minmax(0,1fr);padding:12px 10px;min-height:64px}
+ .login-role small{font-size:12px}.crafted-login .micro-note{font-size:12px}
+ .report-member{flex-wrap:wrap}.report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin-stats{gap:5px}.admin-stats span{font-size:10px}.admin-tabs button{font-size:12px;padding:9px 5px}
+ td{font-size:12px;padding:10px 3px}.admin-tab table{table-layout:fixed;width:100%}
+ #admin-registrations th:first-child{width:39%}#admin-registrations th:last-child{width:15%}
+ .table-toolbar{flex-wrap:wrap}.table-toolbar input{flex:1 1 150px}.table-toolbar select{flex:0 1 100px}
+ .app-footer.official-brand-line{gap:12px}.app-footer .institution-wordmark{width:142px;height:27px}
+}
+@media(max-height:500px){
+ .topbar{min-height:56px;padding-block:6px}.brand.official-header h1{display:none}
+ main{padding-top:10px}.mobile-nav{padding-top:4px;padding-bottom:2px}
+ .mobile-nav button,.administrator-session .mobile-nav button{min-height:43px;padding:5px 3px}
+ .mobile-nav button span{font-size:15px;margin-bottom:2px}.app-footer.official-brand-line{display:none}
+ .intro-content{margin-top:12px;gap:4px}.intro-content>.official-logo{height:32px;width:180px}
+ .intro-content .event-wordmark-hero{width:min(270px,50vw)}.intro-tagline,.intro-content .pill{display:none}
+ .dancer-stage{height:80vh;bottom:0;width:30vw}.dancer-stage-left{left:0}.dancer-stage-right{right:0}
+ .intro .intro-skip{bottom:12px;min-height:44px}
+}
+
+/* Stable controls: only bounded rows scroll. Data pages do not depend on height. */
+#view-admin,#view-entries{overflow:hidden;display:flex;flex-direction:column;min-height:0;height:100%}
+#view-admin[hidden],#view-entries[hidden]{display:none}
+#view-admin>.section-title,#view-entries>.section-title,.admin-tabs,.table-toolbar,.pager,#registration-count{flex-shrink:0}
+#admin-console{flex:1 1 0;min-height:0;overflow:hidden}
+#admin-console>.admin-tab{flex:1 1 0;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+#admin-console>.admin-tab[hidden]{display:none}
+#admin-console>#admin-updates:not([hidden]){overflow:auto;display:block;overscroll-behavior:contain}
+.rows-scroll{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.rows-scroll thead{position:sticky;top:0;background:var(--panel,#20241f);z-index:1}
+#view-entries>.table-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#checker-list{flex:1 1 0;min-height:0;overflow:auto}
+#view-entries .pager{flex-wrap:wrap;min-height:60px}
+#entry-coverage{width:100%;text-align:center}
+#admin-registrations .table-link{min-height:44px}
+#view-entries .pager{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:4px 12px;padding-top:4px}
+#view-entries #recent-prev{grid-column:1;grid-row:1}
+#view-entries #recent-page{grid-column:2;grid-row:1;text-align:center}
+#view-entries #recent-next{grid-column:3;grid-row:1}
+#view-entries #entry-coverage{grid-column:1/-1;grid-row:2}
+@media(max-height:720px){
+ #admin-console>.namu-guide{display:none}
+ #admin-console{gap:6px}
+ #admin-console>.admin-stats{margin-block:4px}
+}
+@media(max-height:500px){
+ #admin-console>.admin-stats,#admin-console>.panel-heading{display:none}
+ #admin-console{gap:4px}
+ #admin-console .admin-tabs{margin:0}
+ #admin-console>.admin-tab{padding:6px}
+ #admin-console .table-toolbar{margin-bottom:4px}
+ #admin-console .pager{padding-top:4px}
+ #view-entries>.section-title .eyebrow,#view-entries>.section-title .micro-note{display:none}
+ #view-entries>.table-panel{padding:6px}
+ #view-entries{gap:4px}
+}

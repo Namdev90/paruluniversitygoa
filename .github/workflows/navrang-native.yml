@@ -1,0 +1,42 @@
+name: Native Compose verification
+on:
+  pull_request:
+    paths: ['native-app/**', 'app/java/**', 'app/res/**', 'app/assets/**', 'gradle/**', '*.gradle.kts', 'gradle.properties', 'tools/**', '.github/workflows/navrang-native.yml']
+  push:
+    branches: [codex/native-compose-rebuild]
+permissions:
+  contents: read
+concurrency:
+  group: navrang-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          # The hosted Android SDK already accepts the standard SDK license.
+          # Do not request the removed legacy tools package or unrelated add-on licenses.
+          accept-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v4
+      - run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
+      - run: ./gradlew :native-app:assembleDebug :native-app:testDebugUnitTest :native-app:lintDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-synthetic-verification
+          path: |
+            native-app/build/reports/
+            native-app/build/test-results/
+            native-app/build/synthetic-screenshots/
+          retention-days: 7
+      # No APK publication, signing key, production credentials or backend writes.
