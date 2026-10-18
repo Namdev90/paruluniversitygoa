@@ -21,6 +21,8 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
     private var operation: Job? = null
     private var actionSequence = 0L
     private var signingOut = false
+    private var pendingRevocationToken: String? = null
+    private var identitySequence = 0L
     private var deskJob: Job? = null
     private var localJob: Job? = null
     private var localAgain = false
@@ -145,9 +147,15 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
 
     private suspend fun refreshIdentity() {
         if (signingOut) return
+        val request = ++identitySequence
         val generation = repository?.runtime?.sessions?.generation()
         val p = repository?.profile()
-        if (signingOut || generation != repository?.runtime?.sessions?.generation()) return
+        if (
+            signingOut ||
+                request != identitySequence ||
+                generation != repository?.runtime?.sessions?.generation()
+        )
+            return
         val scope = p?.scope ?: ""
         if (scope != sessionScope) {
             epoch++
@@ -377,7 +385,13 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
             var oldToken: String? = null
             try {
                 withContext(NonCancellable + Dispatchers.IO) {
-                    oldToken = repo().clearSession()
+                    // Retain the first token in RAM across a failed durable clear.
+                    // A retry must still revoke that original server session.
+                    if (pendingRevocationToken == null)
+                        pendingRevocationToken = repo().runtime.sessions.read()?.text("token")
+                    repo().clearSession()
+                    oldToken = pendingRevocationToken
+                    pendingRevocationToken = null
                     getApplication<Application>()
                         .getSharedPreferences("navrang-pkce", 0)
                         .edit()
