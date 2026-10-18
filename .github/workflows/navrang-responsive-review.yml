@@ -6,6 +6,7 @@ on:
     paths:
       - 'app/assets/art/brand-shell*'
       - 'app/assets/art/classic-restore.css'
+      - 'app/assets/art/app-icon.png'
       - 'app/assets/index.html'
       - 'app/assets/gate.js'
       - 'tests/responsive-browser-check.py'

@@ -29,7 +29,12 @@ val sharedJava =
         into(layout.buildDirectory.dir("generated/java"))
     }
 val sharedResources = tasks.register<Sync>("sharedResources") {
-    from(rootProject.file("app/res"))
+    from(rootProject.file("app/res")) { exclude("drawable/app_icon.png") }
+    from(rootProject.file("app/assets/art")) {
+        include("app-icon.png")
+        into("drawable")
+        rename { "app_icon.png" }
+    }
     from(rootProject.file("app/assets/art")) {
         include("dancer-*.webp", "google-g.png")
         into("drawable")
@@ -63,6 +68,7 @@ android {
         }
         release {
             isMinifyEnabled = false
+            isCrunchPngs = false
             // Signing is exclusively performed by tools/build-native.py after its
             // original-key/parity gates.
         }

@@ -5,13 +5,18 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 source = (root / 'app/java/in/navrang/gate/MainActivity.java').read_text()
-old = 'public final class MainActivity extends Activity'
-assert old in source
-source = source.replace(old, 'public class ClassicActivity extends androidx.activity.ComponentActivity')
-source = source.replace('MainActivity.this', 'ClassicActivity.this')
-source = source.replace('return ScanActivity.class;', 'return ClassicScannerActivity.class;')
-source = source.replace('@Override public void onBackPressed()', 'protected void classicBack()')
-source = source.replace('setContentView(frame);frame.requestApplyInsets();', 'setContentView(frame);frame.requestApplyInsets();getOnBackPressedDispatcher().addCallback(this,new androidx.activity.OnBackPressedCallback(true){@Override public void handleOnBackPressed(){classicBack();}});')
+def replace(old, new, multiple=False):
+    global source
+    count = source.count(old)
+    if not count or (not multiple and count != 1):
+        sys.exit(f'prepare-classic-host: expected source pattern {old!r}; found {count} matches')
+    source = source.replace(old, new)
+
+replace('public final class MainActivity extends Activity', 'public class ClassicActivity extends androidx.activity.ComponentActivity')
+replace('MainActivity.this', 'ClassicActivity.this', multiple=True)
+replace('return ScanActivity.class;', 'return ClassicScannerActivity.class;')
+replace('@Override public void onBackPressed()', 'protected void classicBack()')
+replace('setContentView(frame);frame.requestApplyInsets();', 'setContentView(frame);frame.requestApplyInsets();getOnBackPressedDispatcher().addCallback(this,new androidx.activity.OnBackPressedCallback(true){@Override public void handleOnBackPressed(){classicBack();}});')
 
 target = Path(sys.argv[1]) / 'in/navrang/gate/ClassicActivity.java'
 target.parent.mkdir(parents=True, exist_ok=True)

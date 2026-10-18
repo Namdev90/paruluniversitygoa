@@ -1,7 +1,7 @@
 (function(){
  'use strict';
  const C=GateClient,L=NavrangLive,$=id=>document.getElementById(id);
- let view='home',adminTab='registrations',page=0,entryPage=0,recentPage=0,crewPage=0,selected=null,syncBusy=false,resultTimer=null,queueTimer=null,held=false,lastResult=null,queuedResults=[],introEnded=false,staffSelected=null;
+ let view='home',adminTab='registrations',page=0,entryPage=0,recentPage=0,crewPage=0,selected=null,syncBusy=false,syncAgain=false,resultTimer=null,queueTimer=null,held=false,lastResult=null,queuedResults=[],introEnded=false,staffSelected=null;
  if(location.hash==='#desk')C.destination?.('desk');
  const pendingResults=new Map(),pendingAcknowledged=new Set();
  let model=emptyModel(),uiGeneration=0,pollRun=0,previousRole=C.profile()?.role||'';function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
@@ -27,7 +27,7 @@
  function destination(){return C.destination?.()||'home'}
  function needsName(p){return p?.role==='checker'&&p.method==='google'&&p.nameConfirmed===false&&!p.reports}
  function renderAuth(){
-  const p=C.profile(),admin=isAdmin();if(previousRole==='admin'&&!admin){uiGeneration++;pollRun++;syncBusy=false;clearAdminView()}previousRole=p?.role||'';document.body.classList.toggle('login-mode',!p||view==='login');$('main-nav').hidden=!p;$('admin-nav').hidden=!admin;
+  const p=C.profile(),admin=isAdmin();if(previousRole==='admin'&&!admin){uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;clearAdminView()}previousRole=p?.role||'';document.body.classList.toggle('login-mode',!p||view==='login');$('main-nav').hidden=!p;$('admin-nav').hidden=!admin;
   if(!canScan()&&lastResult){queuedResults=[];releaseResult();}
   $('scan').disabled=!canScan()||needsName(p)||held;$('manual-submit').disabled=!canScan()||needsName(p)||held;
   $('scan-nav').hidden=!canScan();$('entries-nav').hidden=!admin;$('desk-nav').hidden=!canDesk();$('reports-nav').hidden=!canReports();$('switch-station').hidden=!admin;document.querySelector('[data-view=station]').hidden=!admin&&(canScan()||canDesk()||canReports());$('name-form').querySelector('button').textContent=needsName(p)||!station()?'Save name & choose station':'Save real name';
@@ -52,7 +52,7 @@
  }
  async function chooseStation(role){const button=$('station-'+role);await busy(button,async()=>{if(needsName(C.profile()))return;if(!isAdmin()){if(station()){if(station()!==role){notice('Only Namdev can change your saved station.');return}}else{await C.api('staff-request',{station:role});await C.api('me')}}const allowed=role==='checker'?canScan():canDesk();setView(assignedView());if(!allowed){paintStations();feedback('pending');return}C.destination?.(role==='checker'?'home':'desk');setView(role==='checker'?'home':'desk');feedback('transition');if(role==='checker'&&C.native)C.scan()});paintStations()}
  $('station-checker').onclick=()=>chooseStation('checker');$('station-helpdesk').onclick=()=>chooseStation('helpdesk');$('switch-station').onclick=()=>{if(isAdmin())setView('station')};
- function afterSignIn(){uiGeneration++;pollRun++;syncBusy=false;renderAuth();setView(assignedView());globalThis.NavrangDesk?.refresh();poll(true)}
+ function afterSignIn(){uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;renderAuth();setView(assignedView());globalThis.NavrangDesk?.refresh();poll(true)}
  function setAdminTab(next){adminTab=next;for(const b of document.querySelectorAll('[data-admin-tab]')){const yes=b.dataset.adminTab===next;b.classList.toggle('selected',yes);b.setAttribute('aria-selected',String(yes));b.tabIndex=yes?0:-1;$('admin-'+b.dataset.adminTab).hidden=!yes}}
  for(const tab of document.querySelectorAll('[data-admin-tab]'))tab.addEventListener('keydown',e=>{const tabs=[...document.querySelectorAll('[data-admin-tab]')],index=tabs.indexOf(tab);let target;if(e.key==='ArrowRight')target=tabs[(index+1)%tabs.length];else if(e.key==='ArrowLeft')target=tabs[(index-1+tabs.length)%tabs.length];else if(e.key==='Home')target=tabs[0];else if(e.key==='End')target=tabs.at(-1);if(target){e.preventDefault();setAdminTab(target.dataset.adminTab);target.focus()}});setAdminTab(adminTab);
  function paginate(list,current,label,prev,next,size=pageSize()){const pages=Math.max(1,Math.ceil(list.length/size)),p=Math.min(Math.max(0,current),pages-1);$(label).textContent=(p+1)+' / '+pages;$(prev).disabled=p===0;$(next).disabled=p+1>=pages;return{page:p,rows:list.slice(p*size,p*size+size)}}
@@ -111,7 +111,8 @@
 
  }
  async function poll(force){
-  if(syncBusy||!C.profile())return;
+  if(!C.profile())return;
+  if(syncBusy){if(force)syncAgain=true;return;}
   const generation=uiGeneration,run=++pollRun,current=()=>generation===uiGeneration&&!!C.profile();
   syncBusy=true;
   try{
@@ -130,7 +131,7 @@
    if(!current())return;
    connection(false,e.status===403?'Access blocked':e.status===401?'Sign in':'Offline');
    if(e.status===401||e.status===403){notice(e.message);try{await C.api('me');if(current())renderAuth()}catch{}}
-  }finally{if(run===pollRun)syncBusy=false}
+  }finally{if(run===pollRun){syncBusy=false;if(syncAgain){syncAgain=false;poll(true)}}}
  }
  function clearAdminView(){
   model=emptyModel();adminPaint='';selected=staffSelected=null;page=entryPage=recentPage=crewPage=0;
@@ -149,7 +150,7 @@
  $('show-admin-login').onclick=()=>{$('signin-panel').hidden=true;$('admin-signin').hidden=false};$('show-checker-login').onclick=()=>{$('admin-signin').hidden=true;$('signin-panel').hidden=false};
  $('google-signin').onclick=()=>busy($('google-signin'),()=>C.googleLogin());$('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
  function clearSessionView(){
-  uiGeneration++;pollRun++;syncBusy=false;model=emptyModel();adminPaint='';selected=staffSelected=null;page=entryPage=recentPage=crewPage=0;queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);
+  uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;model=emptyModel();adminPaint='';selected=staffSelected=null;page=entryPage=recentPage=crewPage=0;queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);
   for(const d of document.querySelectorAll('dialog[open]'))close(d.id);
   for(const id of ['checker-form','admin-form','manual-form','name-form','ticket-editor','create-checker-form','staff-access-form','change-password-form'])$(id).reset();
   for(const o of $('edit-status').querySelectorAll('[data-custom]'))o.remove();

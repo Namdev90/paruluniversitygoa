@@ -72,3 +72,11 @@ test('restored build retains native Credential Manager and CameraX instead of th
 test('restoration release cannot reuse another version approval or changed source/logo',()=>{
  require('node:child_process').execFileSync('python3',['tests/restoration-release-gate-check.py'],{cwd:root,stdio:'pipe',timeout:15000});
 });
+
+test('classic host generation rejects missing or ambiguous Android back-navigation hooks',()=>{
+ require('node:child_process').execFileSync('python3',['tests/classic-host-generation-check.py'],{cwd:root,stdio:'pipe',timeout:15000});
+});
+
+test('packaged launcher verification rejects substituted artwork despite a correct web logo',()=>{
+ require('node:child_process').execFileSync('python3',['tests/restoration-artwork-check.py'],{cwd:root,stdio:'pipe',timeout:15000});
+});

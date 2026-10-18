@@ -92,3 +92,14 @@ test('restored screens clear private rows when account or session access expires
   }finally{dom.window.close()}
  }
 });
+
+test('an import completed during an active poll queues one immediate forced registration refresh',async()=>{
+ const t=setup({role:'admin',name:'Synthetic Administrator',active:true},{native:true}),{w,dom,$}=t;
+ try{await tick();let finish,requests=[];
+  w.GateClient.sync=async options=>{requests.push(options);if(requests.length===1)return await new Promise(resolve=>finish=resolve);return{dataRevision:2,cursor:0,records:[{id:'DEMO0002',name:'Imported Synthetic Student',amount:100,quantity:1,refund:0,description:'Transaction completed successfully',eligible:true}],entries:[],stats:{},checkers:[]}};
+  t.click('admin-refresh');await tick();t.event({type:'registrations-imported',data:{}});t.event({type:'registrations-imported',data:{}});await tick();assert.equal(requests.length,1);
+  finish({dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:[]});
+  for(let i=0;i<25&&!$('registration-rows').textContent.includes('Imported Synthetic Student');i++)await tick();
+  assert.equal(requests.length,2);assert.equal(requests[1].dataRevision,-1);assert.match($('registration-rows').textContent,/Imported Synthetic Student/);
+ }finally{dom.window.close()}
+});

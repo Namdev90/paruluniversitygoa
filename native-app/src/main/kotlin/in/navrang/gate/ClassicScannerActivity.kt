@@ -26,6 +26,9 @@ class ClassicScannerActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContent {
             val state by model.state.collectAsStateWithLifecycle()
+            LaunchedEffect(state.ready, state.profile?.canScan) {
+                if (state.ready && state.profile?.canScan == true) model.navigate(Destination.Scanner)
+            }
             var confirmClose by remember { mutableStateOf(false) }
             val close = {
                 if (state.held == null) {
@@ -81,6 +84,10 @@ class ClassicScannerActivity : ComponentActivity() {
         }
     }
 
-    override fun onResume() { super.onResume(); model.foreground(true) }
+    override fun onResume() {
+        super.onResume()
+        if (model.state.value.profile?.canScan == true) model.navigate(Destination.Scanner)
+        model.foreground(true)
+    }
     override fun onPause() { model.foreground(false); super.onPause() }
 }

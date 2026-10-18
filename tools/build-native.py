@@ -15,6 +15,19 @@ from restoration_release_gate import require_restoration_ready, ORIGINAL_LOGO_SH
 from release_policy import require_signing_key, verify_apk, check_publication, SIGNER_SHA256
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def verify_restored_artwork(archive, badging):
+    # AGP may shorten resource filenames. Follow the manifest's actual icon
+    # paths from aapt, rather than assuming the source resource path survives.
+    launchers = set(re.findall(r"^application-icon-\d+:'([^']+)'$", badging, re.M))
+    if not launchers:
+        raise SystemExit('Could not resolve the packaged launcher artwork.')
+    for logo in {'assets/art/app-icon.png', *launchers}:
+        if logo not in archive.namelist() or hashlib.sha256(archive.read(logo)).hexdigest() != ORIGINAL_LOGO_SHA256:
+            raise SystemExit('APK does not contain the original Navrang logo in ' + logo)
+
+
 def main():
     release = json.loads((ROOT / 'release.json').read_text())
     original = release.get('interface') == 'original'
@@ -49,8 +62,7 @@ def main():
             required = {'assets/index.html', 'assets/client.js', 'assets/reports.js', 'assets/report-export.js', 'assets/workbook.js', 'assets/art/classic-restore.css'}
             if not required.issubset(archive.namelist()):
                 raise SystemExit('The restored interface is missing a required feature asset.')
-            if hashlib.sha256(archive.read('assets/art/app-icon.png')).hexdigest() != ORIGINAL_LOGO_SHA256:
-                raise SystemExit('APK does not contain the original Navrang logo.')
+            verify_restored_artwork(archive, metadata)
         elif any(name.startswith('assets/') and name.endswith(('.html', '.js')) for name in archive.namelist()):
             raise SystemExit('Operational web assets must not be packaged into the native APK.')
     if candidate.stat().st_size > 25 * 1024 * 1024:
