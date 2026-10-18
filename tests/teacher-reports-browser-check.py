@@ -91,6 +91,8 @@ def main():
     markup = re.sub(r'<meta[^>]*http-equiv="Content-Security-Policy"[^>]*>', '', markup)
     markup = re.sub(r'<script.*?</script>|<link[^>]*>', '', markup, flags=re.S)
     errors = []
+    console_messages = []
+    completed = []
     count = 0
     with tempfile.TemporaryDirectory(prefix='navrang-report-downloads-') as folder, sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True, executable_path=os.getenv('NAVRANG_CHROMIUM', '/usr/bin/chromium'), args=['--no-sandbox', '--disable-dev-shm-usage'])
@@ -98,13 +100,14 @@ def main():
         context.route('**/*', lambda route: route.abort())
         page = context.new_page()
         page.on('pageerror', lambda error: errors.append(str(error)))
+        page.on('console', lambda message: console_messages.append(dict(type=message.type,text=message.text)))
         page.set_content(markup)
         page.evaluate('''f=>{
             const storage=new Map();Object.defineProperty(window,'sessionStorage',{value:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)}});
             sessionStorage.setItem('navrang-session',JSON.stringify({token:'a'.repeat(64),profile:f.profile}));
             window.fixtureEmpty=false;window.fixtureCalls=[];
             window.fetch=async(url,options)=>{
-                const {action,payload}=JSON.parse(options.body);fixtureCalls.push(action);let data;
+                const {action,payload}=JSON.parse(options.body);fixtureCalls.push({action,payload});let data;
                 if(action==='me')data=f.profile;
                 else if(action==='reports-summary')data={stats:f.summary};
                 else if(action==='reports-export')data={kind:payload.kind,rows:fixtureEmpty?[]:[f.row],count:fixtureEmpty?0:1,generatedAt:f.summary.generatedAt};
@@ -114,40 +117,56 @@ def main():
         }''', dict(profile=PROFILE, summary=SUMMARY, row=ROW))
         for script in ['live-core.js', 'config.js', 'client.js', 'report-export.js', 'reports.js']:
             page.evaluate((ASSETS / script).read_text())
+        # This focused harness does not load gate.js; expose its synthetic faculty
+        # destination so ordinary, actionable pointer clicks can be used.
+        page.evaluate("document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='view-reports');document.getElementById('intro').hidden=true")
         page.evaluate('NavrangReports.refresh()')
+        def receive(kind,fmt,empty):
+            context_info=dict(kind=kind,format=fmt,empty=empty)
+            try:
+                # Chromium LocalFrame::ShouldThrottleDownload permits ten burst
+                # requests per second. Use a realistic pace, never disable that guard.
+                # https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/core/frame/local_frame.cc
+                page.wait_for_timeout(500)
+                with page.expect_download() as waiting:
+                    page.locator('#report-'+fmt).click()
+                download=waiting.value
+                assert download.failure() is None
+                prefix='Navrang-Attendance-Summary-' if fmt=='pdf' else 'Navrang-'+kind+'-'
+                assert download.suggested_filename.startswith(prefix)
+                destination=(args.output or Path(folder))/('empty' if empty else 'populated')/download.suggested_filename
+                destination.parent.mkdir(parents=True,exist_ok=True)
+                download.save_as(destination)
+                if fmt!='pdf':verify(destination.read_bytes(),kind,fmt,empty)
+                else:
+                    pdf=PdfReader(destination);assert len(pdf.pages)==1
+                    text=pdf.pages[0].extract_text()
+                    for expected in ['Total admitted: 2','From registration master: 1','Organizer-confirmed admissions: 1','Exact admission time is unknown',STAMP]:assert expected in text,expected
+                    assert 'DEMO0001' not in text
+                completed.append(dict(**context_info,filename=download.suggested_filename,bytes=destination.stat().st_size))
+                print(json.dumps(dict(download=completed[-1],completed=len(completed))),flush=True)
+            except Exception as error:
+                target=args.output or Path(folder);target.mkdir(parents=True,exist_ok=True)
+                details=dict(**context_info,error=str(error),completed=completed,browser=browser.version,page_errors=errors,console=console_messages,
+                    status=page.locator('#report-status').text_content(),selected=page.locator('#report-kind').input_value(),
+                    button=dict(visible=page.locator('#report-'+fmt).is_visible(),disabled=page.locator('#report-'+fmt).is_disabled()),
+                    calls=page.evaluate('fixtureCalls'))
+                (target/'failure.json').write_text(json.dumps(details,indent=2))
+                page.screenshot(path=str(target/'failure.png'),full_page=True)
+                raise
         kinds = page.eval_on_selector_all('#report-kind option', 'options=>options.map(o=>o.value)')
         assert len(kinds) == 12
         for empty in [False, True]:
             page.evaluate('value=>fixtureEmpty=value', empty)
             for kind in kinds:
-                page.eval_on_selector('#report-kind', '(e,value)=>e.value=value', kind)
+                page.locator('#report-kind').select_option(kind)
                 for fmt in ['csv', 'xlsx']:
-                    with page.expect_download() as waiting:
-                        page.eval_on_selector('#report-' + fmt, 'e=>e.click()')
-                    download = waiting.value
-                    assert download.failure() is None
-                    assert download.suggested_filename.startswith('Navrang-' + kind + '-')
-                    destination = (args.output or Path(folder)) / ('empty' if empty else 'populated') / download.suggested_filename
-                    destination.parent.mkdir(parents=True, exist_ok=True)
-                    download.save_as(destination)
-                    verify(destination.read_bytes(), kind, fmt, empty)
-                    count += 1
-        with page.expect_download() as waiting:
-            page.eval_on_selector('#report-pdf', 'e=>e.click()')
-        download = waiting.value
-        assert download.failure() is None
-        destination = (args.output or Path(folder)) / download.suggested_filename
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        download.save_as(destination)
-        pdf = PdfReader(destination)
-        assert len(pdf.pages) == 1
-        text = pdf.pages[0].extract_text()
-        for expected in ['Total admitted: 2', 'From registration master: 1', 'Organizer-confirmed admissions: 1', 'Exact admission time is unknown', STAMP]:
-            assert expected in text, expected
-        assert 'DEMO0001' not in text
-        count += 1
+                    receive(kind,fmt,empty)
+                    count+=1
+        receive('summary','pdf',False)
+        count+=1
         assert not errors, errors
-        assert page.evaluate("fixtureCalls.filter(x=>x==='reports-export').length") == 48
+        assert page.evaluate("fixtureCalls.filter(x=>x.action==='reports-export').length") == 48
         # Native bridge gets byte-identical Base64 for every format, rather than text corruption.
         page.evaluate('''profile=>{window.Native={local:()=>JSON.stringify({ok:true,data:{profile}}),saveReport:(name,mime,content)=>{window.nativeFile={name,mime,content}}}}''', PROFILE)
         page.evaluate((ASSETS / 'client.js').read_text())

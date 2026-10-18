@@ -95,3 +95,13 @@ test('actual browser client creates a typed blob, clicks the filename and releas
 test('server-side revocation clears cached totals even before a profile event arrives',async()=>{
  for(const stage of ['me','reports-export']){const a=launch();try{await a.w.NavrangReports.refresh();a.setHandler(action=>{if(action!==stage)return;if(stage==='me'){a.setProfile({...faculty,reports:false},false);return{...faculty,reports:false};}throw Object.assign(Error('Reporting permission revoked.'),{status:403});});await a.$('report-csv').onclick();assert.equal(a.saves.length,0);assert.equal(a.$('report-stats').textContent,'');assert.equal(a.$('report-caveat').textContent,'');assert.equal(a.$('report-csv').disabled,true);assert.match(a.$('report-status').textContent,/access changed|revoked/);}finally{a.close()}}
 });
+
+
+test('browser download QA uses paced visible clicks without disabling browser guards',()=>{
+ const harness=fs.readFileSync(path.join(ROOT,'tests/teacher-reports-browser-check.py'),'utf8');
+ assert.match(harness,/page\.wait_for_timeout\(500\)/);
+ assert.match(harness,/page\.locator\('#report-'\+fmt\)\.click\(\)/);
+ assert.match(harness,/page\.locator\('#report-kind'\)\.select_option\(kind\)/);
+ assert.match(harness,/failure\.json/);assert.match(harness,/console_messages/);
+ assert.ok(!harness.includes('force=True'));assert.ok(!harness.includes('disable-ipc-flooding-protection'));
+});
