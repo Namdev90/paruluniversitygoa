@@ -77,3 +77,17 @@ dialog::backdrop{background:#08060cd9;backdrop-filter:none}dialog .eyebrow{paddi
 
 /* Preserve CTA centering when the shared tactile press state is active. */
 .intro .intro-skip:active{transform:translateX(50%) translateY(2px)}
+
+
+/* v0.7.7 reporting view */
+.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.report-stat{padding:14px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.report-stat span{color:var(--muted,#b5abbc);font-size:.76rem}
+.report-stat strong{font-size:1.5rem;font-variant-numeric:tabular-nums}
+.report-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.report-actions button{flex:1 1 125px}
+.report-member{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.report-member>div{display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere;min-width:0}
+.report-member small{color:var(--muted,#b5abbc)}
+.report-member button{flex-shrink:0}
+@media(max-width:360px){.report-member{flex-wrap:wrap}.report-member button{width:100%}}
