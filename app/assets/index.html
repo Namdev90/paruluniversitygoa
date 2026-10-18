@@ -23,9 +23,7 @@
 <div role="tabpanel" aria-labelledby="tab-updates" id="admin-updates" class="admin-tab panel" hidden><div class="status-grid"><span>Blocked <b id="stat-blocked">0</b></span><span>Duplicates <b id="stat-duplicates">0</b></span><span>Refused <b id="stat-refused">0</b></span><span>Last minute <b id="stat-minute">0</b></span></div><p class="micro-note">Import organizer CSV/XLSX files from this device. Confirmed entry history is preserved.</p><button id="import-registration" class="button secondary wide" hidden>Import CSV / XLSX</button><button id="add-registration" class="button primary wide">Add / edit registration</button><button id="password-open" class="button quiet wide">Change admin password</button></div></div></section>
 <section id="view-reports" class="view report-view" hidden>
 <div class="section-title"><p class="eyebrow">PARUL UNIVERSITY GOA · NAVRANG 2026</p><h2>Teacher Reports</h2><p class="micro-note">Read-only verified gate datasets. Access must be approved by the administrator.</p></div>
-<article class="panel"><div class="panel-heading"><h3>Attendance overview</h3><button id="report-refresh" class="button quiet" type="button">Refresh</button></div>
-<div class="report-grid" id="report-stats"></div><p id="report-status" class="micro-note" role="status">Loading server totals…</p><p id="report-caveat" class="micro-note"></p></article>
-<article class="panel"><h3>Download data</h3><label for="report-kind">Choose dataset</label><select id="report-kind">
+<article class="panel" id="report-downloads" aria-labelledby="report-downloads-title"><h3 id="report-downloads-title">Download data</h3><label for="report-kind">Choose dataset</label><select id="report-kind">
 <option value="all">All registrations</option><option value="attended">Confirmed attendees</option><option value="absent">Eligible with no verified entry</option>
 <option value="blocked">Ineligible / blocked</option><option value="issues">Server-recorded entry issues</option>
 <option value="resolved">Issues resolved by admission</option><option value="unresolved">Issues without verified entry</option>
@@ -35,6 +33,9 @@
 <button id="report-xlsx" class="button secondary" type="button" disabled>Download Excel</button>
 <button id="report-pdf" class="button quiet" type="button" disabled>PDF summary</button></div>
 <p class="micro-note">CSV and Excel contain the selected dataset. The PDF contains only the verified statistical summary. Exports are saved locally, never sent automatically.</p></article>
+<article class="panel" id="report-overview"><div class="panel-heading"><h3>Attendance overview</h3><button id="report-refresh" class="button quiet" type="button">Refresh</button></div>
+<div class="report-grid" id="report-stats"></div><p id="report-status" class="micro-note" role="status">Loading server totals…</p><p id="report-caveat" class="micro-note"></p></article>
+
 <article class="panel" id="report-manage" hidden><h3>Approve teacher accounts</h3>
 <p class="micro-note">Google-verified accounts only. Teachers get reporting access, not scanner or Help Desk permissions. Remove existing station access before enabling reports.</p>
 <div id="report-teachers"></div></article></section>

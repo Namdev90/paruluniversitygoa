@@ -205,3 +205,15 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 .list-footer .list-status{flex:1 1 150px;min-width:0}
 .list-footer .button{max-width:100%}
 #desk-review-dialog .update-actions .button{min-height:44px;padding:10px 16px;font-size:13px}
+
+/* Reports scroll within the fixed app shell; downloads lead on phones. */
+#view-reports{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-padding-block:12px;padding-bottom:16px}
+#view-reports>.section-title,#view-reports>.panel{flex-shrink:0}
+#report-downloads .report-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#report-downloads .report-actions button{min-height:46px}
+#report-downloads #report-pdf{grid-column:1/-1}
+@media(min-width:900px){
+ #view-reports>#report-overview{grid-column:1;grid-row:2}
+ #view-reports>#report-downloads{grid-column:2;grid-row:2}
+ #report-downloads .report-actions{display:flex}
+}

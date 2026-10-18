@@ -129,6 +129,20 @@ def run():
     reports.append(dict(control=label,**result))
     required_height=result['height']-.5 if minimum==0 else min(minimum,result['height'])
     if result['height']<minimum or result['visibleHeight']<required_height or result['visibleWidth']<min(43,result['width']) or not result['hitTarget']:failures.append(dict(unreachableControl=label,**result))
+   def measure_report_downloads(page):
+    page.wait_for_function("!document.getElementById('report-csv').disabled")
+    for selector in ('#report-kind','#report-csv','#report-xlsx','#report-pdf'):
+     measure_control(page,selector,'Reachable report '+selector,minimum=40)
+    result=page.evaluate("""()=>{
+     const view=document.getElementById('view-reports');
+     const controls=[document.querySelector('.topbar'),document.querySelector('.mobile-nav')];
+     const bounds=()=>controls.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]});
+     const before=bounds();view.scrollTop=view.scrollHeight;const offset=view.scrollTop;view.scrollTop=0;
+     return {before,after:bounds(),offset,height:view.clientHeight,scrollHeight:view.scrollHeight,downloadsFirst:!!(document.getElementById('report-downloads').compareDocumentPosition(document.getElementById('report-overview'))&Node.DOCUMENT_POSITION_FOLLOWING)};
+    }""")
+    reports.append(dict(reportDownloadLayout=result))
+    if not result['downloadsFirst'] or result['scrollHeight']>result['height']+1 and result['offset']<=0 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):
+     failures.append(dict(unreachableReportDownloads=result))
    def measure_scroll(page,view):
     result=page.evaluate("""view=>{
       const root=document.querySelector(view==='students'?'#admin-registrations':'#view-entries');
@@ -283,6 +297,7 @@ def run():
      page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
      measure(page,role,view,width,height)
+     if role=='faculty':measure_report_downloads(page)
      if role=='admin':measure_control(page,'#registration-count','Student list footer',minimum=0,scroll=False)
      if role=='login':
       page.evaluate("document.getElementById('google-browser-signin').hidden=false")
@@ -297,6 +312,7 @@ def run():
        else:page.locator(selector).click()
        page.wait_for_timeout(70);measure(page,role,target,width,height)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
+       if target=='reports':measure_report_downloads(page)
        if target=='desk':
         page.evaluate('window.fixtureDeskPopulated=true')
         page.locator('#desk-saved').click()
