@@ -199,3 +199,9 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 #view-desk.desk-list-mode .desk-workspace{flex:1 0 auto;overflow:visible}
 #view-desk.desk-list-mode .desk-list-panel{flex:1 0 auto}
 #view-desk.desk-list-mode #desk-records{flex:1 1 112px;min-height:112px}
+
+/* Status text and refresh remain reachable on narrow phones. */
+.list-footer{flex-wrap:wrap}
+.list-footer .list-status{flex:1 1 150px;min-width:0}
+.list-footer .button{max-width:100%}
+#desk-review-dialog .update-actions .button{min-height:44px;padding:10px 16px;font-size:13px}

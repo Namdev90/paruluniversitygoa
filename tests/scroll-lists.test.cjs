@@ -89,10 +89,14 @@ test('scan results display optional returned payment facts and actor ID without 
 test('saved Help Desk workspace retains a usable bounded records viewport and real-pointer QA',()=>{
  const css=asset('art/classic-restore.css');
  assert.match(css,/#view-desk\.desk-list-mode\{height:100%;overflow-y:auto\}/);
+ assert.match(css,/\.list-footer\{flex-wrap:wrap\}/);
+ assert.match(css,/\.list-footer \.list-status\{flex:1 1 150px;min-width:0\}/);
  assert.match(css,/#view-desk\.desk-list-mode \.desk-workspace\{flex:1 0 auto;overflow:visible\}/);
  assert.match(css,/#view-desk\.desk-list-mode #desk-records\{flex:1 1 112px;min-height:112px\}/);
  const harness=fs.readFileSync(path.join(__dirname,'responsive-browser-check.py'),'utf8');
  assert.match(harness,/collapsedHelpDeskList/);
+ assert.match(css,/#desk-review-dialog \.update-actions \.button\{min-height:44px/);
+ assert.match(harness,/'#desk-approve','Help Desk approve'/);
  assert.match(harness,/page\.locator\('#desk-records \.button'\)\.first\.click\(\)/);
  assert.ok(!harness.includes('force=True'),'pointer interception must fail the render check');
 });

@@ -306,6 +306,8 @@ def run():
         # Real pointer interaction catches clipping/overlays that DOM visibility misses.
         page.locator('#desk-records .button').first.click()
         page.locator('#desk-review-dialog').wait_for(state='visible')
+        measure_control(page,'#desk-approve','Help Desk approve')
+        measure_control(page,'#desk-reject','Help Desk reject')
         if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-desk-review-{width}.png'))
         page.locator('#desk-review-close').click()
         page.locator('#desk-new').click()
