@@ -136,8 +136,8 @@ begin
  elsif kind='activity' then
   select coalesce(jsonb_agg(jsonb_build_object('Hour IST',x.hour_ist,'Checker',x.checker,'Confirmed entries',x.entry_count) order by x.hour_ist,x.checker),'[]'::jsonb) into rows
   from (select to_char(a.at at time zone 'Asia/Kolkata','YYYY-MM-DD HH24:00') hour_ist,
-   coalesce(c.name,'Administrator') checker,count(*) entry_count
-   from navrang_private.admissions a left join navrang_private.checkers c on c.id=a.checker_id
+   coalesce(ck.name,'Administrator') checker,count(*) entry_count
+   from navrang_private.admissions a left join navrang_private.checkers ck on ck.id=a.checker_id
    where a.event_id='O9KL3' and not a.test_fixture
    group by 1,2) x;
  elsif kind in ('helpdesk','pending') then
