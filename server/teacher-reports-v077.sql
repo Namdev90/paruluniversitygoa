@@ -41,7 +41,7 @@ begin
   select coalesce(g.enabled,false) into granted from navrang_private.report_grants g where g.checker_id=c.id;
  end if;
  permitted := admin_ok or (coalesce(c.active,false) and c.method='google' and
-   c.google_id is not null and coalesce(granted,false) and
+   c.google_id is not null and not c.scanner_enabled and not c.helpdesk_enabled and coalesce(granted,false) and
    (c.access_expires_at is null or c.access_expires_at>now()));
  if p_action='access' then
   return jsonb_build_object('allowed',permitted,'role',case when admin_ok then 'admin' when permitted then 'teacher' else 'none' end);
@@ -67,10 +67,10 @@ begin
    return jsonb_build_object('error','Teacher must sign in with a verified Google account first.','status',400);
   end if;
   if (p->>'enabled')::boolean then
-   if c.scanner_enabled or c.helpdesk_enabled or c.selected_station in ('checker','helpdesk') then
+   if c.scanner_enabled or c.helpdesk_enabled then
     return jsonb_build_object('error','Disable this account’s Checker/Help Desk station before granting teacher-only reports.','status',409);
    end if;
-   update navrang_private.checkers set active=true where id=c.id;
+   update navrang_private.checkers set active=true,selected_station='',requested_role='' where id=c.id;
   end if;
   insert into navrang_private.report_grants(checker_id,enabled,granted_at,granted_by)
    values(c.id,(p->>'enabled')::boolean,now(),'admin')
