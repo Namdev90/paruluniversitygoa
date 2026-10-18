@@ -15,3 +15,5 @@ Codex code and security reviews completed on `4a077f8775b2bfc44ac7042d63ab6ec170
 | Classic-host replacements may silently miss | Require each structural source pattern exactly once; allow multiple qualified outer-instance references. Generator regressions cover missing/ambiguous back-navigation hooks and verify no partial host is written. |
 
 This release does not modify deployed SQL, station permissions, historical corrections, admissions, registrations, staff grants, OAuth configuration, hosted portal/backend deployment or paid services. Google branding remains deferred.
+
+The subsequent Codex review on `26462bc981e9b64a70095392c6d23e024dee99f4` found that provider failures could leave Google-only staff without the explicitly offered browser route. The restored native login now exposes a separate browser-sign-in control and JavaScript bridge into the existing PKCE flow, with debug isolation and cancellation/generation fencing against a concurrent Credential Manager attempt. Client/control regressions cover its independent dispatch. The earlier signed candidate was retired before publication; its bytes are not the final release.

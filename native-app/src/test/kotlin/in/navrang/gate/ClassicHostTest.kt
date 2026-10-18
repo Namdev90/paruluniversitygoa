@@ -47,6 +47,12 @@ class ClassicHostTest {
         assertTrue(activity is ComponentActivity)
         assertTrue(activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
         assertEquals(!BuildConfig.DEBUG, GateUpdater.automatic(activity))
+        if (BuildConfig.DEBUG) {
+            MainActivity::class.java.getDeclaredMethod("browserGoogleLogin").apply {
+                isAccessible = true
+            }.invoke(activity)
+            assertNull(org.robolectric.Shadows.shadowOf(activity).nextStartedActivity)
+        }
         controller.destroy()
     }
 

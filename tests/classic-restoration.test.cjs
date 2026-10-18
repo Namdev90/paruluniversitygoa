@@ -80,3 +80,9 @@ test('classic host generation rejects missing or ambiguous Android back-navigati
 test('packaged launcher verification rejects substituted artwork despite a correct web logo',()=>{
  require('node:child_process').execFileSync('python3',['tests/restoration-artwork-check.py'],{cwd:root,stdio:'pipe',timeout:15000});
 });
+
+test('browser fallback client invokes the native PKCE bridge without invoking Credential Manager',async()=>{
+ const dom=new JSDOM('',{runScripts:'outside-only',url:'https://fixture.invalid/'});let browser=0;const w=dom.window;
+ w.Native={local:()=>JSON.stringify({ok:true,data:{profile:null}}),googleBrowserLogin:()=>browser++,googleLogin:()=>{throw Error('Credential Manager must not run')}};
+ try{for(const name of ['live-core.js','config.js','client.js'])w.eval(read('app/assets/'+name));await w.GateClient.googleBrowserLogin();assert.equal(browser,1)}finally{dom.window.close()}
+});

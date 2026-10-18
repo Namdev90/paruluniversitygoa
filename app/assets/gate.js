@@ -148,6 +148,7 @@
  document.addEventListener('click',e=>{if(e.target.closest('button,summary'))feedback('tap')});
  $('account').onclick=()=>setView('account');$('scan').onclick=()=>{if(!held&&canScan()&&!needsName(C.profile()))C.scan()};
  $('show-admin-login').onclick=()=>{$('signin-panel').hidden=true;$('admin-signin').hidden=false};$('show-checker-login').onclick=()=>{$('admin-signin').hidden=true;$('signin-panel').hidden=false};
+ $('google-browser-signin').hidden=!C.native;$('google-browser-signin').onclick=()=>busy($('google-browser-signin'),()=>C.googleBrowserLogin());
  $('google-signin').onclick=()=>busy($('google-signin'),()=>C.googleLogin());$('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
  function clearSessionView(){
   uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;model=emptyModel();adminPaint='';selected=staffSelected=null;page=entryPage=recentPage=crewPage=0;queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);

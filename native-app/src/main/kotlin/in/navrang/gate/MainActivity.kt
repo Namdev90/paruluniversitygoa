@@ -149,6 +149,17 @@ class MainActivity : ClassicActivity() {
 
     override fun scannerActivity() = ClassicScannerActivity::class.java
 
+    override fun browserGoogleLogin() {
+        runOnUiThread {
+            if (BuildConfig.DEBUG) {
+                nativeError("Google sign-in is disabled in the isolated internal build.")
+                return@runOnUiThread
+            }
+            credentialJob?.cancel()
+            super.googleLogin()
+        }
+    }
+
     override fun googleLogin() {
         runOnUiThread {
             if (credentialJob?.isActive == true) return@runOnUiThread
@@ -195,7 +206,7 @@ class MainActivity : ClassicActivity() {
                     throw cancelled
                 } catch (_: Exception) {
                     nativeError(
-                        "Google sign-in could not complete. Retry, or use your assigned staff code."
+                        "Google sign-in could not complete. Try browser sign-in or your assigned staff code."
                     )
                 }
             }

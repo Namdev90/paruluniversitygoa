@@ -22,6 +22,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  protected Class<? extends Activity> scannerActivity(){return ScanActivity.class;}
  protected void clearCredentialProvider(){}
  protected boolean updatesEnabled(){return true;}
+ protected void browserGoogleLogin(){googleLogin();}
  protected void importRegistrations(){error("Use the updated Android app to import registration files.");}
  protected final void nativeNotice(String text){try{event(new JSONObject().put("type","notice").put("data",new JSONObject().put("message",text)));}catch(Exception ignored){}}
  protected final void nativeError(String text){error(text);}
@@ -215,6 +216,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   @JavascriptInterface public void importRegistrations(){runOnUiThread(()->MainActivity.this.importRegistrations());}
   @JavascriptInterface public void scan(){runOnUiThread(()->beginScan());}
   @JavascriptInterface public void googleLogin(){googleLoginFromBridge();}
+  @JavascriptInterface public void googleBrowserLogin(){runOnUiThread(()->MainActivity.this.browserGoogleLogin());}
   private void googleLoginFromBridge(){MainActivity.this.googleLogin();}
   @JavascriptInterface public void feedback(String kind,boolean enabled){
    if(!java.util.Arrays.asList("intro","stop-intro","tap","transition","success","pending","issue","scan","duplicate","invalid","close").contains(kind))return;
