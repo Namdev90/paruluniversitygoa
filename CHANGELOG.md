@@ -1,29 +1,15 @@
 # Changelog
 
-## Native Compose source checkpoint — no release version allocated
+## 0.7.7 — native Compose release · Android code 15 · 18 October 2026
 
-- Added native Compose screens for all N01–N18 workflows, CameraX scanning, Credential Manager and secure token exchange, RAM-only state, bounded native imports/exports, and native account/update controls.
-- Students and Entry log now scroll inside bounded lists with fixed search and pagination; the separate portal has the same stable-control correction.
-- Full-shell regression fixes preserve row space at 640×360 with doubled text, restore wide-screen Account access, and keep native form actions stable with explicit pending-save locks. Native host coverage now includes 47 passing tests and synthetic full-shell screenshots.
-- Integrated PR #4's workbook ZIP bounds and repaired remaining report-expiry, retained-registration, provenance and checkout-credential review findings.
-- Inspected authenticated CodeRabbit scans and architecture review; bounded native ZIP directory payloads and retired the already-applied historical reconciliation script with an unconditional replay guard. No production records changed.
-- Google branding is deferred at the owner's request. Credential Manager/OAuth device validation, original-key and release/paid-domain approvals remain required.
-- Added synthetic Compose/domain checks, a reproducible Gradle build and a fail-closed native release gate. Existing public APKs and production data are unchanged.
-- This is source under review. [Parity/evidence](docs/NATIVE-PARITY.md) and [audit/continuation](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) list Google, device, backend and publication work still required.
-
-All retained APK versions, reconstructed from the repository history and their embedded Android manifests. The release date below is the archive commit date in IST. An archived version is not a recommendation to install it.
-
-## Unreleased — coordinated 0.7.7 candidate
-
-**Not an APK release.** Keep version 0.7.7 / code 15 only while unused; the original signing environment must recheck the public channel before assigning it.
-
-- Installer lifecycle recovery from merged [PR #3](https://github.com/Namdev90/paruluniversitygoa/pull/3), including process recreation, reboot, interrupted confirmation and scan guarding.
-- Faculty report permissions, administrator approval/revocation, twelve data views, CSV/XLSX downloads and a PDF summary.
-- Organizer-confirmed missing-registration admissions retain their source, unknown actual entry time, missing-name status and note; no future scan bypass.
-- Official brochure-derived Navrang marks, institutional wordmarks, separate peer login choices and highlighted Administration.
-- Responsive mobile/tablet/desktop layouts, subtler dancer motion, reduced-motion support, and readable original white institutional lettering.
-- Web-packaging dependency repair; fresh-bootstrap report RPC; report downloads remain available during teacher-management outages; truthful PDF attendance sources.
-- Visual README, full feature catalogue, archive inventory and original-signing release handoff.
+- Rebuilt N01–N18 workflows with native Compose/Material 3, CameraX scanning, Credential Manager and secure session exchange.
+- Students and Entry log have bounded scrollable lists with fixed search/pagination controls; compact large-text and wide navigation regressions are covered.
+- Preserved original signing identity, encrypted-session compatibility, RAM-only private data, role authority, updater and installer recovery.
+- Added bounded native imports, twelve report datasets and CSV/XLSX/PDF exports; corrected lifecycle, sign-out, profile ordering, registration validation and export races identified in review.
+- Original-key-signed APK: 19,823,096 bytes; SHA-256 `cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a`.
+- Verified 49 native host tests, 165 Node passes (3 skips), 313 Java checks, SQLite, 7 publication-policy and 11 native-gate checks. Release assembly/lint and all three CI workflows passed.
+- Google branding is deferred. The owner explicitly waived remaining device/sign-in, upgrade/reboot, performance and backend/portal acceptance evidence; those checks remain unverified. No production database, hosted portal, OAuth settings or paid domain was changed. All fourteen historical APKs are preserved.
+- [Exact release, review and waiver record](docs/NATIVE-RELEASE-0.7.7.md).
 
 ## Published archive
 

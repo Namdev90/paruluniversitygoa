@@ -1,6 +1,6 @@
 # Navrang Gate 0.7.7 — native release record
 
-Candidate: Android version code 15, package `in.navrang.gate`, minimum API 24, target API 37. Publication is pending signed artifact verification and the normal PR merge. The public channel remains authoritative.
+Release: Android version code 15, package `in.navrang.gate`, minimum API 24, target API 37. The signed APK and exact-byte metadata are published together by PR #7. The public channel remains authoritative.
 
 ## Owner instruction and verification waiver
 
@@ -12,7 +12,7 @@ The original signing key, actual APK certificate/package/version/hash checks, st
 
 ## Automated verification
 
-- Earlier clean release assembly and release lint passed in 2m25s at `3698921`; the final original-key build is repeated on the source pinned above before publication. At the final source, 49 native host tests passed with no failures/skips (34 domain, 11 workflow, 4 stable-list tests).
+- Release assembly, native tests and release lint passed on the final pinned source (final repeat: 29 seconds). The 49 native host tests passed with no failures/skips (34 domain, 11 workflow, 4 stable-list tests).
 - Node: 165 passed, 3 skipped. Legacy Java harnesses: 313 checks passed, including 123 session and 118 updater checks. SQLite rollback/privacy checks passed.
 - Seven signer/publication policy checks and eleven native gate/waiver checks passed. Wrong keys/packages/versions, archive replacement, changed or dirty source and reuse of the waiver remain rejected.
 - Earlier source portal run: 120 synthetic checks passed across eight viewports. A new local attempt could not launch its missing Chromium binary; this is not counted as a pass. Latest CI results are checked before merge.
@@ -28,7 +28,15 @@ The optional report-query index remains a follow-up; no database migration was e
 
 ## Publication
 
-Pending original-key signing, exact-byte metadata preparation, branch checks, normal merge and an independent download of the published bytes. All fourteen earlier APKs must remain unchanged.
+Original-key signing and independent local APK verification passed. Exact-byte publication metadata was prepared using the established release tool. All fourteen earlier APKs remain unchanged. Public download verification is recorded after merge.
+
+- APK: `downloads/Navrang-Gate-0.7.7.apk`
+- Build commit embedded in APK: `2ce2b547aa133b092ccec26d9de57c58635713dd`
+- Size: 19,823,096 bytes
+- SHA-256: `cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a`
+- Signer SHA-256: `0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce`
+- Package/version: `in.navrang.gate`, 0.7.7/code 15; minimum API 24, target API 37
+- All three final-source CI workflows passed: native `39127349039`, responsive `39127349054`, general `39127349074`.
 
 
 Follow-up review: identity reads now use request ordering so an older asynchronous result cannot overwrite a newer profile, and sign-out retains the original revocation token in RAM until durable clearing succeeds. The legacy WebView export callback finding does not affect this native APK, whose excluded legacy activity is not packaged; native exports refresh `me` after the picker. Any separately approved legacy release must address that legacy callback first. The review's ancestry warning evaluated a synthetic squash commit; this release uses a normal merge retaining the verified source ancestor, and the successful real-branch signing gate is retained without a squash exception.

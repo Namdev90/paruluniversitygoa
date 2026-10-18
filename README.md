@@ -5,15 +5,17 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.6.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [Release handoff](docs/RELEASE-HANDOFF-2026-10-18.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.7.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [Release handoff](docs/RELEASE-HANDOFF-2026-10-18.md)
 
 </div>
 
-> **Release status:** the public APK is **0.7.6 · Android code 14**. The visuals and Faculty Reports below show the **unreleased coordinated 0.7.7 candidate**, not an already downloadable update. Installer lifecycle PR #3 is merged source. The original signing key, final build and device validation remain required before publication. [`updates/latest.json`](updates/latest.json) is the actual update channel.
+> **Release status:** **0.7.7 · Android code 15** is the native Compose release. The APK uses the original signing identity and the existing update channel. Google branding is deferred at the owner's request. Real-device sign-in, upgrade/reboot, performance and hosted backend/portal acceptance were skipped under the owner's explicit release instruction and remain unverified. See [the release record](docs/NATIVE-RELEASE-0.7.7.md).
 
-## Native Compose migration — source only
+## Native Compose application
 
-The isolated native rebuild is in `native-app/`. [Implementation and history audit](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) · [N01–N18 parity and verification](docs/NATIVE-PARITY.md). Credential Manager, native workflows and independently scrollable lists are implemented in source. The owner deferred Google branding on 18 October; actual sign-in/device acceptance and production publication remain gated. No native APK has been released. The candidate previews below document the retained browser/legacy presentation.
+All N01–N18 workflows use native Kotlin/Compose, Material 3, CameraX and Credential Manager. Students and Entry log scroll independently while search and pagination stay fixed. Existing session security, role checks and installer recovery remain in place. [Implementation/history audit](docs/NATIVE-IMPLEMENTATION-2026-10-18.md) · [Parity/evidence](docs/NATIVE-PARITY.md).
+
+The screenshots below are synthetic browser/legacy previews. They do not show the new native application.
 
 ## A look at the work
 

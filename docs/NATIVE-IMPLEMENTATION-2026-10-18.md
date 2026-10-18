@@ -1,6 +1,6 @@
 # Native Compose source checkpoint — 18 October 2026
 
-This branch implements the master handoff as native Kotlin/Compose source. It is **not a production release or completed device certification**. Start with [the parity matrix](NATIVE-PARITY.md) and [the machine-readable release hold](native-release-evidence.json).
+The master handoff is implemented in the native Compose 0.7.7/code 15 release. [Release receipt and owner waiver](NATIVE-RELEASE-0.7.7.md) records the exact artifact and outstanding acceptance evidence. The audit below preserves earlier checkpoints; their former release holds were superseded by the owner’s 18 October release instruction. Device certification remains unverified.
 
 ## Reconciled history
 
@@ -94,3 +94,7 @@ The follow-up continuation added eleven full-shell/form Compose cases and repair
 The parity matrix identifies evidence precisely. Before release, finish dedicated synthetic backend integration and the independent review of the current native source; exercise API 24 and current Android devices, actual OAuth package/certificate association, real account selection and callback continuity, camera permission/lifecycle and all outcome transitions, Help Desk races, export revocation, dynamic/fallback themes, TalkBack/keyboard/IME/resizing, and original-key installer upgrade/cancel/reboot/process-death/missing-file fences. Record measured startup/latency/jank/memory/battery outcomes on identified hardware. No physical device or accelerated emulator was attached in this workspace. Authenticated CodeRabbit inspection is now complete; Google branding work is deferred as directed above.
 
 Review and coordinate the additive backend changes against the then-current deployed definitions. Deploy the separately tested portal only when its approval/release conditions are satisfied. Complete N01–N18 and the external gates with real evidence before marking any row RELEASE-READY. A paid authentication domain is optional and requires a separate cost/ownership/migration approval.
+
+## Final release checkpoint
+
+Native runtime source `38cc5a591091272939c9d85d08d8cc847a0a849e` was built with evidence commit `2ce2b547aa133b092ccec26d9de57c58635713dd`. Release assembly, 49 native host tests and release lint passed; all three GitHub workflows passed. The original-key-signed 0.7.7/code 15 APK and matching manifest/checksum are published together through PR #7. The owner explicitly waived remaining device/sign-in, upgrade/reboot, performance and coordinated backend/portal acceptance on 18 October at 17:02:35 IST. Google branding remains deferred. The original signer, artifact identity, archive immutability, data/security and paid-domain boundaries were retained. See the release receipt for exact bytes and public verification.
