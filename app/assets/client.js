@@ -14,7 +14,7 @@
  function profile(){if(native){if(!nativeProfileLoaded)refreshNativeProfile();return nativeProfile?JSON.parse(nativeProfile):null;}try{return JSON.parse(sessionStorage.getItem('navrang-session')||'null')?.profile||null}catch{return null}}
  function auth(){try{return JSON.parse(sessionStorage.getItem('navrang-session')||'null')}catch{return null}}
  function actor(p){return p?.role==='admin'?'admin':p?.checkerId||''}
- const accessScope=p=>JSON.stringify(p?.role==='admin'?['admin',!!p.active]:[p?.role,p?.checkerId,!!p?.active,p?.scanner!==false,!!p?.helpdesk,p?.station,p?.nameConfirmed!==false]);
+ const accessScope=p=>JSON.stringify(p?.role==='admin'?['admin',!!p.active]:[p?.role,p?.checkerId,!!p?.active,p?.scanner!==false,!!p?.helpdesk,p?.station,p?.nameConfirmed!==false,p?.reports===true]);
  const canScan=p=>!!p?.active&&(p.role==='admin'||p.role==='checker'&&p.scanner!==false&&(p.station==null||p.station==='checker')&&(p.method!=='google'||p.nameConfirmed!==false));
  root.onApiResponse=raw=>{try{const r=JSON.parse(raw),cb=callbacks.get(r.id);if(cb){if(native)refreshNativeProfile();callbacks.delete(r.id);clearTimeout(cb.timer);r.body.ok?cb.resolve(r.body):cb.reject(fail(r.body.error||'Request failed.',r.status));}}catch{}};
  root.onGateEvent=raw=>{try{const e=JSON.parse(raw);if(e.type==='auth')authGeneration++;if(native&&(e.type==='auth'||e.type==='profile'))refreshNativeProfile();emit(e.type,e.data)}catch{}};
@@ -101,6 +101,17 @@
   try{r=await fetch(config.project+'/auth/v1/token?grant_type=pkce',{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({auth_code:code,code_verifier:verifier}),signal:controller.signal,cache:'no-store'});data=await r.json();}catch{throw fail('Google sign-in was interrupted. Tap Continue with Google to try again.');}finally{clearTimeout(timer)}
   if(generation!==authGeneration)throw fail('Sign-in changed while Google was connecting. Keep using your current account.',409);if(!r.ok||!data.access_token)throw fail('Google sign-in could not be exchanged. Tap Continue with Google to try again.');await api('google-login',{accessToken:data.access_token});emit('auth',profile());
  }
+ function saveReport(name,mime,bytes){
+  if(!(bytes instanceof Uint8Array))throw fail('Invalid report file.');
+  if(bytes.length>12*1024*1024)throw fail('This report is too large to save from the app.');
+  if(native){
+   if(typeof Native.saveReport!=='function')throw fail('Please install Navrang Gate 0.7.7 to download reports.');
+   let binary='';for(let i=0;i<bytes.length;i+=16384)binary+=String.fromCharCode(...bytes.subarray(i,i+16384));
+   Native.saveReport(name,mime,btoa(binary));return;
+  }
+  const blob=new Blob([bytes],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }
  function save(name,mime,content){
   if(native&&typeof Native.save==='function'){Native.save(name,mime,content);return}
   const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -120,5 +131,5 @@
   }catch{}
  }
  function update(action='status',enabled=true){if(native&&typeof Native.update==='function')return JSON.parse(Native.update(action,enabled));return{currentVersion:'0.7.6',available:false,ready:false,automatic:false,notifications:true,message:'App updates are managed in the Android app.'}}
- root.GateClient={copy,feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
+ root.GateClient={copy,feedback,update,destination,readiness,native,api,local,sync,submit:queue,profile,signOut,googleLogin,finishGoogle,save,saveReport,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);
