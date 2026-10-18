@@ -18,6 +18,7 @@ public final class PrepareBrands {
   Files.createDirectories(path.getParent());if(!ImageIO.write(image,"png",path.toFile()))throw new IllegalStateException("PNG encoder unavailable");
  }
  public static void main(String[] args)throws Exception{
+  System.setProperty("java.awt.headless","true");
   if(args.length<1||args.length>2)throw new IllegalArgumentException("Usage: java tools/PrepareBrands.java SOURCE_ROOT [OUTPUT_ROOT]");
   Path root=Paths.get(args[0]).toAbsolutePath().normalize(),output=args.length==2?Paths.get(args[1]).toAbsolutePath().normalize():root;
   Path source=root.resolve("app/assets/art/event-poster.jpg");byte[] bytes=Files.readAllBytes(source);

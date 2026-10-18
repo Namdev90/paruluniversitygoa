@@ -52,14 +52,16 @@
  }
  function pdf(summary){
   const metrics=[['Registered',summary.registered],['Eligible',summary.eligible],['Blocked',summary.blocked],
-   ['Confirmed attendees',summary.attended],['Eligible with no verified entry',summary.noShow],
+   ['Total admitted',summary.attended],['From registration master',summary.registeredAttended],['Organizer-confirmed admissions',summary.organizerConfirmed],['Eligible with no verified entry',summary.noShow],
    ['Server issue attempts',summary.serverIssues],['Tickets with server issues',summary.issueTickets],
    ['Duplicate attempts',summary.duplicateAttempts],['Pending Help Desk cases',summary.pendingHelpDesk]];
   const esc=v=>text(v).replace(/[^\x20-\x7e]/g,'?').replace(/[\\()]/g,m=>'\\'+m);
   const lines=['Navrang 2026 - Attendance summary','Parul University Goa',''];
   for(const [label,value] of metrics)lines.push(label+': '+text(value??'Unverified'));
   lines.push('','Generated UTC: '+text(summary.generatedAt||new Date().toISOString()),'',
-   'Attendance numbers use server-confirmed admission receipts.',
+   'Attendance includes scanner receipts and organizer confirmations.',
+   'Admitted - registration data missing: organizer-confirmed cases.',
+   'Exact admission time is unknown for those corrections.',
    'No verified entry does NOT prove non-attendance.',
    'Offline/unsubmitted attempts cannot be counted as gate issues.',
    'Use the CSV/XLSX dataset export for participant-level details.');

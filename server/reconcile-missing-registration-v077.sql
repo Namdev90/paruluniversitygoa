@@ -23,6 +23,12 @@ begin
   and at < '2026-10-17T18:30:00Z'::timestamptz
   and at <= '2026-10-18T05:20:46Z'::timestamptz;
  if candidate_count<>expected_count then raise exception 'Expected % missing-data tickets, found %. Review before proceeding.',expected_count,candidate_count;end if;
+ -- A later organizer import needs a reviewed match, not an invented missing-data receipt.
+ if exists(select 1 from navrang_private.attempts x join navrang_private.tickets t on t.id=x.ticket_id
+  where not x.test_fixture and x.response->>'code'='not_found'
+   and x.at >= '2026-10-16T18:30:00Z'::timestamptz and x.at < '2026-10-17T18:30:00Z'::timestamptz
+   and not exists(select 1 from navrang_private.admissions a where a.event_id='O9KL3' and a.ticket_id=x.ticket_id))
+ then raise exception 'Canonical registration now exists for a missing-data candidate. Review the match before reconciliation.';end if;
  select md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) into tickets_before from navrang_private.tickets t;
  select md5(coalesce(jsonb_agg(to_jsonb(t) order by t.actor,t.request_id)::text,'')) into attempts_before from navrang_private.attempts t;
  select count(*) into confirmations_before from navrang_private.admissions where event_id='O9KL3' and not test_fixture;

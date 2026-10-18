@@ -39,7 +39,13 @@
  async function refresh(){
   if(!permitted()){clear();return;}
   const seq=++generation,who=identity();loadedBy=who;status('Loading the latest server totals…');enableDownloads(false);$('report-manage').hidden=true;
-  try{const r=await C.api('reports-summary');if(seq!==generation||who!==identity()||!permitted())return;summary=r.stats;renderSummary(summary);status('Live report ready. Select a dataset to download.');if(C.profile().role==='admin')await loadMembers(seq,who);}
+  try{const r=await C.api('reports-summary');if(seq!==generation||who!==identity()||!permitted())return;summary=r.stats;renderSummary(summary);status('Live report ready. Select a dataset to download.');if(C.profile().role==='admin'){
+   try{await loadMembers(seq,who);}
+   catch(err){if(seq===generation&&who===identity()&&C.profile()?.role==='admin'){
+    $('report-manage').hidden=false;
+    $('report-teachers').replaceChildren(text('p','Teacher management unavailable. Attendance downloads remain ready. Use Refresh to retry.','micro-note'));
+   }}
+  }}
   catch(err){if(seq===generation){status(err.message);enableDownloads(false);}}
  }
  async function download(format){
