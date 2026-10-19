@@ -22,6 +22,16 @@ import kotlinx.coroutines.withContext
 /** Original Navrang interface, with the current native sign-in and scanner underneath. */
 class MainActivity : ClassicActivity() {
     private var credentialJob: Job? = null
+    private var credentialOperation = ""
+
+    override fun googleLoginForOperation(operationId: String) {
+        if (credentialJob?.isActive == true) {
+            nativeAuthState(operationId, "failed", -1)
+            return
+        }
+        credentialOperation = operationId
+        googleLogin()
+    }
 
     private data class ImportIdentity(val generation: Long, val token: String)
 
@@ -148,7 +158,9 @@ class MainActivity : ClassicActivity() {
 
     override fun browserGoogleLogin() {
         runOnUiThread {
+            val operation = credentialOperation
             if (BuildConfig.DEBUG) {
+                nativeAuthState(operation, "failed", -1)
                 nativeError("Google sign-in is disabled in the isolated internal build.")
                 return@runOnUiThread
             }
@@ -160,14 +172,19 @@ class MainActivity : ClassicActivity() {
     override fun googleLogin() {
         runOnUiThread {
             if (credentialJob?.isActive == true) return@runOnUiThread
+            val operation = credentialOperation
             if (BuildConfig.DEBUG) {
+                nativeAuthState(operation, "failed", -1)
                 nativeError("Google sign-in is disabled in the isolated internal build.")
                 return@runOnUiThread
             }
             credentialJob = lifecycleScope.launch {
+                var authGeneration = -1L
                 try {
                     val repo = GateRepository.open(this@MainActivity)
                     val generation = repo.beginGoogle()
+                    authGeneration = generation
+                    nativeAuthState(operation, "pending", generation)
                     val nonce = Pkce.verifier()
                     val hashed =
                         MessageDigest.getInstance("SHA-256")
@@ -195,13 +212,17 @@ class MainActivity : ClassicActivity() {
                     )
                     val token = GoogleIdTokenCredential.createFrom(credential.data).idToken
                     repo.googleIdToken(token, nonce, generation)
+                    nativeAuthState(operation, "completed", generation)
                 } catch (_: GetCredentialCancellationException) {
-                    nativeError("Google sign-in cancelled. You can try again.")
+                    nativeAuthState(operation, "cancelled", authGeneration)
+                    nativeError("Google sign-in cancelled. You can try again or use browser sign-in.")
                 } catch (_: NoCredentialException) {
-                    super.googleLogin()
+                    nativeAuthState(operation, "failed", authGeneration)
+                    nativeError("No Google credential is available. Try browser sign-in.")
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
+                    nativeAuthState(operation, "failed", authGeneration)
                     nativeError(
                         "Google sign-in could not complete. Try browser sign-in or your assigned staff code."
                     )

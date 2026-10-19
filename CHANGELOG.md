@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0 — Android code 18 · 19 October 2026
+
+- Approved combined Navrang/Parul University artwork and maroon styling, staged sign-in, confirmation before sign-out and reduced-motion-aware screen transitions.
+- Consolidated Reports with reachable Downloads, measured metric/teacher pagination and explicit large-text accessibility dialogs.
+- Guarded local report-save completion, cancellation and failure; browser downloads report initiation. Uses the existing repaired reporting backend without a new deployment.
+- New messaging, voice messages and live broadcasts are deferred by the owner. Existing APK-update notifications are retained.
+- Original-key-signed APK: 23,634,731 bytes; SHA-256 `8dd7423a67b69fa882a9115f5f1313fe930dfe6ec12c26ca62ff8b1215243fe4`. All seventeen previous APKs are preserved unchanged. Physical checks remain SKIPPED_BY_OWNER.
+- Fresh local build: 102 Android tests passed; release lint 0 errors/37 warnings. Source CI passed 704 browser cases. [Signed artifact and source evidence](docs/RESTORATION-RELEASE-0.8.0.md).
+
 ## 0.7.9 — Android code 17 · 19 October 2026
 
 - Faithful transparent owner-supplied wordmark, deeper burgundy/gold surfaces, tactile admin tabs and non-overlapping launch animation with an immediate skip action.

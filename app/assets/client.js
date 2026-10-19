@@ -3,6 +3,9 @@
  const native=!!(root.Native&&typeof root.Native.local==='function'),L=root.NavrangLive,config=root.NavrangConfig;
  const callbacks=new Map(),listeners=new Set();let initPromise,draining=false,automaticRegion=false,authGeneration=0,profileSequence=0,appliedProfile=0,syncSequence=0,appliedStaffSync=0;
  let nativeProfileLoaded=false,nativeProfile=null;
+ const pendingSaves=new Map();
+ function invalidateSaves(){for(const [id,save]of pendingSaves)if(save.generation!==authGeneration||save.scope!==accessScope(profile())){pendingSaves.delete(id);save.reject(fail('Sign-in or reporting access changed during save.',409));}}
+ function finishSave(data){const save=pendingSaves.get(data?.operationId);if(!save||!['saved','cancelled','failed'].includes(data.outcome))return;invalidateSaves();if(!pendingSaves.has(data.operationId))return;pendingSaves.delete(data.operationId);save.resolve({operationId:data.operationId,outcome:data.outcome});}
  const emit=(type,data)=>{for(const f of listeners)f({type,data});};
  function fail(message,status){const e=Error(message);e.status=status||0;return e;}
  function refreshNativeProfile(){
@@ -17,7 +20,7 @@
  const accessScope=p=>JSON.stringify(p?.role==='admin'?['admin',!!p.active]:[p?.role,p?.checkerId,!!p?.active,p?.scanner!==false,!!p?.helpdesk,p?.station,p?.nameConfirmed!==false,p?.reports===true]);
  const canScan=p=>!!p?.active&&(p.role==='admin'||p.role==='checker'&&p.scanner!==false&&(p.station==null||p.station==='checker')&&(p.method!=='google'||p.nameConfirmed!==false));
  root.onApiResponse=raw=>{try{const r=JSON.parse(raw),cb=callbacks.get(r.id);if(cb){if(native)refreshNativeProfile();callbacks.delete(r.id);clearTimeout(cb.timer);r.body.ok?cb.resolve(r.body):cb.reject(fail(r.body.error||'Request failed.',r.status));}}catch{}};
- root.onGateEvent=raw=>{try{const e=JSON.parse(raw);if(e.type==='auth')authGeneration++;if(native&&(e.type==='auth'||e.type==='profile'))refreshNativeProfile();emit(e.type,e.data)}catch{}};
+ root.onGateEvent=raw=>{try{const e=JSON.parse(raw);if(e.type==='auth')authGeneration++;if(native&&(e.type==='auth'||e.type==='profile'))refreshNativeProfile();if(e.type==='auth'||e.type==='profile')invalidateSaves();if(e.type==='report-save')finishSave(e.data);emit(e.type,e.data)}catch{}};
  root.onNativeError=text=>emit('error',{message:text});
  root.onNativeSaved=name=>emit('notice',{message:'Saved '+name});
  async function api(action,payload={},sessionOverride){
@@ -85,8 +88,8 @@
   finally{draining=false}
  }
  async function signOut(){const request=api('logout');resetMemory();if(native){nativeProfileLoaded=true;nativeProfile=null;}else sessionStorage.removeItem('navrang-session');emit('auth',profile());await request;}
- async function googleLogin(){
-  if(native){Native.googleLogin();return}
+ async function googleLogin(operationId){
+  if(native){if(operationId&&typeof Native.googleLoginRequest==='function')Native.googleLoginRequest(operationId);else Native.googleLogin();return}
   const cfg=await api('config');if(!cfg.googleEnabled)throw fail('Google sign-in awaits provider setup. Ask the admin for an assigned checker code.');
   if(location.protocol!=='https:')throw fail('Google sign-in needs the hosted HTTPS app or Android APK.');
   const verifier=L.uuid()+L.uuid(),bytes=new TextEncoder().encode(verifier),digest=await crypto.subtle.digest('SHA-256',bytes),challenge=btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -105,16 +108,23 @@
   try{r=await fetch(config.project+'/auth/v1/token?grant_type=pkce',{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({auth_code:code,code_verifier:verifier}),signal:controller.signal,cache:'no-store'});data=await r.json();}catch{throw fail('Google sign-in was interrupted. Tap Continue with Google to try again.');}finally{clearTimeout(timer)}
   if(generation!==authGeneration)throw fail('Sign-in changed while Google was connecting. Keep using your current account.',409);if(!r.ok||!data.access_token)throw fail('Google sign-in could not be exchanged. Tap Continue with Google to try again.');await api('google-login',{accessToken:data.access_token});emit('auth',profile());
  }
- function saveReport(name,mime,bytes){
+ function saveReport(name,mime,bytes,{operationId}={}){
   if(!(bytes instanceof Uint8Array))throw fail('Invalid report file.');
   if(bytes.length>12*1024*1024)throw fail('This report is too large to save from the app.');
   if(native){
    if(typeof Native.saveReport!=='function')throw fail('Please install Navrang Gate 0.7.7 to download reports.');
    let binary='';for(let i=0;i<bytes.length;i+=16384)binary+=String.fromCharCode(...bytes.subarray(i,i+16384));
+   if(operationId){
+    if(typeof operationId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(operationId))throw fail('Invalid report operation.');
+    if(typeof Native.saveReportRequest!=='function')throw fail('Install the latest Navrang app to record report save outcomes.');
+    if(pendingSaves.has(operationId))throw fail('This report save is already active.');
+    return new Promise((resolve,reject)=>{pendingSaves.set(operationId,{generation:authGeneration,scope:accessScope(profile()),resolve,reject});try{const raw=Native.saveReportRequest(name,mime,btoa(binary),operationId);if(raw!=null){const reply=JSON.parse(raw);if(reply.ok!==true)throw fail(reply.error||'The app could not start this save.');}}catch(error){pendingSaves.delete(operationId);reject(error)}});
+   }
    Native.saveReport(name,mime,btoa(binary));return;
   }
   const blob=new Blob([bytes],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  if(operationId)return Promise.resolve({operationId,outcome:'initiated'});
  }
  function save(name,mime,content){
   if(native&&typeof Native.save==='function'){Native.save(name,mime,content);return}

@@ -11,19 +11,18 @@ function setup(native=false){
  const dom=new JSDOM(asset('index.html'),{url:'https://gate.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,$=id=>w.document.getElementById(id);
  w.matchMedia=()=>({matches:true});w.eval(asset('live-core.js'));w.NavrangDesk={refresh(){},clear(){},hasDraft:()=>false};
  w.GateClient={native,profile:()=>profile,on:f=>listener=f,finishGoogle:async()=>{},feedback(){},local:async()=>({stats:{},pending:0,localCount:120}),sync:async()=>update,api:async action=>action==='config'?{googleEnabled:true}:profile};
- w.eval(asset('gate.js'));
+ w.eval(asset('pagination.js'));w.eval(asset('gate.js'));
  return{w,dom,$,records,entries,crew,event:event=>listener(event),setUpdate:value=>update={...update,...value},setProfile:value=>{profile=value;listener({type:'profile'})},search:(target,value)=>{$(target).value=value;$(target).dispatchEvent(new w.Event('input'))}};
 }
 function scroll(t,target){const box=t.$(target).closest('.rows-scroll')||t.$(target);Object.defineProperty(box,'clientHeight',{configurable:true,value:300});Object.defineProperty(box,'scrollHeight',{configurable:true,value:5000});box.scrollTop=4800;box.dispatchEvent(new t.w.Event('scroll'));return box}
 
-test('all active lists use accessible search and scrolling without previous/next paging controls',()=>{
+test('all active lists retain accessible search and status controls',()=>{
  const dom=new JSDOM(asset('index.html'));try{const d=dom.window.document;assert.equal(d.querySelector('.pager'),null);for(const name of ['student-search','recent-search','entry-search','staff-search','desk-search']){const input=d.getElementById(name);assert.equal(input.type,'search');assert.ok(input.getAttribute('aria-label'));assert.ok(d.getElementById(input.getAttribute('aria-controls')))}for(const name of ['entry-coverage','registration-count','all-entry-count','staff-count','desk-list-status'])assert.equal(d.getElementById(name).getAttribute('role'),'status')}finally{dom.window.close()}
 });
 
-test('Students search covers all loaded records and batches append while preserving row actions in web and native hosts',async()=>{
- for(const native of [false,true]){const t=setup(native);try{await tick();assert.equal(t.$('registration-rows').children.length,50);assert.match(t.$('registration-count').textContent,/120 results · 120 loaded · 200 server total/);
-  const first=t.$('registration-rows').firstElementChild;scroll(t,'registration-rows');assert.equal(t.$('registration-rows').children.length,100);assert.equal(t.$('registration-rows').firstElementChild,first);
-  t.$('registration-rows').children[99].querySelector('button').focus();assert.equal(t.$('registration-rows').children.length,120,'tabbing near the end loads the remaining records');
+test('Students search covers every record while explicit pages retain working row actions',async()=>{
+ for(const native of [false,true]){const t=setup(native);try{await tick();assert.equal(t.$('registration-rows').children.length,6);assert.match(t.$('registration-count').textContent,/120 results · 120 loaded · 200 server total/);
+  t.$('registration-rows-next').click();assert.equal(t.$('registration-rows').children.length,6);assert.match(t.$('registration-rows').firstElementChild.textContent,/Student 006/);t.$('registration-rows-previous').click();assert.match(t.$('registration-rows').firstElementChild.textContent,/Student 000/);
   t.search('student-search','demo0119');assert.equal(t.$('registration-rows').children.length,1);assert.match(t.$('registration-count').textContent,/1 results · 120 loaded · 200 server total/);assert.equal(t.$('registration-rows').closest('.rows-scroll').scrollTop,0);t.$('registration-rows').querySelector('button').click();assert.equal(t.$('dialog-name').textContent,'Student 119');
   t.search('student-search','missing');assert.equal(t.$('registration-rows').children.length,0);assert.equal(t.$('registrations-empty').hidden,false);
   t.search('student-search','');t.$('payment-filter').value='eligible';t.$('payment-filter').dispatchEvent(new t.w.Event('change'));assert.match(t.$('registration-count').textContent,/60 results/);
@@ -31,22 +30,25 @@ test('Students search covers all loaded records and batches append while preserv
 });
 
 test('both entry lists search full RAM receipts and distinguish loaded receipts from server totals',async()=>{
- const t=setup();try{await tick();await tick();assert.equal(t.$('recent-entries').children.length,50);assert.equal(t.$('all-entry-rows').children.length,50);assert.match(t.$('entry-coverage').textContent,/120 loaded · 793 server total/);
-  const first=t.$('recent-entries').firstElementChild;scroll(t,'recent-entries');assert.equal(t.$('recent-entries').children.length,100);assert.equal(t.$('recent-entries').firstElementChild,first);
+ const t=setup();try{await tick();await tick();assert.equal(t.$('recent-entries').children.length,6);assert.equal(t.$('all-entry-rows').children.length,6);assert.match(t.$('entry-coverage').textContent,/120 loaded · 793 server total/);
+  t.$('recent-entries-next').click();assert.equal(t.$('recent-entries').children.length,6);assert.match(t.$('recent-entries').textContent,/DEMO0113/);
   t.search('recent-search','demo0000');assert.equal(t.$('recent-entries').children.length,1);assert.match(t.$('recent-entries').textContent,/physical entry time unknown/);
   t.search('entry-search','checker 119');assert.equal(t.$('all-entry-rows').children.length,1);assert.match(t.$('all-entry-rows').textContent,/DEMO0119/);assert.match(t.$('all-entry-count').textContent,/1 results · 120 loaded · 793 server total/);
   t.search('entry-search','missing');assert.equal(t.$('all-entry-empty').hidden,false);assert.match(t.$('all-entry-empty').textContent,/No loaded entries/);
  }finally{await tick();t.dom.window.close()}
 });
+test('entry details open from an authorized compact receipt without an edit action',async()=>{
+ const t=setup();try{await tick();await tick();t.$('all-entry-rows').querySelector('button').click();assert.equal(t.$('student-dialog').open,true);assert.match(t.$('dialog-details').textContent,/DEMO0119/);assert.equal(t.$('edit-student').hidden,true)}finally{await tick();t.dom.window.close()}
+});
 
-test('periodic changes preserve scroll, focused actions and unchanged row identity',async()=>{
- const t=setup();try{await tick();const box=scroll(t,'registration-rows'),row=t.$('registration-rows').children[20],button=row.querySelector('button');button.focus();const top=box.scrollTop;t.setUpdate({stats:{total:200,admitted:794}});t.$('admin-refresh').click();await tick();await tick();assert.equal(t.$('registration-rows').children.length,100);assert.equal(t.$('registration-rows').children[20],row);assert.equal(t.w.document.activeElement,button);assert.equal(box.scrollTop,top);
+test('periodic changes preserve page, focused actions and unchanged row identity',async()=>{
+ const t=setup();try{await tick();t.$('registration-rows-next').click();const row=t.$('registration-rows').children[2],button=row.querySelector('button');button.focus();t.setUpdate({stats:{total:200,admitted:794}});t.$('admin-refresh').click();await tick();await tick();assert.equal(t.$('registration-rows').children.length,6);assert.equal(t.$('registration-rows').children[2],row);assert.equal(t.w.document.activeElement,button);
   t.search('student-search','Student 119');t.$('admin-refresh').click();await tick();assert.equal(t.$('registration-rows').children.length,1);assert.equal(t.$('student-search').value,'Student 119');
  }finally{await tick();t.dom.window.close()}
 });
 
 test('Staff search finds offscreen people without changing full active count and access loss clears list caches',async()=>{
- const t=setup();try{await tick();assert.equal(t.$('checker-list').children.length,50);t.search('staff-search','Staff 119');assert.equal(t.$('checker-list').children.length,1);t.$('checker-list').querySelector('button').click();assert.equal(t.$('staff-name').value,'Staff 119');assert.match(t.$('namu-message').textContent,/120 active staff/);
+ const t=setup();try{await tick();assert.equal(t.$('checker-list').children.length,6);t.search('staff-search','Staff 119');assert.equal(t.$('checker-list').children.length,1);t.$('checker-list').querySelector('button').click();assert.equal(t.$('staff-name').value,'Staff 119');assert.match(t.$('namu-message').textContent,/120 active staff/);
   t.search('recent-search','Checker');t.setProfile({role:'checker',checkerId:'staff-0',name:'Staff',active:true,scanner:true,station:'checker'});await tick();for(const target of ['registration-rows','recent-entries','all-entry-rows','checker-list']){scroll(t,target);assert.equal(t.$(target).children.length,0)}for(const target of ['student-search','recent-search','entry-search','staff-search'])assert.equal(t.$(target).value,'');
  }finally{await tick();t.dom.window.close()}
 });

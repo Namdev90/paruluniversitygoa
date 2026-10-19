@@ -12,6 +12,7 @@ function fixture(profile=null){
  w.GateClient={profile:()=>profile,api:async(action,payload)=>{calls.push({action,payload});return {ok:true,requested:true};},on:fn=>listeners.push(fn),native:false};
  const source=fs.existsSync(shellPath)?fs.readFileSync(shellPath,'utf8'):'';
  if(source)w.eval(source);
+ w.eval(fs.readFileSync(new URL('../../app/assets/auth-flow.js',import.meta.url),'utf8'));
  return {dom,w,calls,listeners};
 }
 test('brand shell is shipped and loaded after the main app',()=>{
@@ -23,17 +24,21 @@ test('brand shell is shipped and loaded after the main app',()=>{
 test('login presents three staff routes and a separate admin route',()=>{
  const {dom,w}=fixture();
  assert.deepEqual([...w.document.querySelectorAll('[data-login-role]')].map(x=>x.dataset.loginRole),['checker','helpdesk','faculty']);
- assert.ok(w.document.getElementById('show-admin-login').closest('.administrator-entry'));
+ assert.ok(w.document.getElementById('show-admin-login').closest('#auth-welcome'));
+ assert.equal(w.document.getElementById('auth-roles').hidden,true);
+ w.document.getElementById('auth-staff').click();
+ assert.equal(w.document.getElementById('auth-roles').hidden,false);
  assert.equal(w.document.getElementById('show-admin-login').textContent.includes('Administrator'),true);
  dom.window.close();
 });
-test('visual brand marks restore the original Navrang logo and retain the university asset',()=>{
+test('visual brand marks use the approved combined artwork and a concise footer',()=>{
  const {dom,w}=fixture();
- const event=w.document.querySelector('.intro-content .event-wordmark');
- assert.ok(event,'Intro needs the official Navrang artwork');
- assert.equal(event.getAttribute('aria-label'),'Navrang');
- assert.ok(event.querySelector('img').getAttribute('src').endsWith('navrang-transparent.png'));
- assert.ok(w.document.querySelector('.app-footer img[src="art/parul-goa.svg"]'));
+ const event=w.document.querySelector('.intro-content .combined-brand-mark');
+ assert.ok(event,'Intro needs the approved combined artwork');
+ assert.equal(event.getAttribute('aria-label'),'Navrang · Parul University Goa');
+ assert.ok(event.querySelector('img').getAttribute('src').endsWith('navrang-parul-combined.png'));
+ assert.match(w.document.querySelector('.app-footer').textContent,/Made by Namdev/);
+ assert.equal(w.document.querySelector('.app-footer img'),null);
  assert.equal(w.document.querySelector('.intro-content h1')?.textContent,'Navrang');
  dom.window.close();
 });

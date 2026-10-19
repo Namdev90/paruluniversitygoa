@@ -37,7 +37,7 @@ async function launch(t){
  w.GateClient={native:false,profile:()=>profile,on:fn=>listener=fn,finishGoogle:async()=>{},feedback:kind=>feedback.push(kind),
   local:async()=>({entries:[],stats:{},localCount:0,pending:0}),api:async action=>action==='me'?profile:{googleEnabled:false},
   sync:async()=>({dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:[]})};
- w.eval(asset('gate.js'));
+ w.eval(asset('pagination.js'));w.eval(asset('gate.js'));
  await tick();
  t.after(async()=>{await tick();dom.window.close()});
  return{$,time,feedback,result:r=>listener({type:'result',data:r}),ack:()=>$('close-result').click(),
