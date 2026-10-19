@@ -1,5 +1,7 @@
 # Live 0.2 execution record
 
+> **Historical 0.2 execution record.** Preserve the dated architecture, instructions and evidence below as history. For the published 0.7.9 behavior and acceptance scope, use [Features](FEATURES.md), [the current release record](RESTORATION-RELEASE-0.7.9.md) and the [documentation index](README.md). Earlier approvals and deployment statements do not authorize or describe a later release.
+
 Scope: docs/LIVE-V02-DESIGN.md and docs/superpowers/plans/2026-10-16-navrang-live.md.
 
 Pre-flight: API reply contract is shared across server, native transport and UI. Exact success codes are admitted, duplicate, blocked and not_found; network failures stay pending. SQLite and JavaScript adapters must preserve the same UUID on retry.

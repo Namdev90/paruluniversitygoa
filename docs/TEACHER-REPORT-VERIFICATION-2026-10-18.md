@@ -1,5 +1,7 @@
 # Teacher report download repair and verification
 
+> **Historical source-only reporting checkpoint.** Preserve the dated architecture, instructions and evidence below as history. For the published 0.7.9 behavior and acceptance scope, use [Features](FEATURES.md), [the current release record](RESTORATION-RELEASE-0.7.9.md) and the [documentation index](README.md). Earlier approvals and deployment statements do not authorize or describe a later release.
+
 ## Scope
 
 This source-only repair covers Faculty Reports in the shared browser/Android interface. It does not change database tables, permissions, grants, the deployed server, the updater, or any published APK.

@@ -7,6 +7,8 @@
 
 [Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.9.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
+[Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Accessibility](ACCESSIBILITY.md)
+
 </div>
 
 > **Release status:** **0.7.9 · Android code 17** includes reachable phone report downloads, the original burgundy/gold design, native scanning and update protections. Signed with the original identity. Physical-device checks remain deferred by the owner; see [the release record](docs/RESTORATION-RELEASE-0.7.9.md).
@@ -14,9 +16,9 @@
 
 ## Original Navrang interface
 
-The original screens use the existing local interface host with native Credential Manager/PKCE sign-in and CameraX scanning. Students and Entry log scroll independently while search and pagination stay fixed. Bulk import, both staff permission flags, Help Desk, session security and installer recovery remain in the app. Twelve report datasets and exports are implemented in the released client/source, while production reporting readiness remains unverified. [Restoration details](docs/ORIGINAL-DESIGN-RESTORATION.md) · [Review disposition](docs/RESTORATION-REVIEW-2026-10-18.md).
+The original screens use the existing local interface host with native Credential Manager/PKCE sign-in and CameraX scanning. Students and Entry log scroll independently while search stays reachable; the current release uses scroll-and-search lists without paging buttons. Bulk import, both staff permission flags, Help Desk, session security and installer recovery remain in the app. Twelve report datasets and exports are implemented in the released client/source. The 0.7.9 release record documents the deployed reporting repair, authenticated administrator summary and owner-confirmed CSV export; separately granted faculty and physical-device acceptance remain unverified. [Restoration details](docs/ORIGINAL-DESIGN-RESTORATION.md) · [Review disposition](docs/RESTORATION-REVIEW-2026-10-18.md).
 
-The screenshots below render the shared interface with synthetic transport. They are not physical-device captures or live attendance records.
+The screenshots below preserve the **0.7.8 original-design checkpoint**, rendered with synthetic transport. They show historical page-arrow controls; 0.7.9 uses scroll-and-search lists. They are not physical-device captures, live attendance records or previews of an unpublished upgrade.
 
 ## A look at the work
 
@@ -51,9 +53,22 @@ An organizer-confirmed admission is not presented as a payment verification. Unk
 
 ## Current installation and access
 
-Install the current signed APK over the existing app; keep the same package and signing identity. Android may ask you to allow installation from the download source. Android 7+ and WebView/Chrome 86+ are required. Sign in with Google or an assigned staff code, save your real name and wait for the administrator's station approval.
+Navrang Gate is for authorized event staff, faculty and administrators. Downloading the app or choosing a station does not grant access. Attendees should contact the event organizer for ticket, payment or entry questions.
 
-The existing laptop portal is [Navrang Gate](https://navrang-gate-admin.namubhai.chatgpt.site). Its deployment is separate from a repository push; candidate screenshots do **not** establish that the hosted portal has been updated. The current hosting audience is public, while operational records require app/server authentication. The hosted interface has not yet been verified against the next reviewed candidate. Follow [the portal parity plan](docs/PORTAL-DEPLOYMENT.md) to deploy the final reviewed companion back to the same site without changing its audience, authentication or backend.
+1. On Android 7 or newer with WebView/Chrome 86 or newer, download the current APK above. For an upgrade, install over the existing signed app without uninstalling; older versions before 0.4 need this manual upgrade once. You do not need every intermediate APK.
+2. Open the APK and follow Android's installation prompts. Grant installation permission only to the source you intentionally used, and keep Android's security checks enabled. A package/signature mismatch needs maintainer help; do not uninstall to bypass it.
+3. Sign in with Google or an assigned staff code, save your real name and wait for administrator approval of the appropriate station. Faculty reporting uses Google sign-in and a separate read-only grant. Administrator access is separate.
+4. Allow the camera when scanning is needed. Notifications are optional; Android still asks before installing an app update. Internet is required for admission confirmation and Help Desk saves. A decoded QR or pending result alone never permits entry.
+
+See [updates and interrupted-install recovery](docs/APP-UPDATES.md) and the [role reference](docs/FEATURES.md#four-clearly-separated-responsibilities).
+
+The existing laptop portal is [Navrang Gate](https://navrang-gate-admin.namubhai.chatgpt.site). Its deployment is separate from a repository push; candidate screenshots do **not** establish that the hosted portal has been updated. The current hosting audience is public, while operational records require app/server authentication. The [0.7.9 release record](docs/RESTORATION-RELEASE-0.7.9.md#original-key-apk-publication-receipt) records the separately published phone download-layout correction as Site version 11. Future companion deployments must follow [the portal parity plan](docs/PORTAL-DEPLOYMENT.md) on the same site without changing its audience, authentication or backend.
+
+## Help and safe reporting
+
+For ordinary software bugs or feature requests, use [GitHub Issues](https://github.com/Namdev90/paruluniversitygoa/issues) and follow [Contributing](CONTRIBUTING.md). Include the app version, affected screen, device/browser and reproduction steps using synthetic or carefully redacted evidence. For staff approval, ticket/payment questions or event-day entry decisions, contact your event organizer through your existing verified channel. Use [Security](SECURITY.md) for a suspected vulnerability and [Accessibility](ACCESSIBILITY.md) for access barriers.
+
+Operational caches are RAM-only, but reports you choose to download and screenshots you capture can remain on your device after sign-out. Store and share those copies appropriately. Never put attendee QR codes, contact/payment details, staff codes, credentials or unredacted diagnostic records in public issues.
 
 ## Development and verification
 
@@ -65,13 +80,13 @@ python3 tests/sqlite-check.py
 python3 tools/package-web.py .build/web-portal
 ```
 
-The web package includes every referenced script, including Faculty Reports. `tests/responsive-browser-check.py` provides fixture-only layout checks with Python Playwright and local Chromium; see the [verification record](docs/VERIFICATION-2026-10-18.md) for exact viewports and limitations. Hosted suites require their dedicated synthetic credentials/state; do not run them against real attendee records.
+The web package includes every referenced script, including Faculty Reports. `tests/responsive-browser-check.py` provides fixture-only layout checks with Python Playwright and local Chromium; see the [0.7.9 release evidence](docs/RESTORATION-RELEASE-0.7.9.md) and [earlier dated verification record](docs/VERIFICATION-2026-10-18.md) for source versions, viewports and limitations. Hosted suites require their dedicated synthetic credentials/state; do not run them against real attendee records.
 
 **For signing:** follow [the current original-environment release procedure](docs/RELEASE-PROCEDURE.md). Do not create a new key or upload one here. No CI workflow in this repository signs releases or needs signing secrets.
 
 ## The development record
 
-The project retains **16 published APK versions** from 0.1.0 through the 0.7.7 native rebuild and 0.7.8 original-design restoration. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. Older architectures remain clearly labelled. [Historical Release migration](docs/history/GITHUB-RELEASES.md) describes the additive archive process: unchanged APKs, original commit/date provenance, current GitHub publication timestamps and no updater-channel changes.
+The project retains **17 published APK versions** from the 0.1.0 offline prototype through the 0.7.7 native rebuild, 0.7.8 original-design restoration and 0.7.9 report-download release. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. Older architectures remain clearly labelled. [Historical Release migration](docs/history/GITHUB-RELEASES.md) describes the additive archive process: unchanged APKs, original commit/date provenance, current GitHub publication timestamps and no updater-channel changes.
 
 ## Project map
 
@@ -94,4 +109,4 @@ The project code and documentation are provided under the existing [MIT License]
 
 ## Next upgrade
 
-The [current checklist](docs/NEXT-STEPS.md) covers the requested deeper original-style visuals, background-free logo treatments, non-overlapping intro, scroll-and-search lists, in-camera exact-ID search and permission-appropriate receipt details. Changes must be demonstrated in the candidate and pass independent review before a new signed release is advertised here. The download above remains the verified 0.7.8 release until then.
+The [current checklist](docs/NEXT-STEPS.md) records the deeper original-style visuals, background-free logo treatments, non-overlapping intro, scroll-and-search lists, in-camera exact-ID search and permission-appropriate receipt details delivered in 0.7.9, alongside remaining acceptance work. Future changes must be demonstrated in their own candidate and pass independent review before a new signed release is advertised here. The download above is the published 0.7.9 release; the checklist retains the implementation and acceptance history that led to it. Any later candidate needs its own verified signed release before replacing that download.

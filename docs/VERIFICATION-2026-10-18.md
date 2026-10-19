@@ -1,5 +1,7 @@
 # Candidate verification — 18 October 2026
 
+> **Historical source-only verification checkpoint.** Preserve the dated architecture, instructions and evidence below as history. For the published 0.7.9 behavior and acceptance scope, use [Features](FEATURES.md), [the current release record](RESTORATION-RELEASE-0.7.9.md) and the [documentation index](README.md). Earlier approvals and deployment statements do not authorize or describe a later release.
+
 ## Tested source and release boundary
 
 The responsive integration starts at Teacher Reports source `3fb78ea46451a25033cddcdc4fd625dd89e41492` and preserves main's installer lifecycle fix `8f145f4916bc2d6eed0a226bca774ae7ffe31bf6`. Work is isolated on `feature/navrang-responsive-handoff`. This record is **not** a signed-APK or live-portal release receipt.

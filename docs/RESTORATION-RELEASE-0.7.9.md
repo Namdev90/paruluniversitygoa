@@ -1,6 +1,8 @@
 # Navrang Gate 0.7.9 — verified source and scoped device-check deferral
 
-This is an **unpublished candidate**, version **0.7.9 / code 17**. It is not a signed-artifact receipt or a claim that production reports or physical devices have passed acceptance.
+> **Current status: published 0.7.9 / code 17.** [PR #12](https://github.com/Namdev90/paruluniversitygoa/pull/12) merged as [6f450eb](https://github.com/Namdev90/paruluniversitygoa/commit/6f450eb5b03183d5cd2a15de48a33ab820e94f93); the [public update manifest](../updates/latest.json) identifies the matching APK, size and checksum. The candidate and preparation checkpoints below are retained chronologically. Their future-tense instructions describe those earlier stages, not the current channel. See the [publication receipt](#original-key-apk-publication-receipt) for the final runtime source and signed artifact. Physical-device checks remain deferred, and limited admin/CSV acceptance does not certify every faculty/device workflow.
+
+At this initial checkpoint, **0.7.9 / code 17 was an unpublished candidate**. This checkpoint was not a signed-artifact receipt or a claim that production reports or physical devices had passed acceptance.
 
 ## Frozen source and approval relationship
 
