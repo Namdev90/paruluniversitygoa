@@ -5,11 +5,11 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.9.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.8.0.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
 </div>
 
-> **Release status:** **0.7.9 · Android code 17** includes reachable phone report downloads, the original burgundy/gold design, native scanning and update protections. Signed with the original identity. Physical-device checks remain deferred by the owner; see [the release record](docs/RESTORATION-RELEASE-0.7.9.md).
+> **Release status:** **0.8.0 · Android code 18** includes the approved combined branding, staged sign-in, consolidated Reports with reachable downloads, sign-out confirmation and smoother transitions. Signed with the original identity. Communications features are deferred. Physical-device checks remain deferred by the owner; see [the release record](docs/RESTORATION-RELEASE-0.8.0.md).
 
 
 ## Original Navrang interface

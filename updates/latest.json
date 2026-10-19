@@ -1,10 +1,10 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 17,
-  "versionName": "0.7.9",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.7.9.apk",
-  "size": 22630853,
-  "sha256": "f52a215fc326d4d824b6868859c9d8b05d8102fd01f6f04747848a94c1cf2729",
-  "notes": "Original Navrang styling with a faithful transparent wordmark, layered depth, improved admin controls and a non-overlapping launch. Enables screenshots, scroll/search lists, in-camera exact-ID verification and organized available scan details. Adds automatic local camera assistance with stale-frame and edge-cropping protection, resilient report generation, bounded import validation and persistent release update checks with Android installation consent. Preserves existing authorization, signing identity and historical releases.",
-  "publishedAt": "2026-10-18T22:26:43.408867+00:00"
+  "versionCode": 18,
+  "versionName": "0.8.0",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.8.0.apk",
+  "size": 23634731,
+  "sha256": "8dd7423a67b69fa882a9115f5f1313fe930dfe6ec12c26ca62ff8b1215243fe4",
+  "notes": "Approved combined Navrang and Parul University branding on maroon, staged sign-in, consolidated Reports with reachable downloads and accessible pagination, smoother transitions, sign-out confirmation and guarded local report saves. Preserves attendance, authorization, original signing identity and existing update notifications. New messaging, audio messages and live broadcasts are deferred.",
+  "publishedAt": "2026-10-19T05:10:19.650230+00:00"
 }

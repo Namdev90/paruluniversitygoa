@@ -1,3 +1,5 @@
+> Historical preparation record. The signing blocker described below was resolved by the original-key build. See [0.8.0 signed release evidence](RESTORATION-RELEASE-0.8.0.md).
+
 # Navrang 0.8.0 / Android code 18 release candidate
 
 The owner requested immediate release of the completed changes on 19 October 2026 and explicitly deferred the new communications features. This candidate is not yet signed or published. The current public download remains 0.7.9 / code 17.
