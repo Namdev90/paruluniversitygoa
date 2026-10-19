@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: 'Leave empty to verify only; type PUBLISH_VERIFIED_HISTORY to publish the existing 16 APKs.'
+        description: 'Leave empty to verify only; type PUBLISH_VERIFIED_HISTORY to publish the existing 17 APKs through 0.7.9.'
         required: false
         type: string
 permissions:
@@ -22,8 +22,16 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Prepare pinned Android signature verifier
+        run: |
+          curl --fail --location --retry 2 https://dl.google.com/android/repository/build-tools_r37_linux.zip --output "$RUNNER_TEMP/android-build-tools.zip"
+          echo "01af179347cbcd9c208b7f8171f7b21f6dd1d2f85bcd15e88caa51d5d7b86060  $RUNNER_TEMP/android-build-tools.zip" | sha256sum --check --strict
+          unzip -q "$RUNNER_TEMP/android-build-tools.zip" android-37.0/apksigner android-37.0/lib/apksigner.jar android-37.0/NOTICE.txt -d "$RUNNER_TEMP/android-build-tools"
+          chmod +x "$RUNNER_TEMP/android-build-tools/android-37.0/apksigner"
+          echo "APKSIGNER=$RUNNER_TEMP/android-build-tools/android-37.0/apksigner" >> "$GITHUB_ENV"
       - run: python3 tests/history-release-check.py
-      - run: python3 tools/publish-history.py
+      - run: python3 tools/publish-history.py --signature-receipt "$RUNNER_TEMP/history-signatures.json"
+      - run: cat "$RUNNER_TEMP/history-signatures.json"
   publish:
     needs: verify
     if: github.repository == 'Namdev90/paruluniversitygoa' && github.ref == 'refs/heads/main' && inputs.confirmation == 'PUBLISH_VERIFIED_HISTORY'
@@ -37,7 +45,15 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Prepare pinned Android signature verifier
+        run: |
+          curl --fail --location --retry 2 https://dl.google.com/android/repository/build-tools_r37_linux.zip --output "$RUNNER_TEMP/android-build-tools.zip"
+          echo "01af179347cbcd9c208b7f8171f7b21f6dd1d2f85bcd15e88caa51d5d7b86060  $RUNNER_TEMP/android-build-tools.zip" | sha256sum --check --strict
+          unzip -q "$RUNNER_TEMP/android-build-tools.zip" android-37.0/apksigner android-37.0/lib/apksigner.jar android-37.0/NOTICE.txt -d "$RUNNER_TEMP/android-build-tools"
+          chmod +x "$RUNNER_TEMP/android-build-tools/android-37.0/apksigner"
+          echo "APKSIGNER=$RUNNER_TEMP/android-build-tools/android-37.0/apksigner" >> "$GITHUB_ENV"
       - name: Verify and archive existing signed bytes
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 tools/publish-history.py --publish --confirm PUBLISH_VERIFIED_HISTORY
+        run: python3 tools/publish-history.py --publish --confirm PUBLISH_VERIFIED_HISTORY --signature-receipt "$RUNNER_TEMP/history-signatures.json"
+      - run: cat "$RUNNER_TEMP/history-signatures.json"

@@ -1,6 +1,6 @@
 {
-  "verifiedAgainstMain": "6c20848f22a1475c07f3aeef3d6b7572a8b8d5cc",
-  "method": "Read Android binary manifest, byte length and SHA-256 from every tracked APK; compare each to its artifact commit, first-on-main archive commit and immutable 0.7.8 main baseline. commit/date identify the first commit on main first-parent history containing the APK; artifactCommit/artifactDate preserve the earlier commit where its bytes entered Git. These dates are not GitHub Release publication or install dates. This inventory run did not itself repeat cryptographic signature verification.",
+  "verifiedAgainstMain": "6f450eb5b03183d5cd2a15de48a33ab820e94f93",
+  "method": "Read Android binary manifest, byte length and SHA-256 from every tracked APK; compare each to its artifact commit, first-on-main archive commit and immutable 0.7.9 main baseline. The first sixteen artifacts also remain identical to the earlier 0.7.8 main baseline. commit/date identify the first commit on main first-parent history containing the APK; artifactCommit/artifactDate preserve the earlier commit where its bytes entered Git. These dates are not GitHub Release publication or install dates. Android signature verification is independently rerun before publication.",
   "artifacts": [
     {
       "filename": "Navrang-Gate-Offline-0.1.0.apk",
@@ -211,10 +211,25 @@
       "artifactCommit": "c82598ed8a3e5c81c9bb743187ee23f78c7607f2",
       "artifactDate": "2026-10-18T22:16:33+05:30",
       "mainArchiveMessage": "Release Navrang Gate 0.7.8 (16) with original design and logo"
+    },
+    {
+      "filename": "Navrang-Gate-0.7.9.apk",
+      "size": 22630853,
+      "sha256": "f52a215fc326d4d824b6868859c9d8b05d8102fd01f6f04747848a94c1cf2729",
+      "version": "0.7.9",
+      "versionCode": 17,
+      "package": "in.navrang.gate",
+      "commit": "6f450eb5b03183d5cd2a15de48a33ab820e94f93",
+      "date": "2026-10-19T04:05:12+05:30",
+      "message": "Publish verified original-key-signed Navrang Gate 0.7.9 with reachable report downloads",
+      "artifactCommit": "899d295cae93f75cf61fd863cfa4eaa29b48197b",
+      "artifactDate": "2026-10-19T03:59:06+05:30",
+      "mainArchiveMessage": "Release 0.7.9: original design refinements and reachable phone report downloads"
     }
   ],
   "signatureVerification": {
     "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
-    "requirement": "Before publication, verify each exact APK with Android apksigner against this original signer and retain the receipt bound to its hash. The migration independently checks bytes, manifests and Git provenance; it does not run apksigner or certify physical-device behavior."
-  }
+    "requirement": "Every verification and publication run executes Android apksigner on all seventeen exact APKs and requires successful verification with exactly one original signer. A prior receipt is evidence, never a replacement for the live gate. This does not certify physical-device behavior."
+  },
+  "previousVerifiedAgainstMain": "6c20848f22a1475c07f3aeef3d6b7572a8b8d5cc"
 }
