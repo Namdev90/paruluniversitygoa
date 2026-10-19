@@ -11,10 +11,11 @@ test('launch uses separate content, dancer and action regions without replacing 
  const stage=w.document.querySelector('.intro-dancers');
  assert.equal(stage.children.length,2);
  assert.equal(stage.querySelectorAll('.dancer').length,2);
- assert.equal(w.document.querySelector('.intro-content .classic-event-logo').getAttribute('src'),'art/navrang-transparent.png');
+ assert.equal(w.document.querySelector('.intro-content .combined-brand-mark img').getAttribute('src'),'art/navrang-parul-combined.png');
  assert.equal(w.document.querySelector('#skip-intro').parentElement.id,'intro');
  assert.equal(w.document.querySelector('.intro-content h1').hidden,true);
- assert.equal(w.document.querySelector('.intro-content>.official-logo').hidden,false);
+ assert.equal(w.document.querySelector('.intro-content>.official-logo'),null);
+ assert.equal(w.document.querySelectorAll('.intro-content .combined-brand-mark').length,1);
  assert.match(read('app/assets/art/classic-restore.css'),/intro-content>\.intro-tagline,\.intro-content>\.pill\{position:static/);
  assert.match(read('app/assets/art/classic-restore.css'),/grid-template-rows:auto minmax\(0,1fr\) auto/);
  assert.match(read('app/assets/art/classic-restore.css'),/prefers-reduced-motion:reduce/);

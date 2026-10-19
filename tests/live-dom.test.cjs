@@ -11,7 +11,7 @@ function launch(factory,session,offlineFlag,requests){
  Object.defineProperty(w,'crypto',{value:webcrypto});w.TextEncoder=TextEncoder;w.TextDecoder=TextDecoder;w.AbortController=AbortController;w.indexedDB=factory;w.matchMedia=()=>({matches:true});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
  if(session)w.sessionStorage.setItem('navrang-session',session);
  w.fetch=async(url,options)=>{const body=options?.body?JSON.parse(options.body):null;if(body)requests.push(body);if(offlineFlag.value)throw TypeError('Network unavailable');return fetch(url,options)};
- for(const file of ['vendor/xlsx.full.min.js','vendor/pako_inflate.min.js','core.js','workbook.js','package.js','live-core.js','store.js','config.js','client.js','gate.js'])w.eval(fs.readFileSync(ROOT+'/app/assets/'+file,'utf8')+'\n//# sourceURL='+file);
+ for(const file of ['vendor/xlsx.full.min.js','vendor/pako_inflate.min.js','core.js','workbook.js','package.js','live-core.js','store.js','config.js','client.js','pagination.js','gate.js'])w.eval(fs.readFileSync(ROOT+'/app/assets/'+file,'utf8')+'\n//# sourceURL='+file);
  return{dom,w,errors};
 }
 test('live UI auth, local conversion and durable offline admission recovery',{skip:!enabled,timeout:150000},async t=>{
@@ -33,7 +33,7 @@ test('live UI auth, local conversion and durable offline admission recovery',{sk
    $('apply-local').click();await until(()=>$('cache-count').textContent==='997','offline cache');
   });
   await t.test('checker login grants its named station and forbids shared file updates',async()=>{
-   $('sign-out').click();await until(()=>$('signin-panel').hidden===false,'sign-out');$('checker-code').value=staff.codeA;$('checker-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+   $('sign-out').click();$('confirm-signout').click();await until(()=>$('signin-panel').hidden===false,'sign-out');$('checker-code').value=staff.codeA;$('checker-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
    await until(()=>$('checker-name').textContent==='Synthetic Checker A'&&$('scan').disabled===false,'checker sign-in');assert.equal($('apply-shared').disabled,true);
   });
   let pendingId,session;

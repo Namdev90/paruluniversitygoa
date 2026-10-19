@@ -21,7 +21,7 @@ function nativeApp(initial){
    else reply(id,{saved:true});
   })},feedback(){},readiness(){return '{}'},update(){return '{}'},destination(){return 'home'},scan(){calls.push({action:'camera'})},submit(id){calls.push({action:'submit',id})}
  };
- for(const name of ['live-core.js','desk-core.js','config.js','client.js','desk.js','gate.js'])w.eval(asset(name));
+ for(const name of ['live-core.js','desk-core.js','config.js','client.js','desk.js','pagination.js','gate.js'])w.eval(asset(name));
  return{dom,w,calls,$:id=>w.document.getElementById(id),reply,emit,setProfile:p=>{profile=p},intercept:f=>{intercept=f}};
 }
 const admin={role:'admin',name:'namdev',active:true};
