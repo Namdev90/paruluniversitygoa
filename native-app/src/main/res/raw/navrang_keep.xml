@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GateFeedback resolves these sound resources by name at runtime. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/intro,@raw/tap,@raw/scan,@raw/success,@raw/issue,@raw/duplicate,@raw/invalid,@raw/pending,@raw/transition,@raw/close" />

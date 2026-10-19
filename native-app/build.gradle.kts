@@ -13,8 +13,20 @@ val prepareNativeAssets = tasks.register<Exec>("prepareNativeAssets") {
     commandLine("python3", rootProject.file("tools/prepare-classic-host.py"), layout.buildDirectory.dir("generated/classicJava").get().asFile)
 }
 val copyNativeAssets = tasks.register<Sync>("copyNativeAssets") {
-    from(rootProject.file("app/assets")) { exclude("legacy.html") }
+    from(rootProject.file("app/assets")) {
+        // Retain the archived offline prototype in git, never in the installed app.
+        // Native import has its own bounded parser; current report-export.js writes XLSX.
+        exclude("legacy.html", "legacy-style.css", "app.js", "store.js", "workbook.js",
+            "package.js", "local-schema.sql", "vendor/**", "art/event-poster.jpg", "art/ASSET-NOTES.md",
+            "art/navrang-parul-combined.png", "art/dancer-male.webp", "art/dancer-female.webp")
+    }
     into(layout.buildDirectory.dir("generated/assets"))
+}
+val prepareRemoteArtwork = tasks.register<Exec>("prepareRemoteArtwork") {
+    inputs.file(rootProject.file("tools/prepare-remote-artwork.py"))
+    inputs.files(listOf("navrang-parul-combined.png", "dancer-male.webp", "dancer-female.webp").map { rootProject.file("app/assets/art/$it") })
+    outputs.dir(layout.buildDirectory.dir("generated/remoteAssets"))
+    commandLine("python3", rootProject.file("tools/prepare-remote-artwork.py"), layout.buildDirectory.dir("generated/remoteAssets").get().asFile)
 }
 
 val sharedJava =
@@ -67,7 +79,8 @@ android {
             versionNameSuffix = "-native-internal"
         }
         release {
-            isMinifyEnabled = false
+            // Remove unreachable legacy UI and unused dependency code from shipped builds.
+            optimization { enable = true }
             isCrunchPngs = false
             // Signing is exclusively performed by tools/build-native.py after its
             // original-key/parity gates.
@@ -77,6 +90,7 @@ android {
         java.directories.add(layout.buildDirectory.dir("generated/java").get().asFile.path)
         java.directories.add(layout.buildDirectory.dir("generated/classicJava").get().asFile.path)
         assets.directories.add(layout.buildDirectory.dir("generated/assets").get().asFile.path)
+        assets.directories.add(layout.buildDirectory.dir("generated/remoteAssets").get().asFile.path)
         res.directories.add(
             layout.buildDirectory.dir("generated/sharedResources").get().asFile.path
         )
@@ -89,7 +103,7 @@ android {
     packaging { resources.excludes += setOf("META-INF/AL2.0", "META-INF/LGPL2.1") }
 }
 
-tasks.named("preBuild").configure { dependsOn(prepareNativeAssets, copyNativeAssets, sharedJava, sharedResources) }
+tasks.named("preBuild").configure { dependsOn(prepareNativeAssets, copyNativeAssets, prepareRemoteArtwork, sharedJava, sharedResources) }
 
 dependencies {
     implementation(platform(libs.compose.bom))

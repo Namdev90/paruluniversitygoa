@@ -40,11 +40,12 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setAllowFileAccessFromFileURLs(false);s.setAllowUniversalAccessFromFileURLs(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
   s.setCacheMode(WebSettings.LOAD_NO_CACHE);web.clearCache(true);web.clearFormData();web.setSaveEnabled(false);web.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);web.setOnLongClickListener(v->{WebView.HitTestResult hit=web.getHitTestResult();return hit==null||hit.getType()!=WebView.HitTestResult.EDIT_TEXT_TYPE;});
   WebView.setWebContentsDebuggingEnabled(false);web.addJavascriptInterface(new Bridge(),"Native");
+  RemoteArtwork artwork=new RemoteArtwork(this);
   web.setWebViewClient(new WebViewClient(){
    private boolean allowed(String url){return url!=null&&url.startsWith("file:///android_asset/");}
    @Override public boolean shouldOverrideUrlLoading(WebView w,WebResourceRequest r){return !allowed(r.getUrl().toString());}
    @Override public boolean shouldOverrideUrlLoading(WebView w,String u){return !allowed(u);}
-   @Override public WebResourceResponse shouldInterceptRequest(WebView w,WebResourceRequest r){String u=r.getUrl().toString();if(allowed(u))return null;return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));}
+   @Override public WebResourceResponse shouldInterceptRequest(WebView w,WebResourceRequest r){String u=r.getUrl().toString();if(allowed(u)){WebResourceResponse image=artwork.intercept(r.getUrl());return image;}return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));}
   });
   web.loadUrl("file:///android_asset/index.html");handleOAuth(getIntent());
  }

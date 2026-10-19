@@ -1,0 +1,25 @@
+/* Own every application dropdown surface; OS-owned permission/picker UI stays native. */
+.navrang-select-source{position:absolute!important;inline-size:1px!important;block-size:1px!important;opacity:0!important;pointer-events:none!important;clip-path:inset(50%)!important;margin:0!important;padding:0!important;border:0!important}
+.navrang-select-trigger{position:relative;display:block;width:100%;min-width:0;min-height:48px;padding:13px 44px 13px 16px!important;text-align:left;white-space:normal;overflow-wrap:anywhere;color:#fff2d6;background:linear-gradient(155deg,#502337,#29101e)!important;border:1px solid #b98b4a66!important;border-top-color:#e5be7d88!important;border-radius:15px!important;box-shadow:inset 0 1px #ffe4aa22,inset 0 -3px #10040b88,0 6px 12px #0004!important}
+.navrang-select-trigger::after{content:'';position:absolute;right:18px;top:calc(50% - 5px);width:8px;height:8px;border-right:2px solid #e5be7d;border-bottom:2px solid #e5be7d;transform:rotate(45deg)}
+.navrang-select-trigger[aria-expanded=true]{border-color:#e5be7d!important;box-shadow:inset 0 1px #ffe4aa22,0 0 0 3px #e5be7d16!important}
+.navrang-select-trigger:disabled{opacity:.48;box-shadow:none!important}
+.navrang-select-dialog{box-sizing:border-box;width:min(92vw,560px)!important;max-height:min(88dvh,800px)!important;padding:0!important;overflow:hidden!important;color:#fff2d6;border:1px solid #be9258aa!important;border-radius:24px!important;background:radial-gradient(ellipse at top left,#5b1c35 0,transparent 65%),linear-gradient(145deg,#28121f,#130a13)!important;box-shadow:inset 0 1px #ffdfa84d,0 28px 85px #000b!important}
+.navrang-select-dialog[open]{display:flex!important;flex-direction:column;gap:0;animation:navrang-picker-in .18s ease-out}
+.navrang-select-dialog::backdrop{background:#080208bf;backdrop-filter:blur(5px)}
+.navrang-select-heading{flex:0 0 auto;padding:22px 22px 15px;border-bottom:1px solid #e5be7d25;background:linear-gradient(180deg,#ffffff06,transparent)}
+.navrang-select-heading .eyebrow{font-size:.65rem;letter-spacing:.12em;color:#e5be7d;margin:0 0 8px;line-height:1.5}
+.navrang-select-heading h2{font-size:clamp(1.1rem,4.7vw,1.55rem);line-height:1.25;margin:0;overflow-wrap:anywhere}
+.navrang-select-options{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px;scrollbar-color:#b18850 #1b0b17;scrollbar-width:thin}
+.navrang-select-option{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;min-height:56px;margin:0 0 4px;padding:14px 15px;border:1px solid transparent;border-radius:14px;color:#eee0d6;background:linear-gradient(140deg,#ffffff05,#ffffff01);font:inherit;text-align:left;line-height:1.4;box-shadow:inset 0 1px #ffffff05;cursor:pointer}
+.navrang-select-option>span:first-child{min-width:0;overflow-wrap:anywhere}
+.navrang-select-option[aria-selected=true]{border-color:#e5be7d75;color:#ffe7b4;background:linear-gradient(135deg,#76502966,#4c233e);box-shadow:inset 0 1px #fce3ae20,0 3px 7px #0003}
+.navrang-select-option:focus-visible,.navrang-select-trigger:focus-visible{outline:2px solid #ffe1a0!important;outline-offset:-3px}
+.navrang-select-option:disabled{opacity:.4;cursor:not-allowed}
+.navrang-select-check{flex:0 0 21px;width:21px;height:21px;border-radius:50%;border:2px solid #ac9687;box-sizing:border-box;box-shadow:inset 0 2px 4px #0007}
+[aria-selected=true]>.navrang-select-check{border-color:#f0c77d;background:radial-gradient(circle,#f0c77d 0 40%,transparent 46%)}
+.navrang-select-footer{flex:0 0 auto;padding:12px 16px 16px;border-top:1px solid #e5be7d25;background:#170b15}
+.navrang-select-footer .button{margin:0;min-height:46px}
+@keyframes navrang-picker-in{from{opacity:0;transform:translateY(9px) scale(.985)}to{opacity:1;transform:none}}
+@media(max-height:430px){.navrang-select-dialog{max-height:94dvh!important}.navrang-select-heading{padding:12px 16px 10px}.navrang-select-footer{padding:8px 12px}.navrang-select-option{min-height:48px;padding:10px 12px}}
+@media(prefers-reduced-motion:reduce){.navrang-select-dialog[open]{animation:none}}

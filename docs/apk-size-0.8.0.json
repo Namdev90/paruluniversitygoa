@@ -1,0 +1,291 @@
+{
+  "apkBytes": 23634731,
+  "sha256": "8dd7423a67b69fa882a9115f5f1313fe930dfe6ec12c26ca62ff8b1215243fe4",
+  "groups": {
+    "Metadata and other": {
+      "bytes": 84913,
+      "expandedBytes": 238269,
+      "files": 120
+    },
+    "Interface, scripts and public config": {
+      "bytes": 462484,
+      "expandedBytes": 1324416,
+      "files": 35
+    },
+    "Compiled app and library code": {
+      "bytes": 16567870,
+      "expandedBytes": 57152836,
+      "files": 4
+    },
+    "Native libraries": {
+      "bytes": 202140,
+      "expandedBytes": 202140,
+      "files": 12
+    },
+    "Artwork": {
+      "bytes": 3774459,
+      "expandedBytes": 3782467,
+      "files": 8
+    },
+    "Audio": {
+      "bytes": 77708,
+      "expandedBytes": 79585,
+      "files": 14
+    },
+    "Android resources": {
+      "bytes": 2271458,
+      "expandedBytes": 2383502,
+      "files": 428
+    },
+    "ZIP headers, signature and alignment": {
+      "bytes": 193699
+    }
+  },
+  "largest": [
+    {
+      "path": "classes2.dex",
+      "bytes": 7212932
+    },
+    {
+      "path": "classes.dex",
+      "bytes": 4396119
+    },
+    {
+      "path": "classes3.dex",
+      "bytes": 3459876
+    },
+    {
+      "path": "classes4.dex",
+      "bytes": 1498943
+    },
+    {
+      "path": "assets/art/navrang-transparent.png",
+      "bytes": 1429752
+    },
+    {
+      "path": "assets/art/navrang-parul-combined.png",
+      "bytes": 975379
+    },
+    {
+      "path": "resources.arsc",
+      "bytes": 943824
+    },
+    {
+      "path": "assets/art/app-icon.png",
+      "bytes": 443362
+    },
+    {
+      "path": "res/aH.png",
+      "bytes": 443362
+    },
+    {
+      "path": "assets/vendor/xlsx.full.min.js",
+      "bytes": 335574
+    },
+    {
+      "path": "assets/art/dancer-female.webp",
+      "bytes": 326144
+    },
+    {
+      "path": "res/wC.webp",
+      "bytes": 326144
+    },
+    {
+      "path": "assets/art/event-poster.jpg",
+      "bytes": 308097
+    },
+    {
+      "path": "assets/art/dancer-male.webp",
+      "bytes": 251922
+    },
+    {
+      "path": "res/mL.webp",
+      "bytes": 251922
+    },
+    {
+      "path": "lib/x86_64/libimage_processing_util_jni.so",
+      "bytes": 49416
+    },
+    {
+      "path": "lib/x86/libimage_processing_util_jni.so",
+      "bytes": 41276
+    },
+    {
+      "path": "assets/art/google-g.png",
+      "bytes": 33661
+    },
+    {
+      "path": "res/OX.png",
+      "bytes": 33661
+    },
+    {
+      "path": "lib/arm64-v8a/libimage_processing_util_jni.so",
+      "bytes": 32528
+    }
+  ],
+  "duplicateGroups": [
+    [
+      {
+        "path": "assets/art/app-icon.png",
+        "bytes": 443362
+      },
+      {
+        "path": "res/aH.png",
+        "bytes": 443362
+      }
+    ],
+    [
+      {
+        "path": "assets/art/dancer-female.webp",
+        "bytes": 326144
+      },
+      {
+        "path": "res/wC.webp",
+        "bytes": 326144
+      }
+    ],
+    [
+      {
+        "path": "assets/art/dancer-male.webp",
+        "bytes": 251922
+      },
+      {
+        "path": "res/mL.webp",
+        "bytes": 251922
+      }
+    ],
+    [
+      {
+        "path": "assets/art/google-g.png",
+        "bytes": 33661
+      },
+      {
+        "path": "res/OX.png",
+        "bytes": 33661
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/close.ogg",
+        "bytes": 6924
+      },
+      {
+        "path": "res/Ow.ogg",
+        "bytes": 6924
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/duplicate.ogg",
+        "bytes": 10902
+      },
+      {
+        "path": "res/Wq.ogg",
+        "bytes": 10902
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/intro.ogg",
+        "bytes": 12027
+      },
+      {
+        "path": "res/Sx.ogg",
+        "bytes": 12027
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/invalid.ogg",
+        "bytes": 5881
+      },
+      {
+        "path": "res/2I.ogg",
+        "bytes": 5881
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/issue.ogg",
+        "bytes": 6917
+      },
+      {
+        "path": "res/oW.ogg",
+        "bytes": 6917
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/pending.ogg",
+        "bytes": 5953
+      },
+      {
+        "path": "res/5f.ogg",
+        "bytes": 5953
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/scan.ogg",
+        "bytes": 5792
+      },
+      {
+        "path": "res/VB.ogg",
+        "bytes": 5792
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/success.ogg",
+        "bytes": 7453
+      },
+      {
+        "path": "res/rk.ogg",
+        "bytes": 7453
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/tap.ogg",
+        "bytes": 5265
+      },
+      {
+        "path": "res/bg.ogg",
+        "bytes": 5265
+      }
+    ],
+    [
+      {
+        "path": "assets/audio/transition.ogg",
+        "bytes": 8860
+      },
+      {
+        "path": "res/dC.ogg",
+        "bytes": 8860
+      }
+    ],
+    [
+      {
+        "path": "META-INF/androidx/annotation/annotation/LICENSE.txt",
+        "bytes": 3563
+      },
+      {
+        "path": "META-INF/androidx/collection/collection-ktx/LICENSE.txt",
+        "bytes": 3563
+      },
+      {
+        "path": "META-INF/androidx/collection/collection/LICENSE.txt",
+        "bytes": 3563
+      },
+      {
+        "path": "META-INF/androidx/lifecycle/lifecycle-common-java8/LICENSE.txt",
+        "bytes": 3563
+      },
+      {
+        "path": "META-INF/androidx/lifecycle/lifecycle-common/LICENSE.txt",
+        "bytes": 3563
+      }
+    ]
+  ],
+  "databaseSpreadsheetOrSigningFiles": []
+}

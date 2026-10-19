@@ -54,6 +54,21 @@ def main():
         markup = archive.read('assets/index.html').decode('utf-8')
         for asset in re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"', markup):
             require('assets/' + asset in names, 'A referenced client asset is missing: ' + asset)
+        if 'assets/remote-artwork.json' in names:
+            remote = json.loads(archive.read('assets/remote-artwork.json'))
+            expected_images = {'art/navrang-parul-combined.png', 'art/dancer-male.webp', 'art/dancer-female.webp'}
+            require(remote.get('schema') == 1 and set(remote.get('images', {})) == expected_images, 'Unexpected remote-artwork scope.')
+            for path, item in remote['images'].items():
+                revision = item.get('revision', '')
+                require(re.fullmatch(r'[0-9a-f]{40}', revision), 'Artwork revision must be immutable.')
+                original = (ROOT / 'app/assets' / path).read_bytes()
+                pinned = subprocess.check_output(['git', 'show', revision + ':app/assets/' + path], cwd=ROOT)
+                require(pinned == original and hashlib.sha256(original).hexdigest() == item.get('sha256')
+                        and item.get('size') == len(original) <= 2 * 1024 * 1024,
+                        'Remote artwork differs from its pinned source bytes: ' + path)
+                require('assets/' + path not in names, 'Optional artwork was unexpectedly bundled: ' + path)
+            for obsolete in ['vendor/xlsx.full.min.js', 'vendor/pako_inflate.min.js', 'legacy.html', 'app.js', 'store.js', 'workbook.js', 'local-schema.sql', 'art/event-poster.jpg']:
+                require('assets/' + obsolete not in names, 'Unused offline prototype file entered the APK: ' + obsolete)
         hashes = {
             'assets/art/app-icon.png': ORIGINAL_LOGO_SHA256,
             'assets/art/navrang-transparent.png': TRANSPARENT_WORDMARK_SHA256,
@@ -63,7 +78,15 @@ def main():
         require(launchers, 'Cannot resolve the manifest launcher artwork.')
         hashes.update({name: ORIGINAL_LOGO_SHA256 for name in launchers})
         for name, expected in hashes.items():
-            require(name in names and hashlib.sha256(archive.read(name)).hexdigest() == expected, 'Artwork bytes changed: ' + name)
+            if name == 'assets/art/navrang-parul-combined.png' and name not in names:
+                remote = json.loads(archive.read('assets/remote-artwork.json'))
+                item = remote['images'].get(name.removeprefix('assets/'), {})
+                require(remote.get('schema') == 1 and item.get('sha256') == expected
+                        and re.fullmatch(r'[0-9a-f]{40}', item.get('revision', ''))
+                        and item.get('size') == (ROOT / 'app/assets/art/navrang-parul-combined.png').stat().st_size,
+                        'Remote approved artwork is not pinned to the original source bytes.')
+            else:
+                require(name in names and hashlib.sha256(archive.read(name)).hexdigest() == expected, 'Artwork bytes changed: ' + name)
     receipt = {
         'sourceCommit': args.expected_source, 'sourceTree': source_tree,
         'workflowCheckout': git('rev-parse', 'HEAD'),

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App-owned Android confirmations share the web and scanner palette. -->
+    <style name="NavrangDialogTheme" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/navrang_dialog_background</item>
+        <item name="android:colorAccent">#E5BE7D</item>
+        <item name="android:textColorPrimary">#FFF2D6</item>
+        <item name="android:textColorSecondary">#D2BFBF</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/NavrangDialogButton</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/NavrangDialogButton</item>
+        <item name="android:buttonBarNeutralButtonStyle">@style/NavrangDialogButton</item>
+    </style>
+    <style name="NavrangDialogButton" parent="android:style/Widget.Material.Button.Borderless">
+        <item name="android:background">@drawable/navrang_dialog_button</item>
+        <item name="android:textColor">#FFE2AA</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:layout_margin">4dp</item>
+    </style>
+</resources>

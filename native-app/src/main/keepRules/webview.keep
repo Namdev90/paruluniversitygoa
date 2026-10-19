@@ -1,0 +1,4 @@
+# JavaScript calls this bridge by method name; it is invisible to static reachability.
+-keepclassmembers,allowoptimization class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
