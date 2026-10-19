@@ -1,0 +1,47 @@
+name: Reassemble verified signed Navrang 0.8.0 bytes
+on:
+  push:
+    branches: [release/navrang-080-signed-transfer]
+permissions:
+  contents: read
+concurrency:
+  group: navrang-080-signed-byte-transfer
+  cancel-in-progress: false
+jobs:
+  verified-blob:
+    if: github.repository == 'Namdev90/paruluniversitygoa' && github.ref == 'refs/heads/release/navrang-080-signed-transfer'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify exact signed bytes and create unreferenced APK blob
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, base64, urllib.request, os
+          assert os.environ['GITHUB_REPOSITORY'] == 'Namdev90/paruluniversitygoa'
+          assert os.environ['GITHUB_REF'] == 'refs/heads/release/navrang-080-signed-transfer'
+          parts = sorted(Path('.release-080-parts').glob('part-*.bin'))
+          assert len(parts) == 46, 'Incomplete signed artifact transfer'
+          data = b''.join(p.read_bytes() for p in parts)
+          expected = '8dd7423a67b69fa882a9115f5f1313fe930dfe6ec12c26ca62ff8b1215243fe4'
+          assert len(data) == 23634731 and hashlib.sha256(data).hexdigest() == expected, 'Signed APK checksum mismatch'
+          expected_blob = '1d465567812feceeaf9921bdff54d91e5d9a6161'
+          assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest() == expected_blob
+          body = json.dumps({'encoding':'base64','content':base64.b64encode(data).decode()}).encode()
+          request = urllib.request.Request('https://api.github.com/repos/Namdev90/paruluniversitygoa/git/blobs', data=body, headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'}, method='POST')
+          with urllib.request.urlopen(request, timeout=180) as response:
+              result = json.load(response)
+          assert result['sha'] == expected_blob, 'GitHub blob identity mismatch'
+          print(json.dumps({'signedApkBlob':result['sha'],'size':len(data),'sha256':expected,'verified':True}))
+          PY
+      # This job never builds, signs, changes branches, publishes releases or sees a keystore.
+      # The reviewed publication commit and PR15 merge remain separate operations.
