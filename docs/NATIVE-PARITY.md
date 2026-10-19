@@ -1,5 +1,7 @@
 # Native migration parity and verification evidence
 
+> **Historical 0.7.7 Compose checkpoint.** The all-Compose presentation described below was superseded by the 0.7.8 original-interface restoration. Current 0.7.9 uses the shared original-style interface in its AndroidX host while retaining native platform services; see [Features](FEATURES.md) and [current release evidence](RESTORATION-RELEASE-0.7.9.md). These older implementation statuses are not current acceptance claims.
+
 Source is isolated on `codex/native-compose-rebuild`. All operational Android screens are Compose in `native-app/src/main/kotlin/in/navrang/gate`; the legacy WebView activities are excluded from this module, retained for the separate portal and regression comparison. The 0.7.7 release preparation and owner waiver are documented in [the release record](NATIVE-RELEASE-0.7.7.md); the detailed evidence below retains the original checkpoint history.
 
 Status vocabulary: NOT STARTED, IMPLEMENTED—UNVERIFIED, VERIFIED AUTOMATED, VERIFIED DEVICE, BLOCKED, RELEASE-READY. Automated evidence never substitutes for a phone test. `docs/native-release-evidence.json` is deliberately fail-closed.

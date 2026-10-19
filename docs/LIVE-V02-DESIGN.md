@@ -1,5 +1,7 @@
 # Navrang Gate 0.2 design
 
+> **Historical 0.2 design.** Preserve the dated architecture, instructions and evidence below as history. For the published 0.7.9 behavior and acceptance scope, use [Features](FEATURES.md), [the current release record](RESTORATION-RELEASE-0.7.9.md) and the [documentation index](README.md). Earlier approvals and deployment statements do not authorize or describe a later release.
+
 Approved scope: the user's 16 October instruction authorizes the shared system previously recommended, updated APK, repository push, and the new scanner/admin/visual requirements. Implement in this session; no additional publication gate is needed. Google OAuth provider configuration may require the account owner's Google Cloud credentials; finish all independent work and identify that dependency precisely.
 
 ## Gate contract

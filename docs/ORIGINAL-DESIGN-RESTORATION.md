@@ -1,5 +1,7 @@
 # Original Navrang design restoration
 
+> **Historical 0.7.8 restoration checkpoint.** The candidate described below was subsequently published; see [the 0.7.8 release record](RESTORATION-RELEASE-0.7.8.md). Current 0.7.9 behavior and artwork are documented in [Features](FEATURES.md), [Artwork](ARTWORK.md) and [the current release record](RESTORATION-RELEASE-0.7.9.md). Preserve this earlier design and verification history.
+
 On 18 October 2026 at 18:57:30 IST the owner rejected the Material redesign and requested the original interface and old logo, with working features retained. This supersedes the native-only presentation requirement. The restoration is an upgrade candidate, 0.7.8 / Android code 16; it must not replace the published 0.7.7 bytes or require uninstalling the app.
 
 The original burgundy/gold interface is restored through the existing local interface host. The original gold Navrang logo is reused directly from the 0.7.6 source, including its original launcher image. No new artwork is generated. Brochure cropping no longer replaces the original logo during Android or web packaging.

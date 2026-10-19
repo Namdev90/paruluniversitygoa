@@ -1,4 +1,4 @@
-> Historical 0.1.0 document. The current shared-system specification is docs/LIVE-V02-DESIGN.md.
+> Historical 0.1.0 document. The later 0.2 design is preserved in [LIVE-V02-DESIGN.md](LIVE-V02-DESIGN.md). For current behavior and navigation, use [Features](FEATURES.md) and the [documentation index](README.md).
 
 # Navrang Offline prototype
 

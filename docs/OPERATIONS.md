@@ -1,6 +1,6 @@
 # Operations reference
 
-Preserved from the pre-refresh README. Version-specific historical paragraphs remain; consult the root README and Changelog for shipped versus unreleased status.
+> **Historical operations reference, principally through 0.7.6.** The download, "current" labels, pagination, update settings and build instructions below describe their recorded checkpoints. For current 0.7.9 installation use the [README](../README.md#current-installation-and-access); for current behavior use [Features](FEATURES.md), [App updates](APP-UPDATES.md) and the [Release procedure](RELEASE-PROCEDURE.md). The older text is retained for provenance, not as instructions to downgrade or replay retired operations.
 
 The historical `server/reconcile-missing-registration-v077.sql` is retired and refuses execution before any database access. The master handoff records its 18 organizer-confirmed corrections as already applied. Do not remove the guard or replay it; future corrections require separately reviewed identities and explicit approval. Existing admissions and original scan outcomes remain unchanged.
 

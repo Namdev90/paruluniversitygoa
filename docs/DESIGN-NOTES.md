@@ -1,6 +1,8 @@
 # Interface direction and evidence
 
-## Current owner direction — 18 October 2026
+> **Current status:** 0.7.9 delivers the transparent wordmark, deeper original-style surfaces, non-overlapping opening and scroll/search refinements described below. See [current artwork](ARTWORK.md), [Features](FEATURES.md) and [the release record](RESTORATION-RELEASE-0.7.9.md). The dated direction and earlier rationale remain preserved; they do not advertise an unpublished upgrade.
+
+## Recorded owner direction — 18 October 2026
 
 Preserve the original Navrang identity and add more 3D depth. The owner explicitly rejected the Material-style restyle; colours may change, but the original app/logo and complete working feature set remain the starting point. The published 0.7.8 restoration is documented in [the release record](RESTORATION-RELEASE-0.7.8.md).
 

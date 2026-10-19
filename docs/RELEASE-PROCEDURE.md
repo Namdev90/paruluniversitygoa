@@ -1,12 +1,12 @@
 # Current original-key release procedure
 
-This is the current procedure after published **0.7.8 / code 16**. The primary operational UI uses the original-design shared interface in its AndroidX host, with native Credential Manager/PKCE, CameraX and platform services. The owner's original-style direction supersedes earlier Material-only presentation requirements. Preserve all working data/security behavior.
+This is the current procedure after published **0.7.9 / code 17**. The primary operational UI uses the original-design shared interface in its AndroidX host, with native Credential Manager/PKCE, CameraX and platform services. The owner's original-style direction supersedes earlier Material-only presentation requirements. Preserve all working data/security behavior.
 
 ## Coordinate the exact source
 
-Re-read remote main, the updater manifest, active PRs and concurrent work. Use the implementation lead's exact reviewed, pushed commit and a coordinated unused version with a strictly higher code. The next arithmetic version is not automatically approved or reserved. Do not overwrite 0.7.8 or any historical artifact.
+Re-read remote main, the updater manifest, active PRs and concurrent work. Use the implementation lead's exact reviewed, pushed commit and a coordinated unused version with a strictly higher code. The next arithmetic version is not automatically approved or reserved. Do not overwrite 0.7.9 or any historical artifact.
 
-Require final-source checks and the requested independent reviews. Keep `release.json`, current artwork expectations and the appropriate source/version-scoped approval evidence consistent. The 0.7.7 and 0.7.8 waivers are historical; they do not authorize a different candidate. Record unperformed device/auth/upgrade/performance/hosted checks as unverified or explicitly waived, never passed.
+Require final-source checks and the requested independent reviews. Keep `release.json`, current artwork expectations and the appropriate source/version-scoped approval evidence consistent. The 0.7.7/0.7.8 waivers and 0.7.9 scoped physical-device deferral apply only to their recorded sources/releases; they do not authorize a different candidate. Record unperformed device/auth/upgrade/performance/hosted checks as unverified or explicitly waived, never passed.
 
 Verify the original signing key is available in the authorized build environment at signing time; never assume it is shared across environments. Never generate a replacement key, upload it to GitHub/CI, disclose its path/password, or delete ignored build/signing material.
 
@@ -42,4 +42,4 @@ Only after the applicable source/artifact/publication gates are met:
 
 Hold the unpublished candidate and its evidence. Do not relabel an older APK as new, decrement the channel, reuse a code, overwrite historical bytes or recommend uninstalling to bypass a signing mismatch. A post-publication bug requires a reviewed forward fix with a new higher code. Backend and website rollback are separate coordinated decisions that must preserve current data and audience.
 
-The [earlier integration handoff](RELEASE-HANDOFF-2026-10-18.md), [0.7.7 evidence](NATIVE-RELEASE-0.7.7.md) and [0.7.8 evidence](RESTORATION-RELEASE-0.7.8.md) remain preserved for provenance.
+The [earlier integration handoff](RELEASE-HANDOFF-2026-10-18.md), [0.7.7 evidence](NATIVE-RELEASE-0.7.7.md) and [0.7.8 evidence](RESTORATION-RELEASE-0.7.8.md) remain preserved for provenance. The [0.7.9 publication record](RESTORATION-RELEASE-0.7.9.md) is the current release checkpoint.

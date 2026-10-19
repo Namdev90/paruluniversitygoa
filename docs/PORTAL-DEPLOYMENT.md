@@ -1,6 +1,6 @@
 # Portal publication checklist
 
-The existing browser companion is [Navrang Gate](https://navrang-gate-admin.namubhai.chatgpt.site). Its publication is independent of an Android release or repository push. The hosted interface has not yet been verified against the next reviewed candidate, and production reporting readiness remains unverified.
+The existing browser companion is [Navrang Gate](https://navrang-gate-admin.namubhai.chatgpt.site). Its publication is independent of an Android release or repository push. The [0.7.9 release record](RESTORATION-RELEASE-0.7.9.md) documents the separately published phone-layout correction as Site version 11, a deployed reporting repair, authenticated administrator summary and owner-confirmed CSV export. These results do not certify later candidate source, a separately granted faculty identity, every export format or physical Android behavior. Apply this checklist to each future deployment.
 
 ## Before publication
 
