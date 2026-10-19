@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Verify/publish the existing 0.1.0–0.7.8 archive; never build or replace APKs."""
+"""Verify/publish the existing 0.1.0–0.7.9 archive; never build or replace APKs."""
 from pathlib import Path
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
 import re
+import shutil
 import struct
 import subprocess
 import tempfile
@@ -13,7 +15,9 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = 'Namdev90/paruluniversitygoa'
-BASELINE = '6c20848f22a1475c07f3aeef3d6b7572a8b8d5cc'
+BASELINE = '6f450eb5b03183d5cd2a15de48a33ab820e94f93'
+PREVIOUS_BASELINE = '6c20848f22a1475c07f3aeef3d6b7572a8b8d5cc'
+SIGNER_SHA256 = '0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce'
 CONFIRMATION = 'PUBLISH_VERIFIED_HISTORY'
 
 
@@ -77,14 +81,20 @@ def apk_identity(path):
 def verify_inventory():
     inventory = json.loads((ROOT / 'docs/history/apk-inventory.json').read_text())
     artifacts = inventory['artifacts']
-    if inventory['verifiedAgainstMain'] != BASELINE or len(artifacts) != 16:
-        raise ValueError('Historical migration is fixed to 16 artifacts through 0.7.8')
-    if [a['versionCode'] for a in artifacts] != list(range(1, 17)):
+    if inventory['verifiedAgainstMain'] != BASELINE or len(artifacts) != 17:
+        raise ValueError('Historical migration is fixed to 17 artifacts through 0.7.9')
+    if [a['versionCode'] for a in artifacts] != list(range(1, 18)):
         raise ValueError('Duplicate, missing or reordered Android version codes')
     archived = set(run('git', 'ls-tree', '--name-only', BASELINE, 'downloads/').splitlines())
     archived = {p for p in archived if p.endswith('.apk')}
     if archived != {'downloads/' + a['filename'] for a in artifacts}:
         raise ValueError('Inventory differs from the immutable baseline APK set')
+    if (inventory.get('previousVerifiedAgainstMain') != PREVIOUS_BASELINE or
+            inventory['signatureVerification']['signerSha256'] != SIGNER_SHA256):
+        raise ValueError('Historical baseline or original signer changed')
+    previous_inventory = json.loads(run('git', 'show', f'{BASELINE}:docs/history/apk-inventory.json'))
+    if artifacts[:16] != previous_inventory['artifacts']:
+        raise ValueError('Existing sixteen inventory entries changed')
     checksum_lines = (ROOT / 'SHA256SUMS.txt').read_text().splitlines()
     main_lineage = set(run('git', 'rev-list', '--first-parent', BASELINE).splitlines())
     for item in artifacts:
@@ -97,6 +107,8 @@ def verify_inventory():
         data = path.read_bytes()
         if len(data) != item['size'] or digest(data) != sha:
             raise ValueError(f'Archive bytes changed: {filename}')
+        if item['versionCode'] <= 16 and digest(run('git', 'show', f'{PREVIOUS_BASELINE}:downloads/{filename}', binary=True)) != sha:
+            raise ValueError(f'Earlier immutable archive changed: {filename}')
         identity = apk_identity(path)
         if identity != {'package': 'in.navrang.gate', 'versionName': item['version'], 'versionCode': item['versionCode']}:
             raise ValueError(f'Embedded package/version mismatch: {filename}')
@@ -122,6 +134,45 @@ def verify_inventory():
         if run('git', 'show', '-s', '--format=%aI', commit).strip() != item['date']:
             raise ValueError(f'Historical archive date mismatch: {filename}')
     return artifacts
+
+
+def verify_signatures(artifacts, apksigner=None):
+    """Require Android verification of the exact bytes, without a private key."""
+    executable = apksigner or os.environ.get('APKSIGNER') or shutil.which('apksigner')
+    if not executable:
+        raise ValueError('Android apksigner is required; provide --apksigner or APKSIGNER')
+    version = run(executable, 'version').strip()
+    receipt = {'verifiedAt': datetime.now(timezone.utc).isoformat(), 'baseline': BASELINE,
+               'apksignerVersion': version, 'expectedSignerSha256': SIGNER_SHA256, 'artifacts': []}
+    for item in artifacts:
+        path = ROOT / 'downloads' / item['filename']
+        before = path.read_bytes()
+        if digest(before) != item['sha256'] or len(before) != item['size']:
+            raise ValueError(f'APK changed before signature verification: {path.name}')
+        output = run(executable, 'verify', '--verbose', '--print-certs', str(path))
+        certs = re.findall(r'^(?:Signer #\d+|V[0-9.]+ Signer):? certificate SHA-256 digest: ([0-9a-f]{64})$', output, re.MULTILINE)
+        if ('Verifies' not in output.splitlines() or
+                'Number of signers: 1' not in output.splitlines() or
+                not certs or set(certs) != {SIGNER_SHA256}):
+            raise ValueError(f'Android signature/original signer verification failed: {path.name}')
+        if digest(path.read_bytes()) != item['sha256']:
+            raise ValueError(f'APK changed during signature verification: {path.name}')
+        receipt['artifacts'].append({'filename': path.name, 'sha256': item['sha256'],
+                                    'size': item['size'], 'signerSha256': SIGNER_SHA256,
+                                    'verified': True, 'output': output})
+    return receipt
+
+
+def record_signatures(receipt, destination=None):
+    if destination:
+        target = Path(destination).resolve()
+        if target == ROOT.resolve() or ROOT.resolve() in target.parents:
+            raise ValueError('Signature receipt must be outside the repository')
+        # Exclusive creation never replaces an APK, existing receipt or other file.
+        with target.open('x') as output:
+            output.write(json.dumps(receipt, indent=2) + '\n')
+    print(json.dumps({'verifiedSignatures': len(receipt['artifacts']),
+                      'signerSha256': SIGNER_SHA256, 'apksignerVersion': receipt['apksignerVersion']}))
 
 
 def api(path, method='GET', payload=None, optional=False):
@@ -185,7 +236,7 @@ This is an additive archive of the APK already retained in this repository, not 
 - Size: {item['size']} bytes
 - SHA-256: `{item['sha256']}`
 
-GitHub's publication timestamp records when this archive Release was created. It is not backdated to the original archive commit. APK bytes, original signatures, repository history and the installed-app update channel are unchanged. The migration rechecks bytes, embedded package/version and commit provenance; it does not claim new historical-signature or physical-device acceptance testing.
+GitHub's publication timestamp records when this archive Release was created. It is not backdated to the original archive commit. APK bytes, original signatures, repository history and the installed-app update channel are unchanged. The migration rechecks bytes, embedded package/version, commit provenance and Android signatures against the original signing certificate before publication. It does not claim physical-device acceptance testing.
 
 [Full version history](https://github.com/{REPO}/blob/main/CHANGELOG.md) · [Archive policy](https://github.com/{REPO}/blob/main/docs/history/GITHUB-RELEASES.md)
 
@@ -210,38 +261,57 @@ def validate_release(release, item, canonical=False):
             raise ValueError(f'Draft/release metadata differs from canonical archive: {tag}; manual review required')
 
 
+def asset_spec(item):
+    checksum = f'{item["sha256"]}  {item["filename"]}\n'.encode('utf-8')
+    return {item['filename']: (item['size'], item['sha256']),
+            item['filename'] + '.sha256': (len(checksum), digest(checksum))}
+
+
+def verify_local_asset(path, item):
+    size, sha = asset_spec(item)[path.name]
+    data = path.read_bytes()
+    if len(data) != size or digest(data) != sha:
+        raise ValueError(f'Local asset differs from immutable inventory: {path.name}')
+
+
 def expected_assets(item, directory):
+    apk = ROOT / 'downloads' / item['filename']
+    verify_local_asset(apk, item)
     checksum = directory / (item['filename'] + '.sha256')
     checksum.write_text(f'{item["sha256"]}  {item["filename"]}\n')
-    return [ROOT / 'downloads' / item['filename'], checksum]
+    return [apk, checksum]
 
 
-def verify_remote_assets(release, paths):
-    """Download every existing matching asset and compare bytes, never overwrite."""
+def verify_remote_assets(release, paths, item):
+    """Bind local and downloaded assets to inventory hashes, never mutable files."""
     assets = {a['name']: a for a in release.get('assets', [])}
     missing = []
     for path in paths:
+        verify_local_asset(path, item)
+        size, sha = asset_spec(item)[path.name]
         asset = assets.get(path.name)
         if asset is None:
             missing.append(path)
             continue
-        if asset['size'] != path.stat().st_size or asset.get('state') != 'uploaded':
+        if asset['size'] != size or asset.get('state') != 'uploaded':
             raise ValueError(f'Existing asset mismatch/incomplete: {path.name}; manual review required')
         with tempfile.TemporaryDirectory() as tmp:
             run('gh', 'release', 'download', release['tag_name'], '--repo', REPO,
                 '--pattern', path.name, '--dir', tmp)
-            if digest((Path(tmp) / path.name).read_bytes()) != digest(path.read_bytes()):
+            if digest((Path(tmp) / path.name).read_bytes()) != sha:
                 raise ValueError(f'Existing asset hash mismatch: {path.name}; refusing replacement')
     return missing
 
 
-def publish(artifacts):
+def publish(artifacts, apksigner=None, signature_receipt=None):
     if os.environ.get('GITHUB_ACTIONS') == 'true':
         if (os.environ.get('GITHUB_REPOSITORY') != REPO or
                 os.environ.get('GITHUB_REF') != 'refs/heads/main' or
                 os.environ.get('GITHUB_EVENT_NAME') != 'workflow_dispatch' or
                 os.environ.get('GITHUB_SHA') != run('git', 'rev-parse', 'HEAD').strip()):
             raise ValueError('Publication is restricted to a manual dispatch of trusted main')
+    # This live check runs before any API mutation, even for direct callers.
+    record_signatures(verify_signatures(artifacts, apksigner), signature_receipt)
     # Read/validate every existing tag and release before making any mutation.
     for item in artifacts:
         tag = 'v' + item['version']
@@ -254,7 +324,7 @@ def publish(artifacts):
                 raise ValueError(f'Existing release has no matching tag: {tag}')
             validate_release(release, item)
             with tempfile.TemporaryDirectory() as tmp:
-                missing = verify_remote_assets(release, expected_assets(item, Path(tmp)))
+                missing = verify_remote_assets(release, expected_assets(item, Path(tmp)), item)
                 if missing and not release['draft']:
                     raise ValueError(f'Published release is incomplete: {tag}; manual review required')
     for item in artifacts:
@@ -272,7 +342,7 @@ def publish(artifacts):
         validate_release(release, item)
         with tempfile.TemporaryDirectory() as tmp:
             paths = expected_assets(item, Path(tmp))
-            missing = verify_remote_assets(release, paths)
+            missing = verify_remote_assets(release, paths, item)
             if missing and not release['draft']:
                 raise ValueError(f'Published release is incomplete: {tag}')
             for path in missing:
@@ -281,17 +351,18 @@ def publish(artifacts):
                 validate_release(release, item)
                 if not release['draft']:
                     raise ValueError(f'Draft published concurrently: {tag}; stopping uploads')
+                verify_local_asset(path, item)
                 run('gh', 'release', 'upload', tag, str(path), '--repo', REPO)
             release = api('releases/' + str(release['id']))
             validate_release(release, item)
-            if verify_remote_assets(release, paths):
+            if verify_remote_assets(release, paths, item):
                 raise ValueError(f'Incomplete upload: {tag}')
             if release['draft']:
                 # Re-read immediately before the publication action, including
                 # its exact body/title/target and the full asset allowlist.
                 release = api('releases/' + str(release['id']))
                 validate_release(release, item, canonical=True)
-                if not release['draft'] or verify_remote_assets(release, paths):
+                if not release['draft'] or verify_remote_assets(release, paths, item):
                     raise ValueError(f'Draft changed before publication: {tag}')
                 if tag_commit(api('git/ref/tags/' + tag)) != item['commit']:
                     raise ValueError(f'Tag changed before publication: {tag}')
@@ -300,7 +371,7 @@ def publish(artifacts):
                 validate_release(release, item, canonical=True)
             if release['draft'] or tag_commit(api('git/ref/tags/' + tag)) != item['commit']:
                 raise ValueError(f'Publication verification failed: {tag}')
-            if verify_remote_assets(release, paths):
+            if verify_remote_assets(release, paths, item):
                 raise ValueError(f'Published assets missing: {tag}')
             print(json.dumps({'tag': tag, 'url': release['html_url'],
                               'publishedAt': release['published_at'], 'verified': True}))
@@ -310,13 +381,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--publish', action='store_true')
     parser.add_argument('--confirm', default='')
+    parser.add_argument('--apksigner', help='Path to Android SDK apksigner (or set APKSIGNER)')
+    parser.add_argument('--signature-receipt', help='Write the successful hash-bound verification receipt')
     args = parser.parse_args()
     if args.publish and args.confirm != CONFIRMATION:
         parser.error('Publication requires --confirm ' + CONFIRMATION)
     artifacts = verify_inventory()
     print(json.dumps({'verifiedArtifacts': len(artifacts), 'baseline': BASELINE, 'mode': 'publish' if args.publish else 'local-verification-only'}))
     if args.publish:
-        publish(artifacts)
+        publish(artifacts, args.apksigner, args.signature_receipt)
+    else:
+        record_signatures(verify_signatures(artifacts, args.apksigner), args.signature_receipt)
 
 
 if __name__ == '__main__':

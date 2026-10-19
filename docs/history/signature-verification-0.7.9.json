@@ -1,0 +1,149 @@
+{
+  "verifiedAt": "2026-10-19T04:48:54.444858+00:00",
+  "baseline": "6f450eb5b03183d5cd2a15de48a33ab820e94f93",
+  "tool": {
+    "sdkBuildTools": "37.0.0",
+    "apksignerVersion": "0.9",
+    "downloadUrl": "https://dl.google.com/android/repository/build-tools_r37_linux.zip",
+    "archiveSha256": "01af179347cbcd9c208b7f8171f7b21f6dd1d2f85bcd15e88caa51d5d7b86060",
+    "apksignerJarSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180"
+  },
+  "artifacts": [
+    {
+      "filename": "Navrang-Gate-0.2.0.apk",
+      "sha256": "db817e09156ded802a8d8234800ae255585b3ab700dc01dd1b1f8ada1d712c86",
+      "size": 5125967,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.3.0.apk",
+      "sha256": "cebbc2be6cc36003811571cc5d2877218a9cd4f2caeb3bd3a74cd5781e6fa070",
+      "size": 1349790,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.4.0.apk",
+      "sha256": "a9f4678477a3cbc03220cb662ea3aa093a906f90903224cdaa4f6a8b83ef4131",
+      "size": 1701765,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.5.0.apk",
+      "sha256": "e81b2efbe7c73b3e4048baa51a30a68ae6e04bc004c3383382ab9a4aca50d617",
+      "size": 1710021,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.6.0.apk",
+      "sha256": "d2d803ae06a297898d300fb3372e94d5c31dd60c5c3e61794800b930eab59f21",
+      "size": 1891593,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.6.1.apk",
+      "sha256": "9ed6fccab56a9654bd2e74611d21db80327d557bd2e618bcfedbcdaa8257e7ba",
+      "size": 1891593,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.0.apk",
+      "sha256": "ab1071cb3d3b7d55262c571905df88b25023c5c12bbbffa2e5a9ae2c4e269728",
+      "size": 1891593,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.1.apk",
+      "sha256": "804d857b623c1212d680aa13f9031bd38f1f44f6bd9f20ed2346fc14815710ba",
+      "size": 1895689,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.2.apk",
+      "sha256": "6baab5f89f057c3af90cc33f714cd27dc0ca5fbba3238fcb07c1d8b046959495",
+      "size": 1895689,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.3.apk",
+      "sha256": "9e786d14eaf6b180bff0beedd27d999a7d20c9017d6ec7059e0d531a2abd5baa",
+      "size": 1936718,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.4.apk",
+      "sha256": "6cfb7fde090ff17bd6e0957d7eaddd66cef2cfaca971d1c215bba79ff696eecc",
+      "size": 1936718,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.5.apk",
+      "sha256": "5bdbf9ca0852488ab7ae51153a389215f05ad727b9b5b92b37f4dd840b36345b",
+      "size": 1936718,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.6.apk",
+      "sha256": "a3502d76c94655c3b47daf79aeab220d19d692818eb12e6a06d366ff2b5c80f2",
+      "size": 1940814,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.7.apk",
+      "sha256": "cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a",
+      "size": 19823096,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.8.apk",
+      "sha256": "b72cd7bdc99883cd9052f3873885073a153f8cb8c83293ffe7191040e415fc60",
+      "size": 21176693,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-0.7.9.apk",
+      "sha256": "f52a215fc326d4d824b6868859c9d8b05d8102fd01f6f04747848a94c1cf2729",
+      "size": 22630853,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    },
+    {
+      "filename": "Navrang-Gate-Offline-0.1.0.apk",
+      "sha256": "e02b744ea3c3a4add273360c82bb0b7835456e4ee87afa52e9fd9404946c999c",
+      "size": 603116,
+      "exitCode": 0,
+      "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+      "stderr": ""
+    }
+  ]
+}
