@@ -636,12 +636,13 @@
     "tag": "v0.7.9",
     "url": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.9"
   },
-  "mainCommitAtChannelCheck": "e1176bf7c1ebecca1f1e2de08cb0a3d8934bb9bf",
-  "channelCheckedAt": "2026-10-19T06:59:39.830523+00:00",
   "preservedFileSha256": {
     "updates/latest.json": "b8501f0c9eca0ca2038e9e2e3595265b9e644f21cac6dfd91b98ce43e4944cf4",
     "release.json": "0da9215d63c283567446b51e75afab651ce571e2be68ddb3ec03b955030b95ad",
     "SHA256SUMS.txt": "b6f4f508c3b59ad71636af7545cf0689f0b72bb3e6f44c711ed126e45af990cb",
     "LICENSE": "18808073c1b24066ddc9e7fab1fe8c3b757a853e6bcf16379849ae26172a9817"
-  }
+  },
+  "preservationBaselineCommit": "e1176bf7c1ebecca1f1e2de08cb0a3d8934bb9bf",
+  "preservedSnapshotCheckedAt": "2026-10-19T06:59:39.830523+00:00",
+  "preservationScope": "Hashes describe the unchanged e1176bf migration checkpoint. Later releases may advance the app channel independently; this receipt does not claim current-main files remain frozen."
 }

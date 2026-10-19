@@ -84,7 +84,7 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Render all roles with synthetic transport only
         run: |
-          NAVRANG_CHROMIUM="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')" python tests/responsive-browser-check.py --output .build/classic-visual
+          NAVRANG_CHROMIUM="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')" python tests/responsive-browser-check.py --sizes 320x480,320x640,360x800,390x844,412x915,640x360,768x1024,1366x768 --report-stress --output .build/classic-visual
       - name: Download and parse every faculty report with synthetic transport
         run: |
           NAVRANG_CHROMIUM="$(python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')" python tests/teacher-reports-browser-check.py --output .build/classic-visual/report-downloads

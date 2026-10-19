@@ -42,7 +42,7 @@ test('name-only edits preserve quantity, unknown refunds and arbitrary payment d
   w.matchMedia=()=>({matches:true});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};let saved;
   w.NavrangWorkbook={};w.NavrangPackage={};w.eval(asset('live-core.js'));
   w.GateClient={native:false,profile:()=>({role:'admin',name:'namdev',active:true}),on:()=>{},finishGoogle:async()=>{},local:async()=>({entries:[],stats:{},localCount:1}),api:async(action,p)=>{if(action==='upsert')saved=p.records[0];return{googleEnabled:false}},sync:async()=>({dataRevision:1,cursor:0,records:[original],entries:[],stats:{},checkers:[]})};
-  try{w.eval(asset('gate.js'));await until(()=>w.document.querySelector('#registration-rows .table-link'));
+  try{w.eval(asset('pagination.js'));w.eval(asset('gate.js'));await until(()=>w.document.querySelector('#registration-rows .table-link'));
    w.document.querySelector('#registration-rows td:last-child button').click();w.document.getElementById('edit-name').value='Corrected name';
    w.document.getElementById('ticket-editor').dispatchEvent(new w.Event('submit',{cancelable:true,bubbles:true}));await until(()=>saved);
    assert.equal(saved.name,'Corrected name');for(const key of ['amount','quantity','refund','description'])assert.equal(saved[key],original[key],key+' changed without organizer input');

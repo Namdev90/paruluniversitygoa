@@ -1,0 +1,69 @@
+{
+  "versionName": "0.8.0",
+  "versionCode": 18,
+  "packageName": "in.navrang.gate",
+  "verifiedSourceCommit": "59938aa8d30653b4a28665cfc4922806965d23cd",
+  "verifiedSourceTree": "bda66dce879ec9eeb338a1675bf728c5ff16782f",
+  "approvalBranch": "release/navrang-080-approval-59938aa",
+  "sourcePullRequest": "https://github.com/Namdev90/paruluniversitygoa/pull/15",
+  "ownerPublicationApproved": true,
+  "communications": "DEFERRED_BY_OWNER",
+  "backendRuntime": "UNCHANGED_FROM_MAIN_6f450eb",
+  "websiteDeployment": "NOT_UPDATED_FOR_0.8.0",
+  "checks": {
+    "node": {
+      "passed": 280,
+      "skipped": 3,
+      "failed": 0
+    },
+    "browser": {
+      "cases": 704,
+      "failed": 0,
+      "errors": 0,
+      "sizes": 8
+    },
+    "reportFiles": {
+      "checks": 52,
+      "browserDownloads": 49,
+      "nativeBridgeFormats": 3,
+      "pageErrors": 0
+    },
+    "android": {
+      "tests": 102,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "debugAndReleaseLintErrors": 0,
+      "debugAndReleaseLintWarnings": 38
+    },
+    "physicalDevice": "SKIPPED_BY_OWNER",
+    "hostedOptInDOM": "SKIPPED_FIXTURE_UNAVAILABLE"
+  },
+  "workflowRuns": {
+    "general": "https://github.com/Namdev90/paruluniversitygoa/actions/runs/39199515167",
+    "responsive": "https://github.com/Namdev90/paruluniversitygoa/actions/runs/39199515161",
+    "native": "https://github.com/Namdev90/paruluniversitygoa/actions/runs/39199515271"
+  },
+  "unsignedArtifact": {
+    "artifactId": 12162783486,
+    "size": 23577508,
+    "sha256": "06047f7c9a80939df24231eef168e954c945d81cb9cf749790475a84248e667b",
+    "signed": false,
+    "publishable": false,
+    "independentPackagedSourceCheck": "PASS"
+  },
+  "requiredSigningCertificateSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+  "signingStatus": "BLOCKED_ORIGINAL_KEY_UNAVAILABLE_IN_CURRENT_SESSION",
+  "published": false,
+  "currentPublicVersion": "0.7.9",
+  "currentPublicVersionCode": 17,
+  "historicalApksAndManifest": "UNCHANGED",
+  "checkedAt": "2026-10-19T04:34:51.021788+00:00",
+  "procedure": [
+    "Use the immutable approval checkout identified in PR15; verify the source ancestor and unchanged runtime tree.",
+    "Run tools/build.py in the environment that retains the original key. Never upload or transfer signing material and never generate a replacement.",
+    "Independently verify the signed APK certificate, package/version/SDK/assets/size/checksum.",
+    "Append the new APK, preserve every older archive, update manifest/checksums and run final publication checks.",
+    "Merge only with expected source/main heads, publish matched website if required, then independently verify public main download bytes."
+  ]
+}

@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 2
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -30,6 +31,31 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - run: ./gradlew :native-app:assembleDebug :native-app:testDebugUnitTest :native-app:lintDebug
+      - name: Detect an unpublished release candidate
+        id: candidate
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          candidate = json.loads(Path('release.json').read_text())['versionCode'] > json.loads(Path('updates/latest.json').read_text())['versionCode']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('enabled=' + str(candidate).lower() + '\n')
+          PY
+      - name: Build and inspect unsigned production candidate
+        if: steps.candidate.outputs.enabled == 'true'
+        env:
+          NAVRANG_CANDIDATE_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          ./gradlew :native-app:assembleRelease :native-app:lintRelease
+          python3 tools/verify-unsigned-candidate.py native-app/build/outputs/apk/release/native-app-release-unsigned.apk --build-tools "$ANDROID_HOME/build-tools/36.0.0" --expected-source "$NAVRANG_CANDIDATE_SOURCE" --output .build/unsigned-candidate/receipt.json
+      - uses: actions/upload-artifact@v4
+        if: steps.candidate.outputs.enabled == 'true'
+        with:
+          name: navrang-unsigned-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            native-app/build/outputs/apk/release/native-app-release-unsigned.apk
+            .build/unsigned-candidate/receipt.json
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -39,4 +65,5 @@ jobs:
             native-app/build/test-results/
             native-app/build/synthetic-screenshots/
           retention-days: 7
-      # No APK publication, signing key, production credentials or backend writes.
+      # The unsigned preparation artifact is never a public APK update. No signing key,
+      # production credentials, backend writes, manifest update or publication occurs here.

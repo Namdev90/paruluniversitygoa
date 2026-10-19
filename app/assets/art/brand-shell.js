@@ -6,18 +6,17 @@
  const el=(tag,content,cls)=>{const n=document.createElement(tag);if(content!=null)n.textContent=content;if(cls)n.className=cls;return n;};
  const identity=()=>{const p=C.profile();return [p?.role||'',p?.checkerId||'',p?.active===true,p?.reports===true].join(':');};
  const reportsAllowed=()=>{const p=C.profile();return p?.role==='admin'||p?.active===true&&p?.reports===true;};
- let role='checker',requestBusy=false,requestGeneration=0,lastIdentity=identity(),requestedFor='';
- try{const saved=sessionStorage.getItem('navrang-login-intent');if(['checker','helpdesk','faculty'].includes(saved))role=saved;}catch{}
+ let requestBusy=false,requestGeneration=0,lastIdentity=identity(),requestedFor='';
  function eventMark(size){
   const mark=el('span',null,'event-wordmark classic-event-mark '+(size||''));mark.setAttribute('role','img');mark.setAttribute('aria-label','Navrang');
   const image=el('img');image.src='art/navrang-transparent.png';image.alt='Navrang';image.className='classic-event-logo';image.draggable=false;mark.append(image);return mark;
  }
  function universityMark(){const image=el('img');image.src='art/parul-goa.svg';image.alt='Parul University Goa';image.className='institution-wordmark';return image;}
- function brandLine(target){if(!target)return;target.replaceChildren(universityMark(),eventMark('event-wordmark-small'));target.classList.add('official-brand-line');}
+ function brandLine(target){if(!target)return;target.replaceChildren(el('span','Navrang · Parul University Goa','compact-brand-copy'));target.classList.add('official-brand-line');}
  const intro=document.querySelector('.intro-content'),heading=intro?.querySelector('h1');
- if(heading){heading.hidden=true;heading.before(eventMark('event-wordmark-hero'));}
- // The owner-supplied transparent wordmark sits below the university mark.
- // Supporting copy stays in normal flow; no lettering is redrawn or overlaid.
+ if(heading)heading.hidden=true;
+ // The approved combined artwork is present in static HTML before first paint.
+ // Supporting copy stays in normal flow; no extra university mark or lettering is overlaid.
  const dancerRow=el('div',null,'intro-dancers');dancerRow.setAttribute('aria-hidden','true');document.querySelector('.intro-content')?.after(dancerRow);
  for(const side of ['left','right']){
   const dancer=document.querySelector('.intro>.dancer-'+side);if(!dancer)continue;
@@ -25,21 +24,12 @@
  }
  const header=document.querySelector('.brand'),oldIcon=header?.querySelector(':scope>img');
  if(oldIcon){oldIcon.src='art/navrang-transparent.png';oldIcon.classList.add('classic-header-logo');header.classList.add('official-header');}
- for(const target of document.querySelectorAll('.app-footer,.login-foot'))brandLine(target);
+ for(const target of document.querySelectorAll('.app-footer,.login-foot')){target.textContent='Made by Namdev';target.classList.add('creator-credit');}
+ document.querySelector('.login-card>.official-logo')?.remove();
  for(const target of document.querySelectorAll('.section-title>.eyebrow,.station-heading>.eyebrow,#view-desk>.panel-heading>div>.eyebrow')){
   if(/PARUL UNIVERSITY GOA/i.test(target.textContent)){const title=el('span',null,'institution-label');title.append(universityMark());target.replaceChildren(title);}
  }
- const card=document.querySelector('.login-card');card?.classList.add('crafted-login');
- const sign=$('signin-panel'),roleGroup=el('div',null,'login-role-picker');roleGroup.setAttribute('aria-label','Choose how you are working');roleGroup.setAttribute('role','group');
- const descriptions={checker:['Checker','Scan and verify entry'],helpdesk:['Help Desk','Resolve registration cases'],faculty:['Faculty','View and download reports']};
- for(const name of ['checker','helpdesk','faculty']){
-  const b=el('button',null,'login-role');b.type='button';b.dataset.loginRole=name;
-  b.append(el('strong',descriptions[name][0]),el('small',descriptions[name][1]));
-  b.onclick=()=>{role=name;try{sessionStorage.setItem('navrang-login-intent',role);}catch{}paintIntent();};roleGroup.append(b);
- }
- $('signin-copy')?.after(roleGroup);
- const admin=$('show-admin-login'),adminEntry=el('div',null,'administrator-entry');
- if(admin){admin.before(adminEntry);adminEntry.append(el('span','EVENT CONTROL','administrator-label'));admin.className='administrator-button';admin.textContent='Administrator';admin.append(el('span','Full access to every station and report','administrator-caption'));adminEntry.append(admin);}
+ document.querySelector('.login-card')?.classList.add('crafted-login');
  const adminTitle=document.querySelector('#admin-signin h2');if(adminTitle)adminTitle.textContent='Administration';
  const accountCopy=document.querySelector('#signedin-panel>.micro-note');if(accountCopy)accountCopy.textContent='Your assigned permissions are checked by the server. An account choice never grants access by itself.';
  const introSkip=$('skip-intro');if(introSkip)introSkip.setAttribute('aria-label','Skip opening animation and open the app');
@@ -48,12 +38,6 @@
  const facultyBody=el('span',null,'station-card-copy');facultyBody.append(facultyTitle,facultyCopy,facultyState);faculty.append(facultyBody,facultyAction);
  document.querySelector('.station-options')?.append(faculty);
  const accountReports=el('button','Faculty reports','button secondary');accountReports.id='account-faculty';accountReports.type='button';$('signedin-panel')?.append(accountReports);
- function paintIntent(){
-  for(const b of roleGroup.children){const selected=b.dataset.loginRole===role;b.setAttribute('aria-pressed',String(selected));b.classList.toggle('selected',selected);}
-  if($('signin-title'))$('signin-title').textContent='Welcome to the event team';
-  if($('signin-copy'))$('signin-copy').textContent=role==='faculty'?'Sign in with your Google account. The administrator approves report access.':'Choose your station, then sign in. Existing assignments remain unchanged.';
-  if($('code-login'))$('code-login').hidden=role==='faculty';
- }
  function paint(){
   const p=C.profile(),admin=p?.role==='admin',allowed=reportsAllowed(),staffStation=!!p?.scanner||!!p?.helpdesk;
   document.body.classList.toggle('administrator-session',!!admin);
@@ -83,9 +67,9 @@
  document.addEventListener('visibilitychange',docVisibility);docVisibility();
  C.on(e=>{if(['auth','profile','sync'].includes(e.type)){
   const now=identity();if(now!==lastIdentity){requestGeneration++;requestBusy=false;requestedFor='';lastIdentity=now;}
-  paint();paintIntent();
+  paint();
  }});
  // Copy-only changes never rebuild scanner rows or reset gate/session state.
- paintIntent();paint();paintPageTitle();
+ paint();paintPageTitle();
  root.NavrangBrand={eventMark,paint};
 })(globalThis);

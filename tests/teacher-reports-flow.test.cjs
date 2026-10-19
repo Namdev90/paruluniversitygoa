@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {JSDOM}=require('jsdom');
 const ROOT=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(ROOT,'app/assets',file),'utf8');
+const operationId='11111111-1111-4111-8111-111111111111';
 const stamp='2026-10-18T12:00:00Z';
 const faculty={role:'checker',checkerId:'22222222-2222-4222-8222-222222222222',name:'Synthetic Faculty',method:'google',active:true,reports:true,scanner:false,helpdesk:false,nameConfirmed:true};
 const stats={registered:3,eligible:2,blocked:1,attended:2,registeredAttended:1,organizerConfirmed:1,noShow:1,serverIssues:2,issueTickets:1,duplicateAttempts:1,pendingHelpDesk:0,generatedAt:stamp};
@@ -12,7 +13,7 @@ function launch(profile=faculty){
  const dom=new JSDOM(read('index.html'),{url:'https://fixture.invalid/',runScripts:'outside-only'}),w=dom.window,calls=[],saves=[],listeners=[];
  let current=profile,handler;
  w.TextEncoder=TextEncoder;w.TextDecoder=TextDecoder;
- w.GateClient={native:false,profile:()=>current,on:f=>listeners.push(f),api:async(action,payload={})=>{calls.push({action,payload});if(handler){const result=await handler(action,payload);if(result!==undefined)return result;}if(action==='me')return current;if(action==='reports-summary')return{stats};if(action==='reports-members')return{members:[]};if(action==='reports-export')return{kind:payload.kind,count:1,generatedAt:stamp,rows:[{'Ticket ID':'DEMO0001',Name:'=HYPERLINK("https://example.invalid")','Attendance':'Admitted'}]};throw Error('Unexpected fixture request: '+action);},saveReport:(name,mime,bytes)=>saves.push({name,mime,bytes})};
+ w.GateClient={native:false,profile:()=>current,on:f=>listeners.push(f),api:async(action,payload={})=>{calls.push({action,payload});if(handler){const result=await handler(action,payload);if(result!==undefined)return result;}if(action==='me')return current;if(action==='reports-summary')return{stats};if(action==='reports-members')return{members:[]};if(action==='reports-export')return{kind:payload.kind,count:1,generatedAt:stamp,rows:[{'Ticket ID':'DEMO0001',Name:'=HYPERLINK("https://example.invalid")','Attendance':'Admitted'}]};throw Error('Unexpected fixture request: '+action);},saveReport:(name,mime,bytes,metadata)=>{saves.push({name,mime,bytes,metadata});return{operationId:metadata?.operationId,outcome:'initiated'}}};
  for(const file of ['report-export.js','reports.js'])w.eval(read(file));
  return{dom,w,calls,saves,$:id=>w.document.getElementById(id),setHandler:f=>handler=f,setProfile:(p,emit=true)=>{current=p;if(emit)listeners.forEach(f=>f({type:'profile'}));},close:()=>dom.window.close()};
 }
@@ -22,15 +23,16 @@ test('every faculty dataset downloads CSV and XLSX with fresh server authorizati
   a.$('report-kind').value=kind;const before=a.calls.length;await a.$('report-'+format).onclick();const saved=a.saves.at(-1);
   assert.match(saved.name,new RegExp('^Navrang-'+kind+'-\\d{4}-\\d{2}-\\d{2}\\.'+format+'$'));
   assert.deepEqual(a.calls.slice(before).map(c=>c.action),['me','reports-export']);
-  assert.equal(a.calls.at(-1).payload.kind,kind);
+  assert.deepEqual(JSON.parse(JSON.stringify(a.calls.slice(before).find(c=>c.action==='reports-export').payload)),{kind});
+  assert.match(saved.metadata.operationId,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
   if(format==='csv'){if(kind!=='activity')assert.match(new TextDecoder().decode(saved.bytes),/'=HYPERLINK/);assert.match(new TextDecoder().decode(saved.bytes),/Report generated UTC/);}
   else assert.equal(Buffer.from(saved.bytes).subarray(0,4).toString('hex'),'504b0304');
  }
- assert.equal(a.saves.length,24);assert.equal(a.calls.some(c=>c.action==='reports-members'),false);
+ assert.equal(a.saves.length,24);assert.equal(new Set(a.saves.map(save=>save.metadata.operationId)).size,24);assert.equal(a.calls.some(c=>c.action==='reports-members'),false);
  }finally{a.close()}
 });
 test('PDF gets a fresh summary and does not fetch participant rows',async()=>{
- const a=launch();try{await a.w.NavrangReports.refresh();const before=a.calls.length;await a.$('report-pdf').onclick();assert.deepEqual(a.calls.slice(before).map(c=>c.action),['me','reports-summary']);assert.equal(a.saves.length,1);assert.equal(a.saves[0].mime,'application/pdf');assert.match(Buffer.from(a.saves[0].bytes).toString(),/Total admitted: 2/);}finally{a.close()}
+ const a=launch();try{await a.w.NavrangReports.refresh();const before=a.calls.length;await a.$('report-pdf').onclick();assert.deepEqual(a.calls.slice(before).map(c=>c.action),['me','reports-summary']);assert.deepEqual(JSON.parse(JSON.stringify(a.calls.at(-1).payload)),{});assert.equal(a.saves.length,1);assert.equal(a.saves[0].mime,'application/pdf');assert.match(Buffer.from(a.saves[0].bytes).toString(),/Total admitted: 2/);}finally{a.close()}
 });
 test('denied faculty, scanner and signed-out identities cannot refresh or download reports',async()=>{
  for(const profile of [null,{...faculty,reports:false},{...faculty,active:false}]){const a=launch(profile);try{await a.w.NavrangReports.refresh();await a.$('report-csv').onclick();assert.equal(a.calls.length,0);assert.equal(a.saves.length,0);assert.equal(a.$('report-csv').disabled,true);}finally{a.close()}}
@@ -104,4 +106,19 @@ test('browser download QA uses paced visible clicks without disabling browser gu
  assert.match(harness,/page\.locator\('#report-kind'\)\.select_option\(kind\)/);
  assert.match(harness,/failure\.json/);assert.match(harness,/console_messages/);
  assert.ok(!harness.includes('force=True'));assert.ok(!harness.includes('disable-ipc-flooding-protection'));
+});
+test('native save waits through the picker and reports cancellation without saved success',async()=>{
+ const a=launch(),hold=deferred();try{a.w.GateClient.native=true;a.w.GateClient.saveReport=(name,mime,bytes,metadata)=>{a.saves.push({name,mime,bytes,metadata});return hold.promise};await a.w.NavrangReports.refresh();const job=a.$('report-csv').onclick();await settle();assert.equal(a.$('report-csv').disabled,true);assert.equal(a.saves.length,1);const localId=a.saves[0].metadata.operationId;assert.match(localId,/^[0-9a-f-]{36}$/i);hold.resolve({operationId:localId,outcome:'cancelled'});await job;assert.deepEqual(a.calls.map(c=>c.action),['reports-summary','me','reports-export']);assert.match(a.$('report-status').textContent,/cancelled/i);assert.doesNotMatch(a.$('report-status').textContent,/saved|receipt/i);assert.equal(a.$('report-csv').disabled,false)}finally{a.close()}
+});
+test('production v7 responses need no server operation identity or save receipt endpoints',async()=>{
+ const a=launch();try{await a.w.NavrangReports.refresh();for(const format of ['csv','xlsx','pdf'])await a.$('report-'+format).onclick();assert.equal(a.saves.length,3);assert.equal(a.calls.some(c=>['reports-summary-prepare','reports-save-outcome'].includes(c.action)),false);assert.match(a.$('report-status').textContent,/Browser download initiated/);assert.doesNotMatch(a.$('report-status').textContent,/saved|receipt|acknowledged/i);}finally{a.close()}
+});
+test('native saved and failed outcomes remain device-confirmed terminal results',async()=>{
+ for(const outcome of ['saved','failed']){const a=launch();try{a.w.GateClient.native=true;a.w.GateClient.saveReport=(name,mime,bytes,metadata)=>{a.saves.push({name,mime,bytes,metadata});return Promise.resolve({operationId:metadata.operationId,outcome})};await a.w.NavrangReports.refresh();await a.$('report-pdf').onclick();assert.match(a.$('report-status').textContent,outcome==='saved'?/saved on this device/:/Could not save report/);assert.equal(a.calls.some(c=>c.action==='reports-save-outcome'),false);assert.equal(a.$('report-pdf').disabled,false);}finally{a.close()}}
+});
+test('a stale native picker completion cannot unlock or overwrite a new account save',async()=>{
+ const a=launch(),old=deferred(),next=deferred();try{a.w.GateClient.native=true;a.w.GateClient.saveReport=(name,mime,bytes,metadata)=>{a.saves.push({name,mime,bytes,metadata});return a.saves.length===1?old.promise:next.promise};await a.w.NavrangReports.refresh();const first=a.$('report-csv').onclick();await settle();a.setProfile(null);a.setProfile({...faculty,checkerId:'33333333-3333-4333-8333-333333333333'});await a.w.NavrangReports.refresh();const second=a.$('report-xlsx').onclick();await settle();assert.equal(a.saves.length,2);old.resolve({operationId:a.saves[0].metadata.operationId,outcome:'saved'});await first;assert.equal(a.$('report-csv').disabled,true);assert.doesNotMatch(a.$('report-status').textContent,/saved on this device/);next.resolve({operationId:a.saves[1].metadata.operationId,outcome:'cancelled'});await second;assert.match(a.$('report-status').textContent,/cancelled/);assert.equal(a.$('report-csv').disabled,false);assert.equal(a.calls.some(c=>c.action==='reports-save-outcome'),false);}finally{a.close()}
+});
+test('unconfirmed or mismatched native terminal outcomes never claim a successful save',async()=>{
+ for(const outcome of ['initiated','unknown','mismatched']){const a=launch();try{a.w.GateClient.native=true;a.w.GateClient.saveReport=(name,mime,bytes,metadata)=>Promise.resolve({operationId:outcome==='mismatched'?operationId:metadata.operationId,outcome:outcome==='mismatched'?'saved':outcome});await a.w.NavrangReports.refresh();await a.$('report-csv').onclick();assert.match(a.$('report-status').textContent,/did not confirm/i);assert.doesNotMatch(a.$('report-status').textContent,/saved on this device/);}finally{a.close()}}
 });

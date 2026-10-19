@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0 — Android code 18 · 19 October 2026
+
+- Approved combined Navrang/Parul University artwork and maroon styling, staged sign-in, confirmation before sign-out and reduced-motion-aware screen transitions.
+- Consolidated Reports with reachable Downloads, measured metric/teacher pagination and explicit large-text accessibility dialogs.
+- Guarded local report-save completion, cancellation and failure; browser downloads report initiation. Uses the existing repaired reporting backend without a new deployment.
+- New messaging, voice messages and live broadcasts are deferred by the owner. Existing APK-update notifications are retained.
+- Original-key-signed APK: 23,634,731 bytes; SHA-256 `8dd7423a67b69fa882a9115f5f1313fe930dfe6ec12c26ca62ff8b1215243fe4`. All seventeen previous APKs are preserved unchanged. Physical checks remain SKIPPED_BY_OWNER.
+- Fresh local build: 102 Android tests passed; release lint 0 errors/37 warnings. Source CI passed 704 browser cases. [Signed artifact and source evidence](docs/RESTORATION-RELEASE-0.8.0.md).
+
 ## 0.7.9 — Android code 17 · 19 October 2026
 
 - Faithful transparent owner-supplied wordmark, deeper burgundy/gold surfaces, tactile admin tabs and non-overlapping launch animation with an immediate skip action.
@@ -55,6 +64,6 @@
 
 ## Evidence and release discipline
 
-The [machine-readable archive inventory](docs/history/apk-inventory.json) records the exact package name, embedded version, byte size, SHA-256 and first archive commit for all seventeen retained APKs through 0.7.9. Original archive commit dates are provenance, not GitHub Release publication timestamps. The [historical-release migration](docs/history/GITHUB-RELEASES.md) preserves this distinction. All seventeen exact APKs passed Android signature verification with the original signer on 19 October 2026; the [hash-bound receipt](docs/history/signature-verification-0.7.9.json) records the result. All seventeen GitHub archive Releases were published on 19 October 2026; the [publication receipt](docs/history/publication-receipt-2026-10-19.json) records their actual timestamps and the independent verification of all 34 public assets. Physical-device and upgrade acceptance are separate and are not implied by this signature audit.
+The [machine-readable archive inventory](docs/history/apk-inventory.json) records the exact package name, embedded version, byte size, SHA-256 and first archive commit for all seventeen retained APKs through 0.7.9. Original archive commit dates are provenance, not GitHub Release publication timestamps. The [historical-release migration](docs/history/GITHUB-RELEASES.md) preserves this distinction. All seventeen exact APKs passed Android signature verification with the original signer on 19 October 2026; the [hash-bound receipt](docs/history/signature-verification-0.7.9.json) records the result. All seventeen GitHub archive Releases were published on 19 October 2026; the [publication receipt](docs/history/publication-receipt-2026-10-19.json) records their actual timestamps and the independent verification of all 34 public assets. This completed migration is bounded through 0.7.9; later app releases are separate. Physical-device and upgrade acceptance are separate and are not implied by this signature audit.
 
 The public updater uses [`updates/latest.json`](updates/latest.json), not this document. A source commit, passing CI, merged PR, or proposed version name does not publish an installable update. Never overwrite an existing APK version or reset its version code. Keep earlier artifacts intact for history; distribute the current verified release through the main download link.

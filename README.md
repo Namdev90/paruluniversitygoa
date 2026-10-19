@@ -5,13 +5,13 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.7.9.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.8.0.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
 [Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Accessibility](ACCESSIBILITY.md)
 
 </div>
 
-> **Release status:** **0.7.9 · Android code 17** includes reachable phone report downloads, the original burgundy/gold design, native scanning and update protections. Signed with the original identity. Physical-device checks remain deferred by the owner; see [the release record](docs/RESTORATION-RELEASE-0.7.9.md).
+> **Release status:** **0.8.0 · Android code 18** includes the approved combined branding, staged sign-in, consolidated Reports with reachable downloads, sign-out confirmation and smoother transitions. Signed with the original identity. Communications features are deferred. Physical-device checks remain deferred by the owner; see [the release record](docs/RESTORATION-RELEASE-0.8.0.md).
 
 
 ## Original Navrang interface
@@ -86,7 +86,7 @@ The web package includes every referenced script, including Faculty Reports. `te
 
 ## The development record
 
-The project retains **17 published APK versions** from the 0.1.0 offline prototype through the 0.7.7 native rebuild, 0.7.8 original-design restoration and 0.7.9 report-download release. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. All 17 versions are also available as [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases), published and independently verified on 19 October 2026 with their original APKs, checksums and source-commit provenance. Older architectures remain clearly labelled. [Historical Release migration](docs/history/GITHUB-RELEASES.md) describes the additive archive process: unchanged APKs, original commit/date provenance, current GitHub publication timestamps and no updater-channel changes.
+The project preserves its APK history from the 0.1.0 offline prototype through native rebuilding and subsequent releases. [CHANGELOG.md](CHANGELOG.md) links versions to their archive commits and explains what changed. The bounded [historical inventory](docs/history/apk-inventory.json) covers the first **17 versions, 0.1.0–0.7.9**, including embedded package/version codes, byte sizes and hashes. Those 17 versions are available as [GitHub archive Releases](https://github.com/Namdev90/paruluniversitygoa/releases), published and independently verified on 19 October 2026 with original APKs, checksums and source-commit provenance. Older architectures remain clearly labelled. The [publication receipt and policy](docs/history/GITHUB-RELEASES.md) distinguish actual GitHub publication times from original archive dates. Newer app releases follow the current download and updater channel above; the historical migration does not change that channel.
 
 ## Project map
 
