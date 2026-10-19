@@ -1,0 +1,647 @@
+{
+  "verifiedAt": "2026-10-19T06:56:34.333834+00:00",
+  "workflowRunId": 39212213363,
+  "workflowRunUrl": "https://github.com/Namdev90/paruluniversitygoa/actions/runs/39212213363",
+  "workflowCommit": "e1176bf7c1ebecca1f1e2de08cb0a3d8934bb9bf",
+  "expectedSignerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+  "verifiedReleaseCount": 17,
+  "verifiedAssetCount": 34,
+  "releases": [
+    {
+      "version": "0.1.0",
+      "versionCode": 1,
+      "tag": "v0.1.0",
+      "tagCommit": "294dcf600e7c8ab3367d38a1de18b047bf4e6be7",
+      "artifactCommit": "294dcf600e7c8ab3367d38a1de18b047bf4e6be7",
+      "archiveDate": "2026-10-16T22:00:13+05:30",
+      "artifactDate": "2026-10-16T22:00:13+05:30",
+      "releaseId": 416989155,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.1.0",
+      "publishedAt": "2026-10-19T06:51:07Z",
+      "assets": [
+        {
+          "id": 655483063,
+          "filename": "Navrang-Gate-Offline-0.1.0.apk",
+          "size": 603116,
+          "sha256": "e02b744ea3c3a4add273360c82bb0b7835456e4ee87afa52e9fd9404946c999c",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.1.0/Navrang-Gate-Offline-0.1.0.apk",
+          "githubDigest": "sha256:e02b744ea3c3a4add273360c82bb0b7835456e4ee87afa52e9fd9404946c999c"
+        },
+        {
+          "id": 655483100,
+          "filename": "Navrang-Gate-Offline-0.1.0.apk.sha256",
+          "size": 97,
+          "sha256": "778e7e5badb433efc27cf22c5da5419c8455af7312ae053d856c9cc7208bd285",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.1.0/Navrang-Gate-Offline-0.1.0.apk.sha256",
+          "githubDigest": "sha256:778e7e5badb433efc27cf22c5da5419c8455af7312ae053d856c9cc7208bd285"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.2.0",
+      "versionCode": 2,
+      "tag": "v0.2.0",
+      "tagCommit": "a192e292fd9e90282dbd1d39660446008927c1b0",
+      "artifactCommit": "a192e292fd9e90282dbd1d39660446008927c1b0",
+      "archiveDate": "2026-10-16T23:23:13+05:30",
+      "artifactDate": "2026-10-16T23:23:13+05:30",
+      "releaseId": 416989240,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.2.0",
+      "publishedAt": "2026-10-19T06:51:15Z",
+      "assets": [
+        {
+          "id": 655483251,
+          "filename": "Navrang-Gate-0.2.0.apk",
+          "size": 5125967,
+          "sha256": "db817e09156ded802a8d8234800ae255585b3ab700dc01dd1b1f8ada1d712c86",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.2.0/Navrang-Gate-0.2.0.apk",
+          "githubDigest": "sha256:db817e09156ded802a8d8234800ae255585b3ab700dc01dd1b1f8ada1d712c86"
+        },
+        {
+          "id": 655483303,
+          "filename": "Navrang-Gate-0.2.0.apk.sha256",
+          "size": 89,
+          "sha256": "a229fb83234d006a7e442fe2961ad1eb68df8a6d2abf41064d8e7d388ae29363",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.2.0/Navrang-Gate-0.2.0.apk.sha256",
+          "githubDigest": "sha256:a229fb83234d006a7e442fe2961ad1eb68df8a6d2abf41064d8e7d388ae29363"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.3.0",
+      "versionCode": 3,
+      "tag": "v0.3.0",
+      "tagCommit": "82b603ef46936c721c95fa90974e4b8d81dc6788",
+      "artifactCommit": "82b603ef46936c721c95fa90974e4b8d81dc6788",
+      "archiveDate": "2026-10-17T09:51:33+05:30",
+      "artifactDate": "2026-10-17T09:51:33+05:30",
+      "releaseId": 416989312,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.3.0",
+      "publishedAt": "2026-10-19T06:51:24Z",
+      "assets": [
+        {
+          "id": 655483486,
+          "filename": "Navrang-Gate-0.3.0.apk",
+          "size": 1349790,
+          "sha256": "cebbc2be6cc36003811571cc5d2877218a9cd4f2caeb3bd3a74cd5781e6fa070",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.3.0/Navrang-Gate-0.3.0.apk",
+          "githubDigest": "sha256:cebbc2be6cc36003811571cc5d2877218a9cd4f2caeb3bd3a74cd5781e6fa070"
+        },
+        {
+          "id": 655483527,
+          "filename": "Navrang-Gate-0.3.0.apk.sha256",
+          "size": 89,
+          "sha256": "cf73cdcabbd21569085dba36c9d70296462fa9694da06204575a4bf83e23440a",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.3.0/Navrang-Gate-0.3.0.apk.sha256",
+          "githubDigest": "sha256:cf73cdcabbd21569085dba36c9d70296462fa9694da06204575a4bf83e23440a"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.4.0",
+      "versionCode": 4,
+      "tag": "v0.4.0",
+      "tagCommit": "18278c9cd6c6f5fef479de8f0630fe6a2db0fa0f",
+      "artifactCommit": "18278c9cd6c6f5fef479de8f0630fe6a2db0fa0f",
+      "archiveDate": "2026-10-17T10:52:41+05:30",
+      "artifactDate": "2026-10-17T10:52:41+05:30",
+      "releaseId": 416989401,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.4.0",
+      "publishedAt": "2026-10-19T06:51:34Z",
+      "assets": [
+        {
+          "id": 655483755,
+          "filename": "Navrang-Gate-0.4.0.apk",
+          "size": 1701765,
+          "sha256": "a9f4678477a3cbc03220cb662ea3aa093a906f90903224cdaa4f6a8b83ef4131",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.4.0/Navrang-Gate-0.4.0.apk",
+          "githubDigest": "sha256:a9f4678477a3cbc03220cb662ea3aa093a906f90903224cdaa4f6a8b83ef4131"
+        },
+        {
+          "id": 655483786,
+          "filename": "Navrang-Gate-0.4.0.apk.sha256",
+          "size": 89,
+          "sha256": "87dff435d09e2cf4d5eac0faa02b7ac8b81060aeb353d87422f124b4c99d5d5b",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.4.0/Navrang-Gate-0.4.0.apk.sha256",
+          "githubDigest": "sha256:87dff435d09e2cf4d5eac0faa02b7ac8b81060aeb353d87422f124b4c99d5d5b"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.5.0",
+      "versionCode": 5,
+      "tag": "v0.5.0",
+      "tagCommit": "c9c43bbc46c3a1e9a1e9c7349fc16cd55e28cb92",
+      "artifactCommit": "c9c43bbc46c3a1e9a1e9c7349fc16cd55e28cb92",
+      "archiveDate": "2026-10-17T11:26:06+05:30",
+      "artifactDate": "2026-10-17T11:26:06+05:30",
+      "releaseId": 416989518,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.5.0",
+      "publishedAt": "2026-10-19T06:51:44Z",
+      "assets": [
+        {
+          "id": 655484036,
+          "filename": "Navrang-Gate-0.5.0.apk",
+          "size": 1710021,
+          "sha256": "e81b2efbe7c73b3e4048baa51a30a68ae6e04bc004c3383382ab9a4aca50d617",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.5.0/Navrang-Gate-0.5.0.apk",
+          "githubDigest": "sha256:e81b2efbe7c73b3e4048baa51a30a68ae6e04bc004c3383382ab9a4aca50d617"
+        },
+        {
+          "id": 655484069,
+          "filename": "Navrang-Gate-0.5.0.apk.sha256",
+          "size": 89,
+          "sha256": "e62e1c627a6a412077af9e2584cb53b4d6a3fe03d2043b5d1fa4492d53c76d36",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.5.0/Navrang-Gate-0.5.0.apk.sha256",
+          "githubDigest": "sha256:e62e1c627a6a412077af9e2584cb53b4d6a3fe03d2043b5d1fa4492d53c76d36"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.6.0",
+      "versionCode": 6,
+      "tag": "v0.6.0",
+      "tagCommit": "fbc636da9a3823a5426d6c20a22442d6db9e0410",
+      "artifactCommit": "fbc636da9a3823a5426d6c20a22442d6db9e0410",
+      "archiveDate": "2026-10-17T12:17:53+05:30",
+      "artifactDate": "2026-10-17T12:17:53+05:30",
+      "releaseId": 416989599,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.6.0",
+      "publishedAt": "2026-10-19T06:51:53Z",
+      "assets": [
+        {
+          "id": 655484347,
+          "filename": "Navrang-Gate-0.6.0.apk",
+          "size": 1891593,
+          "sha256": "d2d803ae06a297898d300fb3372e94d5c31dd60c5c3e61794800b930eab59f21",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.6.0/Navrang-Gate-0.6.0.apk",
+          "githubDigest": "sha256:d2d803ae06a297898d300fb3372e94d5c31dd60c5c3e61794800b930eab59f21"
+        },
+        {
+          "id": 655484392,
+          "filename": "Navrang-Gate-0.6.0.apk.sha256",
+          "size": 89,
+          "sha256": "35fe574c9b7f4128ac054347a562f7daf82127d06653a3ed12580e430f5923bc",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.6.0/Navrang-Gate-0.6.0.apk.sha256",
+          "githubDigest": "sha256:35fe574c9b7f4128ac054347a562f7daf82127d06653a3ed12580e430f5923bc"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.6.1",
+      "versionCode": 7,
+      "tag": "v0.6.1",
+      "tagCommit": "5dd88797598584e309f3b6561a7aa6ad9011c38b",
+      "artifactCommit": "5dd88797598584e309f3b6561a7aa6ad9011c38b",
+      "archiveDate": "2026-10-17T12:21:54+05:30",
+      "artifactDate": "2026-10-17T12:21:54+05:30",
+      "releaseId": 416989695,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.6.1",
+      "publishedAt": "2026-10-19T06:52:02Z",
+      "assets": [
+        {
+          "id": 655484650,
+          "filename": "Navrang-Gate-0.6.1.apk",
+          "size": 1891593,
+          "sha256": "9ed6fccab56a9654bd2e74611d21db80327d557bd2e618bcfedbcdaa8257e7ba",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.6.1/Navrang-Gate-0.6.1.apk",
+          "githubDigest": "sha256:9ed6fccab56a9654bd2e74611d21db80327d557bd2e618bcfedbcdaa8257e7ba"
+        },
+        {
+          "id": 655484690,
+          "filename": "Navrang-Gate-0.6.1.apk.sha256",
+          "size": 89,
+          "sha256": "2cb5f4c9b4ec96faf07f700b3d5f4dc0fcdef0639e16697f3dcabc987f9d4a19",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.6.1/Navrang-Gate-0.6.1.apk.sha256",
+          "githubDigest": "sha256:2cb5f4c9b4ec96faf07f700b3d5f4dc0fcdef0639e16697f3dcabc987f9d4a19"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.0",
+      "versionCode": 8,
+      "tag": "v0.7.0",
+      "tagCommit": "ee0249470e1e14276c1c83874614c19b68582464",
+      "artifactCommit": "ee0249470e1e14276c1c83874614c19b68582464",
+      "archiveDate": "2026-10-17T13:03:23+05:30",
+      "artifactDate": "2026-10-17T13:03:23+05:30",
+      "releaseId": 416989786,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.0",
+      "publishedAt": "2026-10-19T06:52:12Z",
+      "assets": [
+        {
+          "id": 655484873,
+          "filename": "Navrang-Gate-0.7.0.apk",
+          "size": 1891593,
+          "sha256": "ab1071cb3d3b7d55262c571905df88b25023c5c12bbbffa2e5a9ae2c4e269728",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.0/Navrang-Gate-0.7.0.apk",
+          "githubDigest": "sha256:ab1071cb3d3b7d55262c571905df88b25023c5c12bbbffa2e5a9ae2c4e269728"
+        },
+        {
+          "id": 655484909,
+          "filename": "Navrang-Gate-0.7.0.apk.sha256",
+          "size": 89,
+          "sha256": "2f3e48cfff92f9a57ea720d0ba168c959e413154d852a97b9a258e3b649c3daf",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.0/Navrang-Gate-0.7.0.apk.sha256",
+          "githubDigest": "sha256:2f3e48cfff92f9a57ea720d0ba168c959e413154d852a97b9a258e3b649c3daf"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.1",
+      "versionCode": 9,
+      "tag": "v0.7.1",
+      "tagCommit": "2dd3647240eeefb219c3e013a068267001a025a1",
+      "artifactCommit": "2dd3647240eeefb219c3e013a068267001a025a1",
+      "archiveDate": "2026-10-17T13:36:20+05:30",
+      "artifactDate": "2026-10-17T13:36:20+05:30",
+      "releaseId": 416989900,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.1",
+      "publishedAt": "2026-10-19T06:52:21Z",
+      "assets": [
+        {
+          "id": 655485174,
+          "filename": "Navrang-Gate-0.7.1.apk",
+          "size": 1895689,
+          "sha256": "804d857b623c1212d680aa13f9031bd38f1f44f6bd9f20ed2346fc14815710ba",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.1/Navrang-Gate-0.7.1.apk",
+          "githubDigest": "sha256:804d857b623c1212d680aa13f9031bd38f1f44f6bd9f20ed2346fc14815710ba"
+        },
+        {
+          "id": 655485227,
+          "filename": "Navrang-Gate-0.7.1.apk.sha256",
+          "size": 89,
+          "sha256": "3b91b5418219ba4b9adec87b98f2a7e1e26edc6e262325762dcc960d665132c3",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.1/Navrang-Gate-0.7.1.apk.sha256",
+          "githubDigest": "sha256:3b91b5418219ba4b9adec87b98f2a7e1e26edc6e262325762dcc960d665132c3"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.2",
+      "versionCode": 10,
+      "tag": "v0.7.2",
+      "tagCommit": "f762dae0fa8da76a4f8d1bf491a0d9465b11efc2",
+      "artifactCommit": "f762dae0fa8da76a4f8d1bf491a0d9465b11efc2",
+      "archiveDate": "2026-10-17T14:02:57+05:30",
+      "artifactDate": "2026-10-17T14:02:57+05:30",
+      "releaseId": 416989996,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.2",
+      "publishedAt": "2026-10-19T06:52:31Z",
+      "assets": [
+        {
+          "id": 655485470,
+          "filename": "Navrang-Gate-0.7.2.apk",
+          "size": 1895689,
+          "sha256": "6baab5f89f057c3af90cc33f714cd27dc0ca5fbba3238fcb07c1d8b046959495",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.2/Navrang-Gate-0.7.2.apk",
+          "githubDigest": "sha256:6baab5f89f057c3af90cc33f714cd27dc0ca5fbba3238fcb07c1d8b046959495"
+        },
+        {
+          "id": 655485507,
+          "filename": "Navrang-Gate-0.7.2.apk.sha256",
+          "size": 89,
+          "sha256": "6af182ba074181b5d84032c86f3d3ad022ca4e2188c5d296d530622bfcabc25e",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.2/Navrang-Gate-0.7.2.apk.sha256",
+          "githubDigest": "sha256:6af182ba074181b5d84032c86f3d3ad022ca4e2188c5d296d530622bfcabc25e"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.3",
+      "versionCode": 11,
+      "tag": "v0.7.3",
+      "tagCommit": "65f7cd0611fa25134bbc9946b929ba73d471eaf2",
+      "artifactCommit": "65f7cd0611fa25134bbc9946b929ba73d471eaf2",
+      "archiveDate": "2026-10-17T16:46:30+05:30",
+      "artifactDate": "2026-10-17T16:46:30+05:30",
+      "releaseId": 416990088,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.3",
+      "publishedAt": "2026-10-19T06:52:40Z",
+      "assets": [
+        {
+          "id": 655485722,
+          "filename": "Navrang-Gate-0.7.3.apk",
+          "size": 1936718,
+          "sha256": "9e786d14eaf6b180bff0beedd27d999a7d20c9017d6ec7059e0d531a2abd5baa",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.3/Navrang-Gate-0.7.3.apk",
+          "githubDigest": "sha256:9e786d14eaf6b180bff0beedd27d999a7d20c9017d6ec7059e0d531a2abd5baa"
+        },
+        {
+          "id": 655485768,
+          "filename": "Navrang-Gate-0.7.3.apk.sha256",
+          "size": 89,
+          "sha256": "99305644386e4a57d99b352da22fc8769f4b9e6dc98485d9530150b5acb64db2",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.3/Navrang-Gate-0.7.3.apk.sha256",
+          "githubDigest": "sha256:99305644386e4a57d99b352da22fc8769f4b9e6dc98485d9530150b5acb64db2"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.4",
+      "versionCode": 12,
+      "tag": "v0.7.4",
+      "tagCommit": "aa14bbefb99838ab31c8fff87081807541387045",
+      "artifactCommit": "aa14bbefb99838ab31c8fff87081807541387045",
+      "archiveDate": "2026-10-17T17:02:34+05:30",
+      "artifactDate": "2026-10-17T17:02:34+05:30",
+      "releaseId": 416990193,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.4",
+      "publishedAt": "2026-10-19T06:52:50Z",
+      "assets": [
+        {
+          "id": 655486043,
+          "filename": "Navrang-Gate-0.7.4.apk",
+          "size": 1936718,
+          "sha256": "6cfb7fde090ff17bd6e0957d7eaddd66cef2cfaca971d1c215bba79ff696eecc",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.4/Navrang-Gate-0.7.4.apk",
+          "githubDigest": "sha256:6cfb7fde090ff17bd6e0957d7eaddd66cef2cfaca971d1c215bba79ff696eecc"
+        },
+        {
+          "id": 655486079,
+          "filename": "Navrang-Gate-0.7.4.apk.sha256",
+          "size": 89,
+          "sha256": "e3a30c3362e369d1d8eb4fc545cf438ec87990898bbf6f1d95463ab7dd1f89b5",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.4/Navrang-Gate-0.7.4.apk.sha256",
+          "githubDigest": "sha256:e3a30c3362e369d1d8eb4fc545cf438ec87990898bbf6f1d95463ab7dd1f89b5"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.5",
+      "versionCode": 13,
+      "tag": "v0.7.5",
+      "tagCommit": "85fc4dd306d8c49c68a14af128ecb5de4657e489",
+      "artifactCommit": "85fc4dd306d8c49c68a14af128ecb5de4657e489",
+      "archiveDate": "2026-10-17T19:26:17+05:30",
+      "artifactDate": "2026-10-17T19:26:17+05:30",
+      "releaseId": 416990286,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.5",
+      "publishedAt": "2026-10-19T06:52:59Z",
+      "assets": [
+        {
+          "id": 655486289,
+          "filename": "Navrang-Gate-0.7.5.apk",
+          "size": 1936718,
+          "sha256": "5bdbf9ca0852488ab7ae51153a389215f05ad727b9b5b92b37f4dd840b36345b",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.5/Navrang-Gate-0.7.5.apk",
+          "githubDigest": "sha256:5bdbf9ca0852488ab7ae51153a389215f05ad727b9b5b92b37f4dd840b36345b"
+        },
+        {
+          "id": 655486326,
+          "filename": "Navrang-Gate-0.7.5.apk.sha256",
+          "size": 89,
+          "sha256": "99fd33953f9e00b81e53470597901779fd40ae6ee2481c79d2102a374bed6135",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.5/Navrang-Gate-0.7.5.apk.sha256",
+          "githubDigest": "sha256:99fd33953f9e00b81e53470597901779fd40ae6ee2481c79d2102a374bed6135"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.6",
+      "versionCode": 14,
+      "tag": "v0.7.6",
+      "tagCommit": "0a5c8a2bd577ab5afddc96ef7ed22e28fa3cc19e",
+      "artifactCommit": "0a5c8a2bd577ab5afddc96ef7ed22e28fa3cc19e",
+      "archiveDate": "2026-10-18T09:33:12+05:30",
+      "artifactDate": "2026-10-18T09:33:12+05:30",
+      "releaseId": 416990374,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.6",
+      "publishedAt": "2026-10-19T06:53:09Z",
+      "assets": [
+        {
+          "id": 655486551,
+          "filename": "Navrang-Gate-0.7.6.apk",
+          "size": 1940814,
+          "sha256": "a3502d76c94655c3b47daf79aeab220d19d692818eb12e6a06d366ff2b5c80f2",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.6/Navrang-Gate-0.7.6.apk",
+          "githubDigest": "sha256:a3502d76c94655c3b47daf79aeab220d19d692818eb12e6a06d366ff2b5c80f2"
+        },
+        {
+          "id": 655486600,
+          "filename": "Navrang-Gate-0.7.6.apk.sha256",
+          "size": 89,
+          "sha256": "3ada1a43fb784964621847e9315150456aa71905a259e2a8244e2d07f0fe31d9",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.6/Navrang-Gate-0.7.6.apk.sha256",
+          "githubDigest": "sha256:3ada1a43fb784964621847e9315150456aa71905a259e2a8244e2d07f0fe31d9"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.7",
+      "versionCode": 15,
+      "tag": "v0.7.7",
+      "tagCommit": "987632021acc1924a48c873d82cb214de9eeac75",
+      "artifactCommit": "921fd3bfb20d1b12edc1607dc88ada39dd22fae1",
+      "archiveDate": "2026-10-18T18:47:58+05:30",
+      "artifactDate": "2026-10-18T18:42:10+05:30",
+      "releaseId": 416990465,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.7",
+      "publishedAt": "2026-10-19T06:53:21Z",
+      "assets": [
+        {
+          "id": 655486816,
+          "filename": "Navrang-Gate-0.7.7.apk",
+          "size": 19823096,
+          "sha256": "cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.7/Navrang-Gate-0.7.7.apk",
+          "githubDigest": "sha256:cfffe5cb2e83f22c47c9e41a86c56510516e3da014461ade771f3c315e275e5a"
+        },
+        {
+          "id": 655486857,
+          "filename": "Navrang-Gate-0.7.7.apk.sha256",
+          "size": 89,
+          "sha256": "7b289bc67afa13d6be938320dd07e04aa584196e44ec0285bbb27176c3506c5c",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.7/Navrang-Gate-0.7.7.apk.sha256",
+          "githubDigest": "sha256:7b289bc67afa13d6be938320dd07e04aa584196e44ec0285bbb27176c3506c5c"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.8",
+      "versionCode": 16,
+      "tag": "v0.7.8",
+      "tagCommit": "6c20848f22a1475c07f3aeef3d6b7572a8b8d5cc",
+      "artifactCommit": "c82598ed8a3e5c81c9bb743187ee23f78c7607f2",
+      "archiveDate": "2026-10-18T22:21:50+05:30",
+      "artifactDate": "2026-10-18T22:16:33+05:30",
+      "releaseId": 416990592,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.8",
+      "publishedAt": "2026-10-19T06:53:32Z",
+      "assets": [
+        {
+          "id": 655487147,
+          "filename": "Navrang-Gate-0.7.8.apk",
+          "size": 21176693,
+          "sha256": "b72cd7bdc99883cd9052f3873885073a153f8cb8c83293ffe7191040e415fc60",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.8/Navrang-Gate-0.7.8.apk",
+          "githubDigest": "sha256:b72cd7bdc99883cd9052f3873885073a153f8cb8c83293ffe7191040e415fc60"
+        },
+        {
+          "id": 655487181,
+          "filename": "Navrang-Gate-0.7.8.apk.sha256",
+          "size": 89,
+          "sha256": "73396c96ec7c05f1cb3a0220564a7c528efa2a9727d67acd3e05ee21ab93cd1a",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.8/Navrang-Gate-0.7.8.apk.sha256",
+          "githubDigest": "sha256:73396c96ec7c05f1cb3a0220564a7c528efa2a9727d67acd3e05ee21ab93cd1a"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    },
+    {
+      "version": "0.7.9",
+      "versionCode": 17,
+      "tag": "v0.7.9",
+      "tagCommit": "6f450eb5b03183d5cd2a15de48a33ab820e94f93",
+      "artifactCommit": "899d295cae93f75cf61fd863cfa4eaa29b48197b",
+      "archiveDate": "2026-10-19T04:05:12+05:30",
+      "artifactDate": "2026-10-19T03:59:06+05:30",
+      "releaseId": 416990699,
+      "releaseUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.9",
+      "publishedAt": "2026-10-19T06:53:43Z",
+      "assets": [
+        {
+          "id": 655487466,
+          "filename": "Navrang-Gate-0.7.9.apk",
+          "size": 22630853,
+          "sha256": "f52a215fc326d4d824b6868859c9d8b05d8102fd01f6f04747848a94c1cf2729",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.9/Navrang-Gate-0.7.9.apk",
+          "githubDigest": "sha256:f52a215fc326d4d824b6868859c9d8b05d8102fd01f6f04747848a94c1cf2729"
+        },
+        {
+          "id": 655487520,
+          "filename": "Navrang-Gate-0.7.9.apk.sha256",
+          "size": 89,
+          "sha256": "5b20e4a75bb1903d3e588d83eb80f7bc217e83e2c0008904aadfedbed2a6e218",
+          "downloadUrl": "https://github.com/Namdev90/paruluniversitygoa/releases/download/v0.7.9/Navrang-Gate-0.7.9.apk.sha256",
+          "githubDigest": "sha256:5b20e4a75bb1903d3e588d83eb80f7bc217e83e2c0008904aadfedbed2a6e218"
+        }
+      ],
+      "signatureVerification": {
+        "exitCode": 0,
+        "signerSha256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+        "stdout": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v3.2 scheme (APK Signature Scheme v3.2): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nV3.0 Signer: certificate DN: CN=Navrang Prototype, O=Prototype, C=IN\nV3.0 Signer: certificate SHA-256 digest: 0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce\nV3.0 Signer: certificate SHA-1 digest: 1421988c0ab9188da2c49a6e7134dbe0f8204687\nV3.0 Signer: certificate MD5 digest: f2a1399a558c88246e7fcffb9c254651\nV3.0 Signer: key algorithm: RSA\nV3.0 Signer: key size (bits): 2048\nV3.0 Signer: public key SHA-256 digest: 46018522096991e7a360bed79ace8dfc7601ba8b5326b268c078c09bc82467ac\nV3.0 Signer: public key SHA-1 digest: 46fc165d1c825d1b59d83d90417d587ac415307f\nV3.0 Signer: public key MD5 digest: f507ea9a760d53f1ace1e30d9a70ece1\n",
+        "stderr": ""
+      }
+    }
+  ],
+  "repository": "Namdev90/paruluniversitygoa",
+  "verificationScope": "Independent public downloads: exact asset bytes and GitHub digests, canonical checksum files, embedded Android identity, original signer, canonical release metadata, and first-on-main tag targets. No APK was installed or executed; no physical-device acceptance is claimed.",
+  "verifiedTagCount": 17,
+  "tool": {
+    "sdkBuildTools": "37.0.0",
+    "apksignerVersion": "0.9",
+    "downloadUrl": "https://dl.google.com/android/repository/build-tools_r37_linux.zip",
+    "archiveSha256": "01af179347cbcd9c208b7f8171f7b21f6dd1d2f85bcd15e88caa51d5d7b86060",
+    "apksignerJarSha256": "2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180"
+  },
+  "workflowConclusion": "success",
+  "workflowAttempt": 1,
+  "latestReleaseAtVerification": {
+    "tag": "v0.7.9",
+    "url": "https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.9"
+  },
+  "mainCommitAtChannelCheck": "e1176bf7c1ebecca1f1e2de08cb0a3d8934bb9bf",
+  "channelCheckedAt": "2026-10-19T06:59:39.830523+00:00",
+  "preservedFileSha256": {
+    "updates/latest.json": "b8501f0c9eca0ca2038e9e2e3595265b9e644f21cac6dfd91b98ce43e4944cf4",
+    "release.json": "0da9215d63c283567446b51e75afab651ce571e2be68ddb3ec03b955030b95ad",
+    "SHA256SUMS.txt": "b6f4f508c3b59ad71636af7545cf0689f0b72bb3e6f44c711ed126e45af990cb",
+    "LICENSE": "18808073c1b24066ddc9e7fab1fe8c3b757a853e6bcf16379849ae26172a9817"
+  }
+}

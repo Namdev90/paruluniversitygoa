@@ -86,7 +86,7 @@ The web package includes every referenced script, including Faculty Reports. `te
 
 ## The development record
 
-The project retains **17 published APK versions** from the 0.1.0 offline prototype through the 0.7.7 native rebuild, 0.7.8 original-design restoration and 0.7.9 report-download release. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. Older architectures remain clearly labelled. [Historical Release migration](docs/history/GITHUB-RELEASES.md) describes the additive archive process: unchanged APKs, original commit/date provenance, current GitHub publication timestamps and no updater-channel changes.
+The project retains **17 published APK versions** from the 0.1.0 offline prototype through the 0.7.7 native rebuild, 0.7.8 original-design restoration and 0.7.9 report-download release. [CHANGELOG.md](CHANGELOG.md) links each version to its archive commit and explains what changed. The [archive inventory](docs/history/apk-inventory.json) records embedded package/version codes, byte sizes and hashes. All 17 versions are also available as [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases), published and independently verified on 19 October 2026 with their original APKs, checksums and source-commit provenance. Older architectures remain clearly labelled. [Historical Release migration](docs/history/GITHUB-RELEASES.md) describes the additive archive process: unchanged APKs, original commit/date provenance, current GitHub publication timestamps and no updater-channel changes.
 
 ## Project map
 
