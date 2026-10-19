@@ -1,31 +1,32 @@
 {
   "approvedBy": "owner",
-  "approvedAt": "2026-10-18T21:56:00.888635+00:00",
-  "instruction": "Owner requested the phone report-download layout fix and publication: push the update if this needs a fix; downloading part works.",
-  "versionName": "0.7.9",
-  "versionCode": 17,
-  "verifiedSourceCommit": "275c0cfd64d13ab1e78523bcc02d91715adc328c",
-  "approvedSourceCommit": "275c0cfd64d13ab1e78523bcc02d91715adc328c",
+  "approvedAt": "2026-10-19T04:06:26+00:00",
+  "instruction": "Owner explicitly requested immediate release of the completed version and deferred the new communications features: release the pointed version now and add this feature later if it takes more time.",
+  "versionName": "0.8.0",
+  "versionCode": 18,
+  "verifiedSourceCommit": "59938aa8d30653b4a28665cfc4922806965d23cd",
+  "approvedSourceCommit": "59938aa8d30653b4a28665cfc4922806965d23cd",
   "releaseApproved": true,
   "deviceAcceptance": "SKIPPED_BY_OWNER",
   "deviceEvidence": "",
-  "releaseNote": "Owner confirmed live CSV export works after the guarded backend and hosted portal repair. Mobile report download reachability is corrected and independently reviewed. Physical hardware checks remain SKIPPED_BY_OWNER, never passed.",
+  "releaseNote": "Narrowed branding/Reports/auth/motion release. Source CI passed:280Node tests,704browser cases,102Android tests, unsigned production build and integrity inspection. Original-key signing and public publication remain pending because key custody is unavailable in this session.",
   "restorationInstruction": "go back to do original design material design is bad; keep all the things intact think like i never said that; go back to old logo",
   "restorationRequestedAt": "2026-10-18T18:57:30+05:30",
   "verificationWaiver": {
     "approvedBy": "owner",
-    "approvedAt": "2026-10-18T21:56:00.888635+00:00",
-    "instruction": "Physical-device checks remain deferred until after publication under the owner's ongoing release direction; latest owner specifically requested fixing mobile Reports and pushing this update. The bounded report layout received fresh source tests and independent review.",
-    "versionName": "0.7.9",
-    "versionCode": 17,
-    "sourceCommit": "275c0cfd64d13ab1e78523bcc02d91715adc328c",
-    "scope": "Physical-device sign-in/camera/keyboard, screenshot and screen-recording, installed upgrade/reboot, accessibility and hardware/performance acceptance deferred until after publication. Unperformed checks remain unverified. No backend, hosted portal, signing or publication-integrity waiver."
+    "approvedAt": "2026-10-19T04:06:26+00:00",
+    "instruction": "The owner's standing instruction defers physical-device checks until after release. The immediate release request narrows scope to completed UI/report changes; the deferral continues for this version and source. Unperformed checks remain skipped, never passed.",
+    "versionName": "0.8.0",
+    "versionCode": 18,
+    "sourceCommit": "59938aa8d30653b4a28665cfc4922806965d23cd",
+    "scope": "Physical-device sign-in/camera/keyboard, installed upgrade/reboot, accessibility, screenshots and performance remain deferred. No waiver of original-key signing, APK integrity, production authorization or public-download verification."
   },
-  "publicationInstruction": "It should look good and push the update now.",
-  "publicationRequestedAt": "2026-10-18T20:05:05.336916+00:00",
+  "publicationInstruction": "Release the completed version now; defer communications.",
+  "publicationRequestedAt": "2026-10-19T04:06:26+00:00",
   "remainingReleaseGates": [
-    "Fresh final-source CI and independent review",
-    "Rebuild and independently verify original-key APK",
-    "Preserve historical archives and verify public APK/manifest/checksum"
+    "Original key available in retained custody and verified against expected certificate",
+    "Build/sign and independently inspect signed APK for exact approved source/version",
+    "Append archive, update manifest/checksums, pass publication checks and merge with expected-head lease",
+    "Independently download and verify public main APK/manifest/checksum"
   ]
 }
