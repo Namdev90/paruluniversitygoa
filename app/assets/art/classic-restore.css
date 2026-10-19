@@ -280,7 +280,7 @@ body[data-route=login] .classic-header-logo{transition:width .4s cubic-bezier(.2
 body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[data-reduced-motion=true] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 
 #report-teacher-search{width:100%;min-height:44px;flex:none;margin:0}
-#report-teachers-open{min-height:44px;flex:none}
+#report-teachers-open{min-height:44px;flex:none;padding-block:6px}
 #report-teacher-dialog{max-height:85vh;max-height:85dvh;overflow:auto}
 #report-teacher-dialog #report-teachers{display:flex;flex-direction:column;gap:10px}
 #report-teacher-dialog .report-member{flex:none;overflow-wrap:anywhere}
