@@ -2,11 +2,15 @@
 
 ## Status and fixed scope
 
-At the 19 October 2026 audit, the authenticated Releases listing and tag-ref listing were empty. The repository contains **17 archived APKs**, versions 0.1.0–0.7.9 / Android codes 1–17. They were distributed through repository downloads; this is not evidence of seventeen pre-existing GitHub Releases. The refreshed [inventory](apk-inventory.json) checks all seventeen against their original artifact commits, first-on-main archive commits and immutable main checkpoint `6f450eb5b03183d5cd2a15de48a33ab820e94f93`. The original sixteen inventory entries and their bytes remain identical to the earlier `6c20848f22a1475c07f3aeef3d6b7572a8b8d5cc` checkpoint.
+At the initial 19 October 2026 audit, before this migration, the authenticated Releases listing and tag-ref listing were empty. This completed migration covers the **first 17 archived APKs**, versions 0.1.0–0.7.9 / Android codes 1–17. Newer releases are outside this fixed historical inventory. They were distributed through repository downloads; this is not evidence of seventeen pre-existing GitHub Releases. The refreshed [inventory](apk-inventory.json) checks all seventeen against their original artifact commits, first-on-main archive commits and immutable main checkpoint `6f450eb5b03183d5cd2a15de48a33ab820e94f93`. The original sixteen inventory entries and their bytes remain identical to the earlier `6c20848f22a1475c07f3aeef3d6b7572a8b8d5cc` checkpoint.
 
 All seventeen exact APKs passed Android `apksigner verify --verbose --print-certs` with the original signer on 19 October. The [hash-bound verification receipt](signature-verification-0.7.9.json) includes every result, APK checksum, tool version and official tool-download checksum. This is cryptographic verification, not physical-device acceptance.
 
-The migration tooling below is **prepared, not dispatched** by this documentation change. Its existence is not evidence that any GitHub Release has been published. The live [Releases page](https://github.com/Namdev90/paruluniversitygoa/releases) is the source for actual GitHub publication status.
+**Published and independently verified on 19 October 2026.** The [manual workflow run](https://github.com/Namdev90/paruluniversitygoa/actions/runs/39212213363) succeeded from reviewed main `e1176bf7c1ebecca1f1e2de08cb0a3d8934bb9bf`. It created all **17 GitHub Releases and 17 first-on-main tags**, from [v0.1.0](https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.1.0) through [v0.7.9](https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.7.9), with the unchanged APK and canonical `.sha256` file on each Release.
+
+The [public-download verification receipt](publication-receipt-2026-10-19.json) records every Release URL, actual GitHub publication timestamp, tag target, asset ID, size, checksum and Android signature result. All **34 public assets** were downloaded and verified independently after the run; all seventeen APKs retained the original signer and embedded package/version identity. Release titles, notes and tag targets matched the inventory, with no remaining drafts or extra uploaded assets. GitHub also provides its automatic source archives; these are distinct from the 34 uploaded assets.
+
+At the migration's verification checkpoint, GitHub's latest Release resolved to **v0.7.9**, and `updates/latest.json`, `release.json`, `SHA256SUMS.txt` and `LICENSE` remained byte-identical to the pre-publication checkpoint. The receipt describes that fixed checkpoint, not a permanent freeze of the app channel. The subsequent [0.8.0 publication](../RESTORATION-RELEASE-0.8.0.md) is separate: use the [current README download](../../README.md#current-installation-and-access) and [updater manifest](../../updates/latest.json) for the current app, which can be newer than the latest GitHub archive Release. Original archive commit dates are preserved separately from the actual 19 October GitHub publication times. The live [Releases page](https://github.com/Namdev90/paruluniversitygoa/releases) remains the source for subsequent publication status.
 
 ## Main publication versus artifact provenance
 
@@ -50,9 +54,9 @@ Require the original signer `0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b
 
 For local use, provide `--apksigner` or set `APKSIGNER` to a trusted Android SDK verifier. `--signature-receipt /path/to/receipt.json` retains that run's results in a new file outside the repository; existing files are never overwritten. Verification does not install or execute any historical APK.
 
-## Manual execution after review
+## Manual verification or deliberate rerun after review
 
-The workflow [Archive existing Navrang releases](../../.github/workflows/navrang-history-releases.yml) is `workflow_dispatch` only. It must first exist on reviewed `main`.
+The workflow [Archive existing Navrang releases](../../.github/workflows/navrang-history-releases.yml) remains `workflow_dispatch` only. The bounded archive above is already published; ordinary pushes do not run this workflow. These instructions are for read-only verification or an explicitly authorized, deliberate rerun of the same archive. Matching existing Releases are verified and preserved, not recreated.
 
 1. Open Actions → Archive existing Navrang releases → Run workflow, selecting `main`.
 2. Leave confirmation empty for read-only/local verification.
