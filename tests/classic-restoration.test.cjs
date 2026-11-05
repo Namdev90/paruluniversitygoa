@@ -78,7 +78,9 @@ test('restored build retains native Credential Manager and CameraX instead of th
 });
 
 test('restoration release cannot reuse another version approval or changed source/logo',()=>{
- require('node:child_process').execFileSync('python3',['tests/restoration-release-gate-check.py'],{cwd:root,stdio:'pipe',timeout:15000});
+ // Twelve isolated Git repositories can exceed 15 seconds on Windows while
+ // Android compilation runs; keep the same gate assertions with a bounded wait.
+ require('node:child_process').execFileSync('python3',['tests/restoration-release-gate-check.py'],{cwd:root,stdio:'pipe',timeout:30000});
 });
 
 test('classic host generation rejects missing or ambiguous Android back-navigation hooks',()=>{

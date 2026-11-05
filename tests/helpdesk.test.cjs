@@ -21,13 +21,14 @@ test('help desk handler blocks anonymous export and rejects malformed save befor
  assert.equal((await post('helpdesk-save',{requestId,details:{...details,eligible:true,status:'approved'}},true)).status,200);assert.equal(called[0].p.details.eligible,undefined);assert.equal(called[0].p.details.status,undefined);
  assert.equal((await post('helpdesk-list',{offset:0,limit:10000},true)).status,400);
 });
-function desk(profile={role:'checker',name:'Raju',checkerId:'desk-1',active:true,helpdesk:true}){
+function desk(profile={role:'checker',name:'Raju',checkerId:'desk-1',active:true,helpdesk:true},options={}){
  const dom=new JSDOM(asset('index.html'),{url:'https://gate.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;Object.defineProperty(w,'crypto',{value:webcrypto});
- let calls=[],behavior=async()=>({records:[],total:0,stats:{total:0,pending:0,approved:0},registration:{ticket_id:'HDABCDEF'}});
- w.GateClient={profile:()=>profile,native:false,feedback:()=>{},api:async(a,p)=>{calls.push({a,p:JSON.parse(JSON.stringify(p||{}))});return behavior(a,p)},save:()=>calls.push({a:'file-save'}),sync:async()=>({})};
+ let calls=[],listeners=new Set(),behavior=async()=>({records:[],total:0,stats:{total:0,pending:0,approved:0},registration:{ticket_id:'HDABCDEF'}}),clock=0;const timers=[];
+ if(options.fakeClock){Object.defineProperty(w.performance,'now',{value:()=>clock});const active=new Map();w.setTimeout=(fn,delay)=>{const id=timers.length+1,timer={fn,delay,active:true};timers.push(timer);active.set(id,timer);return id};w.clearTimeout=id=>{const timer=active.get(id);if(timer)timer.active=false};}
+ w.GateClient={profile:()=>profile,native:false,feedback:()=>{},on:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},api:async(a,p)=>{calls.push({a,p:JSON.parse(JSON.stringify(p||{}))});return behavior(a,p)},save:()=>calls.push({a:'file-save'}),sync:async()=>({})};
  w.eval(asset('live-core.js'));w.eval(asset('desk-core.js'));w.eval(asset('desk.js'));
  for(const [key,value]of Object.entries(details))w.document.getElementById('desk-'+key).value=value??'';
- return{dom,w,calls,setBehavior:f=>behavior=f,setProfile:p=>profile=p};
+ return{dom,w,calls,timers,setBehavior:f=>behavior=f,setProfile:p=>profile=p,event:e=>{for(const fn of listeners)fn(e)},advance:ms=>{clock+=ms},fireTimer:timer=>{timer.active=false;timer.fn()}};
 }
 test('an uncertain help desk save retries the identical request and only clears the form after server receipt',async()=>{
  const t=desk(),{w,dom,calls}=t;let saves=0;
@@ -102,10 +103,44 @@ test('an export finishing after sign-out or admin downgrade cannot download cont
 test('a changed Help Desk search is fetched after an in-flight page and never shows the stale rows',async()=>{
  const t=desk(),{w,dom,calls}=t;let deliver;
  try{
+  w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;
   t.setBehavior(async(action,payload)=>payload.search==='Newest'?{records:[],total:0,stats:{total:0,pending:0,approved:0}}:new Promise(r=>deliver=()=>r({records:[{id:'old',ticket_id:'HDABCDEF',created_by_name:'Raju',created_at:'2026-10-17T01:00:00Z',details,status:'pending',version:1}],total:1,stats:{total:1,pending:1,approved:0}})));
   const first=w.NavrangDesk.refresh(true);w.document.getElementById('desk-search').value='Newest';await w.NavrangDesk.refresh(true);deliver();await first;await pause();
   assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);assert.equal(calls.at(-1).p.search,'Newest');assert.ok(!w.document.getElementById('desk-records').textContent.includes(details.name));assert.equal(w.document.getElementById('desk-total').textContent,'0');
  }finally{dom.window.close()}
+});
+test('Help Desk data hints coalesce once and require visible authorized saved-records view',async()=>{
+ const t=desk(),{w,dom,calls}=t;let finish;w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;
+ t.setBehavior((action)=>action==='helpdesk-list'&&calls.filter(c=>c.a==='helpdesk-list').length===1?new Promise(resolve=>finish=()=>resolve({records:[],total:0,stats:{total:0,pending:0,approved:0}})):{records:[],total:0,stats:{total:0,pending:0,approved:0}});
+ try{
+  const first=w.NavrangDesk.refresh(true);t.event({type:'data-invalidated',data:{domain:'other'}});t.event({type:'data-invalidated',data:{domain:'helpdesk'}});t.event({type:'data-invalidated',data:{domain:'helpdesk'}});finish();await first;await pause();
+  assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);
+  w.document.getElementById('desk-list-panel').hidden=true;t.event({type:'data-invalidated',data:{domain:'helpdesk'}});assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);
+  w.document.getElementById('desk-list-panel').hidden=false;t.setProfile({...{role:'checker',name:'Raju',checkerId:'desk-1',active:true},helpdesk:false});t.event({type:'data-invalidated',data:{domain:'helpdesk'}});assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);
+ }finally{dom.window.close()}
+});
+test('successful reads satisfy repeated profile refreshes for sixty seconds and role loss still clears',async()=>{
+ const t=desk(undefined,{fakeClock:true}),{w,dom,calls}=t;w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;
+ t.setBehavior(async()=>({records:[{id:'case-1',ticket_id:'HDABCDEF',created_by_name:'Raju',created_at:'2026-10-17T01:00:00Z',details,status:'pending',version:1}],total:1,stats:{total:1,pending:1,approved:0}}));
+ try{
+  await w.NavrangDesk.refresh(true);t.advance(30000);t.event({type:'profile'});await w.NavrangDesk.refresh();assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,1);
+  t.advance(30001);await w.NavrangDesk.refresh();assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);
+  t.setProfile({role:'checker',name:'Raju',checkerId:'desk-1',active:true,helpdesk:false});t.event({type:'profile'});assert.equal(w.document.getElementById('desk-records').textContent,'');assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);
+ }finally{dom.window.close()}
+});
+test('a failed request with queued private hints waits for retry cooldown and only retries once',async()=>{
+ const t=desk(undefined,{fakeClock:true}),{w,dom,calls,timers}=t;w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;let rejectFirst=true,finish;
+ t.setBehavior(async()=>{if(rejectFirst)return new Promise((_,reject)=>finish=()=>reject(Error('offline')));return{records:[],total:0,stats:{total:0,pending:0,approved:0}}});
+ try{
+  const first=w.NavrangDesk.refresh(true,false,'manual');t.event({type:'data-invalidated',data:{domain:'helpdesk'}});t.event({type:'data-invalidated',data:{domain:'helpdesk'}});finish();await first;await pause();
+  assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,1);let timer=timers.filter(x=>x.active).at(-1);assert.ok(timer.delay>=60000);
+  t.event({type:'data-invalidated',data:{domain:'helpdesk'}});assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,1);timer=timers.filter(x=>x.active).at(-1);t.advance(timer.delay);rejectFirst=false;t.fireTimer(timer);await pause();
+  assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);assert.equal(timers.filter(x=>x.active).length,1);
+ }finally{dom.window.close()}
+});
+test('Help Desk manual refresh throttling uses monotonic time',async()=>{
+ const t=desk(undefined,{fakeClock:true}),{w,dom,calls}=t;w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;t.setBehavior(async()=>({records:[],total:0,stats:{total:0,pending:0,approved:0}}));
+ try{w.document.getElementById('desk-refresh').click();await pause();w.document.getElementById('desk-refresh').click();await pause();assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,1);t.advance(2001);w.document.getElementById('desk-refresh').click();await pause();assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2)}finally{dom.window.close()}
 });
 
 test('an unconfirmed save locks record navigation until its identical request is resolved',async()=>{
@@ -153,6 +188,7 @@ test('Help Desk appends authorized eight-row batches with honest loaded/server c
 
 test('Help Desk search runs on the server and fences an older in-flight append',async()=>{
  const t=desk(),{w,dom,calls}=t,records=deskRows();let deliver;t.setBehavior(async(action,query)=>query.offset?new Promise(resolve=>deliver=()=>resolve(listReply(records,query))):listReply(records,query));try{
+  w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;
   await w.NavrangDesk.refresh(true);scrollDesk(t);await pause();const input=w.document.getElementById('desk-search');input.value='Student 18';input.dispatchEvent(new w.Event('input'));await w.NavrangDesk.refresh(true);deliver();await pause();await pause();
   assert.equal(w.document.querySelectorAll('.desk-record').length,1);assert.match(w.document.getElementById('desk-records').textContent,/Student 18/);assert.match(w.document.getElementById('desk-list-status').textContent,/1 loaded · 1 matching server records/);assert.equal(calls.filter(c=>c.a==='helpdesk-list').at(-1).p.search,'Student 18');
  }finally{await pause();dom.window.close()}

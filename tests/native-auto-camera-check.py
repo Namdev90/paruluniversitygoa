@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compile and exercise the real native-only QR reader and assist policy without Android."""
 from pathlib import Path
+import os
 import subprocess
 import tempfile
 
@@ -11,4 +12,4 @@ with tempfile.TemporaryDirectory(prefix='navrang-auto-camera-') as temporary:
     sources.append(root / 'app/java/in/navrang/gate/ScanLatch.java')
     sources.append(root / 'tests/qr/ScannerAssistCheck.java')
     subprocess.run(['java', '--module', 'jdk.compiler/com.sun.tools.javac.Main', '-cp', str(jar), '-d', temporary, *map(str, sources)], check=True)
-    subprocess.run(['java', '-Djava.awt.headless=true', '-cp', f'{temporary}:{jar}', 'in.navrang.gate.ScannerAssistCheck'], check=True, timeout=30)
+    subprocess.run(['java', '-Djava.awt.headless=true', '-cp', os.pathsep.join([temporary, str(jar)]), 'in.navrang.gate.ScannerAssistCheck'], check=True, timeout=30)

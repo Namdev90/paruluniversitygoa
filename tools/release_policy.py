@@ -18,7 +18,16 @@ def verify_apk(apk, release, build_tools):
         raise SystemExit('Release versionName must be major.minor.patch.')
     if type(release.get('versionCode')) is not int or release['versionCode'] <= 0:
         raise SystemExit('Release versionCode must be a positive integer.')
-    output = subprocess.check_output([str(build_tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)], text=True)
+    # Android SDK ships apksigner as a shell/batch launcher plus a portable JAR.
+    # On Windows, invoking the extensionless Unix launcher fails even though
+    # Java and the SDK's apksigner.jar are present. Prefer the JAR when bundled;
+    # retain the launcher path for older/custom build-tools installations.
+    apksigner_jar = build_tools / 'lib' / 'apksigner.jar'
+    if apksigner_jar.is_file():
+        signer_command = ['java', '-jar', str(apksigner_jar), 'verify', '--verbose', '--print-certs', str(apk)]
+    else:
+        signer_command = [str(build_tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)]
+    output = subprocess.check_output(signer_command, text=True)
     signers = re.findall(r'^Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]+)$', output, re.M)
     if signers != [SIGNER_SHA256]:
         raise SystemExit('APK signer does not match the original installed app. Release refused.')

@@ -82,25 +82,25 @@ test('manual registration rejects invalid numeric values before saving and accep
  }finally{dom.window.close()}
 });
 
-test('restored screens clear private rows when account or session access expires without a server reply',async()=>{
+test('restored screens hide private rows while retaining credentials until server expiry is confirmed',async()=>{
  for(const field of ['accessExpiresAt','expiresAt']){
   const profile={role:'admin',name:'Synthetic Administrator',active:true,[field]:new Date(Date.now()+60000).toISOString()};
   const t=setup(profile),{w,dom,calls,$}=t;
   try{await tick();$('registration-rows').textContent='Synthetic private registration';t.setProfile({...profile,[field]:new Date(Date.now()-1000).toISOString()});
-   for(let i=0;i<20&&!calls.some(c=>c.action==='logout');i++)await new Promise(r=>setTimeout(r,20));
-   assert.ok(calls.some(c=>c.action==='logout'));assert.equal($('registration-rows').textContent,'');assert.equal($('view-login').hidden,false);assert.equal(w.GateClient.profile(),null);
+   for(let i=0;i<20&&$('registration-rows').textContent;i++)await new Promise(r=>setTimeout(r,20));
+   assert.ok(!calls.some(c=>c.action==='logout'));assert.equal($('registration-rows').textContent,'');assert.equal($('view-account').hidden,false);assert.ok(w.GateClient.profile());
   }finally{dom.window.close()}
  }
 });
 
-test('an import completed during an active poll queues one immediate forced registration refresh',async()=>{
+test('an import completed during an active poll coalesces one immediate incremental registration refresh',async()=>{
  const t=setup({role:'admin',name:'Synthetic Administrator',active:true},{native:true}),{w,dom,$}=t;
  try{await tick();let finish,requests=[];
   w.GateClient.sync=async options=>{requests.push(options);if(requests.length===1)return await new Promise(resolve=>finish=resolve);return{dataRevision:2,cursor:0,records:[{id:'DEMO0002',name:'Imported Synthetic Student',amount:100,quantity:1,refund:0,description:'Transaction completed successfully',eligible:true}],entries:[],stats:{},checkers:[]}};
   t.click('admin-refresh');await tick();t.event({type:'registrations-imported',data:{}});t.event({type:'registrations-imported',data:{}});await tick();assert.equal(requests.length,1);
   finish({dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:[]});
   for(let i=0;i<25&&!$('registration-rows').textContent.includes('Imported Synthetic Student');i++)await tick();
-  assert.equal(requests.length,2);assert.equal(requests[1].dataRevision,-1);assert.match($('registration-rows').textContent,/Imported Synthetic Student/);
+  assert.equal(requests.length,2);assert.equal(requests[1].dataRevision,1,'reuse the known revision instead of redownloading an unchanged master');assert.match($('registration-rows').textContent,/Imported Synthetic Student/);
  }finally{dom.window.close()}
 });
 

@@ -19,9 +19,19 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  private final ReportSaveCoordinator documentSaves=new ReportSaveCoordinator(this::reserveDocumentRequestCode);
  private WebView web;
  private GateRuntime runtime;
- private String pendingLogoutToken;private boolean clearingSignOut;
+ private String pendingLogoutToken,pendingLogoutRefresh;private boolean clearingSignOut;
  protected Class<? extends Activity> scannerActivity(){return ScanActivity.class;}
  protected void clearCredentialProvider(){}
+ protected void nativeHostReady(){}
+ protected void nativeIdentityChanging(){}
+ protected final void nativePrivateCover(boolean covered){if(web!=null){if(covered)web.onPause();else web.onResume();}if(!covered)resumeDocumentSave();}
+ protected final void nativeLocalSignOut(){durableSignOut("");}
+ protected void nativeNotificationFeed(JSONObject feed,long generation,String token){}
+ protected void nativeLocatorCommand(String action,String payload){if(!"sample".equals(action))return;try{String operation=new JSONObject(payload).optString("operationId");nativeLocatorReply(new JSONObject().put("operationId",operation).put("ok",false).put("error","One-shot location is unavailable in this build."));}catch(Exception ignored){}}
+ protected final void nativeLocatorReply(JSONObject result){call("onNativeLocatorResult",result.toString());}
+ protected long nativeLocatorRequest(String action){return 0;}
+ protected void nativeLocatorResponse(String action,JSONObject payload,JSONObject response,long generation,String token,long requestFence,long elapsedMs){}
+ protected String nativeVoiceCommand(String action,String payload){return "{\"available\":false,\"ready\":false,\"state\":\"unavailable\",\"microphone\":false,\"canTalk\":false,\"message\":\"Voice is not available yet.\"}";}
  protected void googleLoginForOperation(String operationId){googleLogin();}
  protected final void nativeAuthState(String operationId,String phase,long generation){try{event(new JSONObject().put("type","credential").put("data",new JSONObject().put("operationId",operationId).put("phase",phase).put("generation",generation)));}catch(Exception ignored){}}
  protected boolean updatesEnabled(){return GateUpdater.automatic(this);}
@@ -41,6 +51,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   s.setCacheMode(WebSettings.LOAD_NO_CACHE);web.clearCache(true);web.clearFormData();web.setSaveEnabled(false);web.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);web.setOnLongClickListener(v->{WebView.HitTestResult hit=web.getHitTestResult();return hit==null||hit.getType()!=WebView.HitTestResult.EDIT_TEXT_TYPE;});
   WebView.setWebContentsDebuggingEnabled(false);web.addJavascriptInterface(new Bridge(),"Native");
   web.setWebViewClient(new WebViewClient(){
+   @Override public void onPageFinished(WebView w,String url){if("file:///android_asset/index.html".equals(url))nativeHostReady();}
    private boolean allowed(String url){return url!=null&&url.startsWith("file:///android_asset/");}
    @Override public boolean shouldOverrideUrlLoading(WebView w,WebResourceRequest r){return !allowed(r.getUrl().toString());}
    @Override public boolean shouldOverrideUrlLoading(WebView w,String u){return !allowed(u);}
@@ -66,8 +77,13 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  }
  private boolean reportAllowed(long expected){if(runtime==null||expected!=runtime.sessions.generation())return false;JSONObject session=runtime.sessions.read(),p=session==null?null:session.optJSONObject("profile");return p!=null&&p.optBoolean("active")&&("admin".equals(p.optString("role"))||p.optBoolean("reports",false));}
  private boolean exportAllowed(long expected){if(runtime==null||expected!=runtime.sessions.generation())return false;JSONObject session=runtime.sessions.read(),p=session==null?null:session.optJSONObject("profile");return p!=null&&p.optBoolean("active")&&"admin".equals(p.optString("role"));}
- private boolean saveIdentityAllowed(ReportSaveCoordinator.Request request){return runtime!=null&&runtime.sessions.isCurrent(request.generation,request.token)&&(request.kind==ReportSaveCoordinator.Kind.REPORT?reportAllowed(request.generation):exportAllowed(request.generation));}
- private boolean saveAllowed(ReportSaveCoordinator.Request request){return documentSaves.isCurrent(request)&&saveIdentityAllowed(request);}
+ private boolean saveIdentityAllowed(ReportSaveCoordinator.Request request){return runtime!=null&&runtime.sessions.sameIdentity(request.generation,request.token,request.familyId)&&(request.kind==ReportSaveCoordinator.Kind.REPORT?reportAllowed(request.generation):exportAllowed(request.generation));}
+ private boolean saveAllowed(ReportSaveCoordinator.Request request){return runtime!=null&&runtime.privateAccessAllowed()&&documentSaves.isCurrent(request)&&saveIdentityAllowed(request);}
+ private void resumeDocumentSave(){documentSaves.resumeDeferred(()->runtime!=null&&runtime.privateAccessAllowed());}
+ private void queueDocumentWrite(ReportSaveCoordinator.Request request,Uri uri){
+  if(!documentSaves.isCurrent(request)||!saveIdentityAllowed(request)){documentSaves.finish(request);return;}
+  if(documentSaves.defer(request,()->writeDocument(request,uri)))resumeDocumentSave();
+ }
  /** Check identity on the UI thread immediately before delivering; never queue an unguarded save notice. */
  private void documentOutcome(ReportSaveCoordinator.Request request,String outcome){
   runOnUiThread(()->{
@@ -91,9 +107,9 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  }
  private void writeDocument(ReportSaveCoordinator.Request request,Uri uri){
   runtime.requests.execute(()->{
-   if(!saveAllowed(request)){documentSaves.finish(request);return;}
+   if(!saveAllowed(request)){queueDocumentWrite(request,uri);return;}
    boolean adminOnly=request.kind==ReportSaveCoordinator.Kind.HELP_DESK;
-   if(!refreshExportAccess(request.generation,adminOnly)){documentOutcome(request,"failed");return;}
+   if(!refreshExportAccess(request.generation,adminOnly)){if(!runtime.privateAccessAllowed())queueDocumentWrite(request,uri);else documentOutcome(request,"failed");return;}
    byte[] bytes=null;
    AuthorizedDocumentWriter.Result result;
    try{
@@ -101,29 +117,31 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
     result=AuthorizedDocumentWriter.write(bytes,()->getContentResolver().openOutputStream(uri,"wt"),()->saveAllowed(request));
    }catch(RuntimeException failure){result=AuthorizedDocumentWriter.Result.FAILED;}
    finally{if(bytes!=null)java.util.Arrays.fill(bytes,(byte)0);}
-   if(result==AuthorizedDocumentWriter.Result.STALE){documentSaves.finish(request);return;}
+   if(result==AuthorizedDocumentWriter.Result.STALE){if(!runtime.privateAccessAllowed())queueDocumentWrite(request,uri);else documentSaves.finish(request);return;}
    documentOutcome(request,result==AuthorizedDocumentWriter.Result.SAVED?"saved":"failed");
   });
  }
  private void beginScan(){
+  if(!runtime.privateAccessAllowed()){error("Unlock Navrang before scanning.");return;}
   JSONObject auth=runtime.sessions.read();if(!GateSession.canScan(auth)||("google".equals(auth.optJSONObject("profile").optString("method"))&&!auth.optJSONObject("profile").optBoolean("nameConfirmed",true))){error("Sign in with an approved checker account first.");return;}
   if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.CAMERA},CAMERA_PERMISSION);return;}
   try{startActivity(new Intent(this,scannerActivity()));}catch(Exception e){error("Camera could not open. Use manual entry.");}
  }
  @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){super.onRequestPermissionsResult(request,permissions,results);if(request==START_PERMISSIONS||request==UPDATE_NOTIFICATIONS){GateUpdater.publish(this);runtime.emit("readiness",GateReadiness.status(this));return;}if(request==CAMERA_PERMISSION){if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)beginScan();else error("Allow camera permission in Android settings, or use manual entry.");}}
  private void preparePermissions(boolean initial){
-  android.content.SharedPreferences p=getSharedPreferences("navrang-readiness",MODE_PRIVATE);if(initial&&p.getBoolean("prompted",false))return;p.edit().putBoolean("prompted",true).apply();
-  java.util.ArrayList<String> wanted=new java.util.ArrayList<>();if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED)wanted.add(Manifest.permission.CAMERA);if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)wanted.add(Manifest.permission.POST_NOTIFICATIONS);
-  if(!wanted.isEmpty())requestPermissions(wanted.toArray(new String[0]),START_PERMISSIONS);else runtime.emit("readiness",GateReadiness.status(this));
+  // Startup only reports capability. Scanner, voice and notification actions
+  // request their own permission when the user chooses the relevant feature.
+  if(initial){runtime.emit("readiness",GateReadiness.status(this));return;}
+  startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));
  }
  @Override protected void onActivityResult(int request,int result,Intent data){
   super.onActivityResult(request,result,data);
   ReportSaveCoordinator.Request pending=documentSaves.claimPicker(request);
   if(pending==null)return;
-  if(!saveAllowed(pending)){documentSaves.finish(pending);return;}
+  if(!saveIdentityAllowed(pending)){documentSaves.finish(pending);return;}
   if(result!=RESULT_OK){documentOutcome(pending,"cancelled");return;}
   if(data==null||data.getData()==null){documentOutcome(pending,"failed");return;}
-  writeDocument(pending,data.getData());
+  queueDocumentWrite(pending,data.getData());
  }
  @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handleOAuth(intent);}
  protected void googleLogin(){
@@ -152,15 +170,17 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    if(generation!=runtime.sessions.generation())return;
    GateApi.Reply r=runtime.api.call("google-login",new JSONObject().put("accessToken",exchange.body.getString("access_token")),"");
    if(r.status!=200||!r.body.optBoolean("ok")){error(r.body.optString("error","Google sign-in failed."));return;}
-   if(!runtime.sessions.saveIfCurrent(generation,r.body.getString("token"),r.body.getJSONObject("profile")))return;p.edit().clear().commit();runtime.db.clearTemporary();runtime.emit("auth",r.body.getJSONObject("profile"));runtime.refresh();
+   if(!runtime.sessions.saveBundleIfCurrent(generation,r.body))return;p.edit().clear().commit();runtime.db.clearTemporary();runtime.emit("auth",r.body.getJSONObject("profile"));runtime.refresh();
   }catch(Exception e){error("Google sign-in could not finish. Reopen sign-in with a working connection.");}});
  }
  /** A picker may outlive a role/session grant. Refresh server authority before opening a file. */
  private boolean refreshExportAccess(long generation,boolean adminOnly){
+  if(!runtime.privateAccessAllowed())return false;
   try{
    JSONObject session=runtime.sessions.read();if(session==null||generation!=runtime.sessions.generation())return false;
    String token=session.getString("token");long sequence=runtime.sessions.beginProfileRequest();
    GateApi.Reply reply=runtime.api.call("me",new JSONObject(),token);
+   if(!reply.sessionToken.isEmpty())token=reply.sessionToken;
    if(!runtime.sessions.isCurrent(generation,token))return false;
    if(reply.status==401){if(runtime.sessions.clearIfCurrent(generation,token)){runtime.db.clearTemporary();runtime.emit("auth",new JSONObject());}return false;}
    if(reply.status!=200||!reply.body.optBoolean("ok"))return false;
@@ -173,15 +193,15 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  private void apiResponse(String id,int status,JSONObject body){try{call("onApiResponse",new JSONObject().put("id",id).put("status",status).put("body",body).toString());}catch(Exception ignored){}}
  private synchronized void durableSignOut(String id){
   if(clearingSignOut){apiResponse(id,409,new JSONObject());return;}
-  clearingSignOut=true;
-  JSONObject auth=runtime.sessions.read();if(pendingLogoutToken==null&&auth!=null)pendingLogoutToken=auth.optString("token","");
+  clearingSignOut=true;nativeIdentityChanging();
+  JSONObject auth=runtime.sessions.read();if(pendingLogoutToken==null&&auth!=null){pendingLogoutToken=auth.optString("token","");pendingLogoutRefresh=auth.optString("refreshToken","");}
   runtime.sessions.beginChange();runtime.db.clearTemporary();runOnUiThread(()->{clearExport();clearReport();});
   runtime.requests.execute(()->{
-   final String token;
+   final String token,refresh;
    try{
     if(!runtime.sessions.clearDurably())throw new IOException("Could not persist sign-out.");
     getSharedPreferences("navrang-pkce",MODE_PRIVATE).edit().clear().commit();clearCredentialProvider();
-    synchronized(MainActivity.this){token=pendingLogoutToken;pendingLogoutToken=null;clearingSignOut=false;}
+    synchronized(MainActivity.this){token=pendingLogoutToken;refresh=pendingLogoutRefresh;pendingLogoutToken=pendingLogoutRefresh=null;clearingSignOut=false;}
    }catch(Exception failure){
     synchronized(MainActivity.this){clearingSignOut=false;}
     try{apiResponse(id,0,new JSONObject().put("ok",false).put("error","Sign-out could not be saved. Private access is blocked. Retry sign out."));}catch(Exception ignored){}
@@ -190,11 +210,12 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    try{apiResponse(id,200,new JSONObject().put("ok",true).put("signedOut",true));}catch(Exception ignored){}
    runtime.emit("auth",new JSONObject());
    // Revoking the captured old token must not block a later identity's local sign-out.
-   if(token!=null&&!token.isEmpty())try{runtime.api.call("logout",new JSONObject(),token);}catch(Exception ignored){}
+   if(token!=null&&!token.isEmpty())try{JSONObject revoke=new JSONObject();if(refresh!=null&&!refresh.isEmpty())revoke.put("refreshToken",refresh);runtime.api.call("logout",revoke,token);}catch(Exception ignored){}
   });
  }
  private String documentReply(boolean ok,String message){try{return new JSONObject().put("ok",ok).put("error",message).toString();}catch(Exception ignored){return "{\"ok\":false,\"error\":\"Document save unavailable.\"}";}}
  private String requestDocument(ReportSaveCoordinator.Kind kind,String name,String mime,String content,String operationId){
+  if(runtime!=null&&!runtime.privateAccessAllowed())return documentReply(false,"Unlock Navrang before saving a document.");
   if(runtime==null)return documentReply(false,"Sign in and try the download again.");
   boolean report=kind==ReportSaveCoordinator.Kind.REPORT;
   if(name==null||!name.startsWith("Navrang-")||name.length()>100||content==null||content.length()>(report?16:12)*1024*1024||
@@ -202,7 +223,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   long generation=runtime.sessions.generation();JSONObject auth=runtime.sessions.read();
   String token=auth==null?"":auth.optString("token","");
   if(token.isEmpty()||!runtime.sessions.isCurrent(generation,token)||!(report?reportAllowed(generation):exportAllowed(generation)))return documentReply(false,report?"Teacher reports access required. Sign in and refresh.":"Only the admin can export Help Desk records.");
-  final ReportSaveCoordinator.Request pending=new ReportSaveCoordinator.Request(kind,operationId,generation,token,content);
+  final ReportSaveCoordinator.Request pending=new ReportSaveCoordinator.Request(kind,operationId,generation,token,content,auth.optString("refreshFamilyId"));
   if(!documentSaves.begin(pending))return documentReply(false,documentSaves.busy()?"Complete the current document save first.":"Could not reserve a document save. Retry or use the web portal.");
   runOnUiThread(()->{
    if(!saveAllowed(pending)){documentSaves.finish(pending);return;}
@@ -216,32 +237,46 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  private final class Bridge {
   @JavascriptInterface public String local(String action,String value){
    try{JSONObject p=value==null||value.isEmpty()?new JSONObject():new JSONObject(value),r;
+    if(!runtime.privateAccessAllowed()&&!"session".equals(action)&&!"config".equals(action))return new JSONObject().put("ok",false).put("error","Unlock Navrang to view event data.").toString();
     switch(action){
      case "snapshot":r=runtime.db.snapshot();break;
+     case "admin-snapshot":synchronized(runtime.sessions){JSONObject a=runtime.sessions.read();if(!runtime.privateAccessAllowed()||!GateSession.canSync(a)||!"admin".equals(GateSession.actor(a)))throw new SecurityException("Administrator access required.");r=runtime.db.adminSnapshot(p.optLong("dataRevision",-1),p.optLong("afterSeq",0));if(!runtime.privateAccessAllowed())throw new SecurityException("Unlock Navrang.");r.put("ownerGeneration",runtime.sessions.generation());}break;
+     case "refresh":if(runtime.sessions.read()==null)throw new SecurityException("Sign in first.");runtime.refresh();r=new JSONObject().put("scheduled",true);break;
      case "lookup":r=runtime.db.lookup(p.getString("id"));break;
-     case "session":JSONObject a=runtime.sessions.read();r=new JSONObject().put("profile",a==null?JSONObject.NULL:a.getJSONObject("profile"));break;
+     case "session":synchronized(runtime.sessions){JSONObject a=runtime.privateAccessAllowed()?runtime.sessions.read():null;r=new JSONObject().put("generation",runtime.sessions.generation()).put("profile",a==null?JSONObject.NULL:a.getJSONObject("profile")).put("validatedAtWall",a==null?0:runtime.sessions.validatedAtWall()).put("validationAgeMs",a==null?Long.MAX_VALUE:runtime.sessions.validationAgeMillis());}break;
      case "config":r=runtime.api.config;break;
      default:throw new IllegalArgumentException("Unsupported local operation.");
     }return new JSONObject().put("ok",true).put("data",r).toString();
    }catch(Exception e){try{return new JSONObject().put("ok",false).put("error","Device storage is unavailable. Keep app data and retry.").toString();}catch(Exception ignored){return "{\"ok\":false}";}}
   }
   @JavascriptInterface public void api(String action,String value,String id){
+   // Media authorization must never be returned to JavaScript through the generic API.
+   if(action!=null&&(action.startsWith("voice-")||action.startsWith("duty-"))){try{call("onApiResponse",new JSONObject().put("id",id).put("status",503).put("body",new JSONObject().put("ok",false).put("error","Use the native voice controls.")).toString());}catch(Exception ignored){}return;}
    if("logout".equals(action)){durableSignOut(id);return;}
    final boolean changesIdentity="login".equals(action)||"checker-login".equals(action)||"google-login".equals(action)||"logout".equals(action);
+   if(!changesIdentity&&!"config".equals(action)&&!runtime.privateAccessAllowed()){try{apiResponse(id,423,new JSONObject().put("ok",false).put("error","Unlock Navrang to continue."));}catch(Exception ignored){}return;}
+   if(changesIdentity)nativeIdentityChanging();
    final long generation=changesIdentity?runtime.sessions.beginChange():runtime.sessions.generation();
    final long profileRequest="me".equals(action)?runtime.sessions.beginProfileRequest():-1;
    final JSONObject auth=runtime.sessions.read();final String token=auth==null?"":auth.optString("token");
+   final long locatorFence=action.startsWith("locator-")?nativeLocatorRequest(action):0;
    if(changesIdentity)runOnUiThread(()->{clearExport();clearReport();});
    runtime.requests.execute(()->{try{
+    final long callStarted=android.os.SystemClock.elapsedRealtime();
     GateApi.Reply r=runtime.api.call(action,new JSONObject(value),token);
+    final String effective=r.sessionToken.isEmpty()?token:r.sessionToken;
+    if(!changesIdentity&&!"config".equals(action)&&!runtime.privateAccessAllowed())r=new GateApi.Reply(423,new JSONObject().put("ok",false).put("error","Unlock Navrang to continue."));
     if(!changesIdentity&&generation!=runtime.sessions.generation())r=new GateApi.Reply(409,new JSONObject().put("ok",false).put("error","Sign-in changed while this request was running."));
-    if(!changesIdentity&&r.status==401&&runtime.sessions.clearIfCurrent(generation,token)){runtime.db.clearTemporary();runtime.emit("auth",new JSONObject());}
+    if(!changesIdentity&&r.status==401&&runtime.sessions.clearIfCurrent(generation,effective)){runtime.db.clearTemporary();runtime.emit("auth",new JSONObject());}
+    if(action.startsWith("locator-")&&(r.status==401||r.status==403))nativeLocatorRequest("locator-stop");
     if(r.status==200&&r.body.optBoolean("ok")){
-     if(r.body.has("token")&&r.body.has("profile")){boolean saved=runtime.sessions.saveIfCurrent(generation,r.body.getString("token"),r.body.getJSONObject("profile"));r.body.remove("token");if(!saved)throw new IllegalStateException("Sign-in changed.");runtime.db.clearTemporary();runtime.refresh();}
-     if("me".equals(action)&&auth!=null){JSONObject profile=new JSONObject(r.body.toString());profile.remove("ok");if(!runtime.sessions.refreshIfCurrent(generation,token,profileRequest,profile)){JSONObject current=runtime.sessions.read();if(generation!=runtime.sessions.generation()||current==null||!token.equals(current.optString("token")))throw new IllegalStateException("Sign-in changed.");r=new GateApi.Reply(200,new JSONObject(current.getJSONObject("profile").toString()).put("ok",true));}}
+     if("notifications-feed".equals(action)&&runtime.sessions.isCurrent(generation,effective))nativeNotificationFeed(r.body,generation,effective);
+     if(action.startsWith("locator-")&&runtime.sessions.isCurrent(generation,effective))nativeLocatorResponse(action,new JSONObject(value),r.body,generation,effective,locatorFence,android.os.SystemClock.elapsedRealtime()-callStarted);
+     if(r.body.has("token")&&r.body.has("profile")){boolean saved=runtime.sessions.saveBundleIfCurrent(generation,r.body);if(!saved)throw new IllegalStateException("Sign-in changed.");runtime.db.clearTemporary();runtime.emit("auth",r.body.getJSONObject("profile"));runtime.refresh();}
+     if("me".equals(action)&&auth!=null){JSONObject profile=new JSONObject(r.body.toString());profile.remove("ok");if(!runtime.sessions.refreshIfCurrent(generation,effective,profileRequest,profile)){JSONObject current=runtime.sessions.read();if(generation!=runtime.sessions.generation()||current==null||!effective.equals(current.optString("token")))throw new IllegalStateException("Sign-in changed.");r=new GateApi.Reply(200,new JSONObject(current.getJSONObject("profile").toString()).put("ok",true));}}
      if("sync".equals(action)&&generation==runtime.sessions.generation()&&GateSession.canSync(runtime.sessions.read())&&("admin".equals(GateSession.actor(runtime.sessions.read()))||r.body.optBoolean("staffSummary")))runtime.db.applySync(r.body);
     }
-    JSONObject response=new JSONObject().put("id",id).put("status",r.status).put("body",r.body);call("onApiResponse",response.toString());
+    JSONObject response=new JSONObject().put("id",id).put("status",r.status).put("body",GateApi.publicBody(r.body));call("onApiResponse",response.toString());
    }catch(Exception e){try{call("onApiResponse",new JSONObject().put("id",id).put("status",0).put("body",new JSONObject().put("ok",false).put("error","Connection interrupted. Unconfirmed scans stay only in memory while the app is open.")).toString());}catch(Exception ignored){}}});
   }
   @JavascriptInterface public String update(String action,boolean value){
@@ -251,10 +286,12 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    else if("download".equals(action))GateUpdater.check(MainActivity.this,true,true);
    else if("automatic".equals(action))GateUpdater.setAutomatic(MainActivity.this,value);
    else if("install".equals(action))runOnUiThread(()->GateUpdater.install(MainActivity.this));
-   else if("notifications".equals(action))runOnUiThread(()->{if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},UPDATE_NOTIFICATIONS);else startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()));});
+   else if("notifications".equals(action))runOnUiThread(()->{if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},UPDATE_NOTIFICATIONS);else if(Build.VERSION.SDK_INT>=26)startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()));else startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));});
    return GateUpdater.status(MainActivity.this).toString();
   }
-  @JavascriptInterface public void copy(String value){if(value==null||value.length()>256)return;runOnUiThread(()->{android.content.ClipboardManager clip=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(clip!=null)clip.setPrimaryClip(android.content.ClipData.newPlainText("Navrang staff code",value));});}
+  @JavascriptInterface public String voice(String action,String payload){if(action==null||action.length()>16||payload!=null&&payload.length()>256)return nativeVoiceCommand("status","{}");return nativeVoiceCommand(action,payload);}
+  @JavascriptInterface public void locator(String action,String payload){if(!"sample".equals(action)&&!"cancel".equals(action)||payload==null||payload.length()>512)return;runOnUiThread(()->nativeLocatorCommand(action,payload));}
+  @JavascriptInterface public void copy(String value){if(!runtime.privateAccessAllowed()||value==null||value.length()>256)return;runOnUiThread(()->{if(!runtime.privateAccessAllowed())return;android.content.ClipboardManager clip=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(clip!=null)clip.setPrimaryClip(android.content.ClipData.newPlainText("Navrang staff code",value));});}
   @JavascriptInterface public void exit(){runOnUiThread(()->finishAndRemoveTask());}
   @JavascriptInterface public void submit(String id){runtime.submit(id);}
   @JavascriptInterface public String destination(String value){android.content.SharedPreferences p=getSharedPreferences("navrang-ui",MODE_PRIVATE);if("home".equals(value)||"desk".equals(value))p.edit().putString("destination",value).apply();return p.getString("destination","home");}
@@ -265,7 +302,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    if(operationId==null||!operationId.matches("(?i)[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"))return documentReply(false,"Invalid report operation.");
    return requestDocument(ReportSaveCoordinator.Kind.REPORT,name,mime,content,operationId);
   }
-  @JavascriptInterface public void importRegistrations(){runOnUiThread(()->MainActivity.this.importRegistrations());}
+  @JavascriptInterface public void importRegistrations(){runOnUiThread(()->{if(runtime.privateAccessAllowed())MainActivity.this.importRegistrations();else error("Unlock Navrang before importing event data.");});}
   @JavascriptInterface public void scan(){runOnUiThread(()->beginScan());}
   @JavascriptInterface public void googleLogin(){googleLoginFromBridge();}
   @JavascriptInterface public void googleLoginRequest(String operationId){if(operationId!=null&&operationId.matches("[A-Za-z0-9-]{1,100}"))runOnUiThread(()->MainActivity.this.googleLoginForOperation(operationId));}
@@ -280,5 +317,5 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  @Override public void onResume(){super.onResume();if(readiness!=null)readiness.resume();if(web!=null)web.onResume();if(runtime!=null){runtime.add(this);runtime.resume();JSONObject current=runtime.sessions.read();runtime.emit("profile",current==null?new JSONObject():current.optJSONObject("profile"));runtime.emit("readiness",GateReadiness.status(this));runtime.refresh();}GateUpdater.add(this);GateUpdater.publish(this);if(updatesEnabled()&&GateUpdater.automatic(this))GateUpdater.check(this,false,false);}
  @Override public void onPause(){if(readiness!=null)readiness.pause();GateUpdater.remove(this);if(runtime!=null){runtime.remove(this);runtime.pause();}if(web!=null)web.onPause();super.onPause();}
  @Override public void onDestroy(){clearExport();clearReport();if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}super.onDestroy();}
- @Override public void onBackPressed(){if(web==null){finish();return;}web.evaluateJavascript("window.onBackRequested && window.onBackRequested();",null);}
+ @Override public void onBackPressed(){if(runtime!=null&&!runtime.privateAccessAllowed()){moveTaskToBack(true);return;}if(web==null){finish();return;}web.evaluateJavascript("window.onBackRequested && window.onBackRequested();",null);}
 }

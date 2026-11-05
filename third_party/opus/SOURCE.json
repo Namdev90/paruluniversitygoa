@@ -1,0 +1,15 @@
+{
+  "version": "1.6.1",
+  "source": "https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz",
+  "sha256": "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1",
+  "license": "BSD-style; COPYING retained with royalty-free patent references",
+  "ndk": "30.0.16248370",
+  "android_min_api": 24,
+  "default_android_abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64",
+    "x86"
+  ],
+  "status": "FOUR_ABI_API24_CROSS_BUILD_AND_HOST_JNI_VERIFIED_ANDROID_RUNTIME_PENDING"
+}

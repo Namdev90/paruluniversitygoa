@@ -32,12 +32,15 @@ class GateRepository private constructor(val runtime: GateRuntime) {
 
     suspend fun call(action: String, payload: JSONObject = JSONObject()): JSONObject =
         withContext(Dispatchers.IO) {
+            if (!runtime.privateAccessAllowed()) throw GateFailure(423, "Unlock Navrang to continue.")
             val session = runtime.sessions.read() ?: throw GateFailure(401, "Sign in first.")
             val generation = runtime.sessions.generation()
-            val token = session.getString("token")
+            var token = session.getString("token")
             val scope = Profile.from(session.getJSONObject("profile")).scope
             val profileRequest = if (action == "me") runtime.sessions.beginProfileRequest() else -1
             val r = runtime.api.call(action, payload, token)
+            if (!runtime.privateAccessAllowed()) throw GateFailure(423, "Unlock Navrang to continue.")
+            if (r.sessionToken.isNotEmpty()) token = r.sessionToken
             if (!runtime.sessions.isCurrent(generation, token)) throw StaleSession()
             if (
                 action != "me" &&
@@ -130,10 +133,9 @@ class GateRepository private constructor(val runtime: GateRuntime) {
         if (r.status != 200 || !r.body.optBoolean("ok"))
             throw GateFailure(r.status, r.body.text("error", "Sign-in failed."))
         if (
-            !runtime.sessions.saveIfCurrent(
+            !runtime.sessions.saveBundleIfCurrent(
                 generation,
-                r.body.getString("token"),
-                r.body.getJSONObject("profile"),
+                r.body,
             )
         )
             throw StaleSession()
@@ -152,10 +154,12 @@ class GateRepository private constructor(val runtime: GateRuntime) {
             token
         }
 
-    suspend fun revokeSession(token: String) =
+    suspend fun revokeSession(token: String, refresh: String = "") =
         withContext(Dispatchers.IO) {
             try {
-                runtime.api.call("logout", JSONObject(), token)
+                val payload = JSONObject()
+                if (refresh.isNotEmpty()) payload.put("refreshToken", refresh)
+                runtime.api.call("logout", payload, token)
             } catch (_: Exception) {}
         }
 

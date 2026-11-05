@@ -1,0 +1,40 @@
+{
+  "project": "mzesveurjzxjybkejqmx",
+  "checkedAtUTC": "2026-11-05T08:22:22Z",
+  "databaseVersion": "17.11.0.003",
+  "userApproval": "Explicit action-time approval for both reviewed boundary migrations received before execution.",
+  "migrations": [
+    {
+      "version": "20261105082055",
+      "name": "navrang_voice_worker_boundary_v1",
+      "sqlSha256": "8f2e52420c65456e3cd1b50233f560434427074dc63273306da8f28ea2a02102"
+    },
+    {
+      "version": "20261105082141",
+      "name": "navrang_notification_bridge_v080",
+      "sqlSha256": "816034a20886322ef8d55db333bd121d217d9dcb1f5fb6c34d18b0a4db0a5c30"
+    }
+  ],
+  "status": "APPLIED_AND_VERIFIED",
+  "wrapperCount": 6,
+  "wrapperBodiesMatchReviewedSource": true,
+  "rolesNoLoginNonAdmin": true,
+  "privateSchemaUsage": false,
+  "serviceRoleMembership": false,
+  "workerSchemaCreate": false,
+  "serviceRoleSchemaCreate": false,
+  "anonExecute": false,
+  "authenticatedExecute": false,
+  "wrapperOwner": "service_role",
+  "wrapperSearchPath": "",
+  "centerEnabled": false,
+  "deliveryEnabled": false,
+  "newSecurityAdvisorFindings": 0,
+  "unchangedAdvisories": [
+    "rls_enabled_no_policy:29 private service-only tables",
+    "auth_leaked_password_protection:1 pre-existing Auth warning"
+  ],
+  "credentialsCreated": false,
+  "workerDeploymentPerformed": false,
+  "featureActivationPerformed": false
+}

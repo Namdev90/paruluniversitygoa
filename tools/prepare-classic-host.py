@@ -12,7 +12,7 @@ def replace(old, new, multiple=False):
         sys.exit(f'prepare-classic-host: expected source pattern {old!r}; found {count} matches')
     source = source.replace(old, new)
 
-replace('public final class MainActivity extends Activity', 'public class ClassicActivity extends androidx.activity.ComponentActivity')
+replace('public final class MainActivity extends Activity', 'public class ClassicActivity extends androidx.fragment.app.FragmentActivity')
 replace('MainActivity.this', 'ClassicActivity.this', multiple=True)
 replace('return ScanActivity.class;', 'return ClassicScannerActivity.class;')
 replace('@Override public void onBackPressed()', 'protected void classicBack()')

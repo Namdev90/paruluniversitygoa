@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
 import java.util.function.Predicate;
+import java.util.function.BooleanSupplier;
 
 /** One document owns the picker and subsequent write until completion or identity invalidation. */
 public final class ReportSaveCoordinator {
@@ -11,19 +12,22 @@ public final class ReportSaveCoordinator {
 
  public static final class Request {
   public final Kind kind;
-  public final String operationId,token,content;
+  public final String operationId,token,content,familyId;
   public final long generation;
-  public Request(Kind kind,String operationId,long generation,String token,String content){
+  public Request(Kind kind,String operationId,long generation,String token,String content){this(kind,operationId,generation,token,content,"");}
+  public Request(Kind kind,String operationId,long generation,String token,String content,String familyId){
    this.kind=Objects.requireNonNull(kind);
    this.operationId=Objects.requireNonNull(operationId);
    this.generation=generation;
    this.token=Objects.requireNonNull(token);
    this.content=Objects.requireNonNull(content);
+   this.familyId=Objects.requireNonNull(familyId);
   }
  }
 
  private Request current;
  private boolean pickerClaimed;
+ private Request deferredRequest;private Runnable deferredWrite;
  private int currentRequestCode=-1;
  private final IntSupplier requestCodes;
 
@@ -49,12 +53,27 @@ public final class ReportSaveCoordinator {
 
  public synchronized boolean isCurrent(Request request){return request!=null&&current==request;}
 
- public synchronized boolean finish(Request request){
-  if(request==null||current!=request)return false;
-  current=null;pickerClaimed=false;currentRequestCode=-1;return true;
+ /** Retain the selected destination in memory while the app is locked. */
+ public synchronized boolean defer(Request request,Runnable write){
+  if(request==null||current!=request||!pickerClaimed||write==null||deferredWrite!=null)return false;
+  deferredRequest=request;deferredWrite=write;return true;
+ }
+ public boolean resumeDeferred(BooleanSupplier unlocked){
+  final Runnable write;
+  synchronized(this){
+   if(deferredWrite==null||current!=deferredRequest)return false;
+   try{if(!unlocked.getAsBoolean())return false;}catch(RuntimeException unavailable){return false;}
+   write=deferredWrite;deferredRequest=null;deferredWrite=null;
+  }
+  write.run();return true;
  }
 
- public synchronized void clear(Kind kind){if(current!=null&&current.kind==kind){current=null;pickerClaimed=false;currentRequestCode=-1;}}
+ public synchronized boolean finish(Request request){
+  if(request==null||current!=request)return false;
+  current=null;pickerClaimed=false;currentRequestCode=-1;deferredRequest=null;deferredWrite=null;return true;
+ }
+
+ public synchronized void clear(Kind kind){if(current!=null&&current.kind==kind)finish(current);}
 
  public void retainIf(Predicate<Request> allowed){
   final Request pending;

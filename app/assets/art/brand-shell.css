@@ -20,15 +20,15 @@ label{font-size:12px;color:var(--muted)}
 .icon-button,.avatar{height:42px;width:42px;min-width:42px;border-radius:10px;background:var(--paper);font-size:12px;box-shadow:none}
 .notice{max-height:90px;overflow:auto;font-size:12px;border-radius:8px;background:#3b3020}
 main{padding-top:20px}
-.view{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#4b5148 transparent;animation:arrive .2s ease both;padding-bottom:6px}
+.view{scrollbar-width:thin;scrollbar-color:#4b5148 transparent;animation:arrive .2s ease both;padding-bottom:6px}
 .panel-heading{gap:14px}.section-title{padding:2px 0 5px}
 .stats article{padding:13px 12px}.stats span{font-size:11px}.stats strong{font-size:30px;color:var(--ink);font-weight:600}
 .admin-stats article{padding:11px 8px}.admin-stats strong{font-size:26px}
-#admin-console{min-height:510px;height:100%}
+#admin-console{min-height:510px;}
 .admin-tabs{gap:0;border-bottom:1px solid var(--line);padding-bottom:3px}
 .admin-tabs button{min-height:44px;background:transparent;border:0;border-radius:0;font-size:12px}
 .admin-tabs button.selected{background:transparent;color:var(--ink);box-shadow:inset 0 -2px var(--gold)}
-.admin-tab{overflow-y:auto;flex:1 0 auto}.admin-tab table{flex:0 0 auto}
+.admin-tab{flex:1 0 auto}.admin-tab table{flex:0 0 auto}
 th{font-size:10px;font-weight:600;padding:10px 5px}td{font-size:12px;padding:11px 5px}.cell-secondary{font-size:10px}.badge{font-size:10px;padding:4px 6px}
 .pager{padding-top:14px;font-size:12px}.pager .button{min-height:42px}
 .checker-row{gap:12px;padding:15px 0}.checker-row strong{font-size:14px}.checker-row small{font-size:11px}.checker-row .button{min-height:44px;font-size:12px}
@@ -51,7 +51,7 @@ dialog{padding:24px;border-color:#686957;max-height:calc(100% - 32px);overflow:a
 .sound-status{display:none}.connection{font-size:10px}.top-actions{gap:7px}.institution-label .institution-wordmark{height:29px;width:164px}
 .visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 /* The three working entrances are peers. Administration is intentionally separate. */
-.login-view{justify-content:flex-start;padding:6px 0 20px;overflow-y:auto}.login-art{display:none!important}.crafted-login{width:min(500px,100%);flex:none;margin:auto;padding:26px;border:0;background:transparent;box-shadow:none}
+.login-view{justify-content:flex-start;padding:6px 0 20px;}.login-art{display:none!important}.crafted-login{width:min(500px,100%);flex:none;margin:auto;padding:26px;border:0;background:transparent;box-shadow:none}
 .crafted-login>.official-logo{width:230px;height:42px;object-fit:contain;padding:8px 12px;border-radius:3px;margin:0 0 23px;background:#fcf3e0}
 .crafted-login h2{font-size:25px;line-height:1.23;margin:9px 0}.crafted-login .muted{margin-bottom:20px}
 .login-role-picker{display:flex;flex-direction:column;gap:1px;border-top:1px solid #45503f;border-bottom:1px solid #45503f;margin:20px 0 23px}

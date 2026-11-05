@@ -35,3 +35,43 @@ test('unrelated native errors cannot unlock or replace an active credential oper
 test('approved static combined artwork precedes the active welcome stage',()=>{
  const t=setup();try{const card=t.w.document.querySelector('.login-card'),children=[...card.children];assert.ok(children.indexOf(card.querySelector('.combined-brand-login'))<children.indexOf(t.$('auth-welcome')));assert.equal(card.querySelectorAll('.combined-brand-login').length,1)}finally{t.dom.window.close()}
 });
+test('shipped Android launcher reaches the classic login stylesheet',()=>{
+ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+ assert.match(read('native-app/src/main/AndroidManifest.xml'),/android:name="\.MainActivity"/);
+ assert.match(read('native-app/src/main/kotlin/in/navrang/gate/MainActivity.kt'),/class MainActivity : ClassicActivity\(\)/);
+ assert.match(read('tools/prepare-classic-host.py'),/public class ClassicActivity extends androidx\.fragment\.app\.FragmentActivity/);
+ assert.match(read('app/java/in/navrang/gate/MainActivity.java'),/web\.loadUrl\("file:\/\/\/android_asset\/index\.html"\)/);
+ assert.ok(asset('index.html').includes('href="art/classic-restore.css"'));
+});
+test('quiet classic login styling remains scoped and preserves secret fields',()=>{
+ const css=asset('art/classic-restore.css').split('/* Quiet sign-in forms only.')[1].split('@media(max-height:620px)')[0];
+ assert.ok(css.includes('#view-login input{min-height:48px'));
+ assert.ok(css.includes('#view-login :is(button,summary){min-height:48px}'));
+ assert.ok(css.includes('#view-login #auth-back{min-height:48px}'));
+ assert.ok(css.includes('#view-login .google-button{height:auto;min-height:48px;padding:12px;line-height:1.4}'));
+ assert.ok(css.includes('#view-login h2{overflow-wrap:anywhere}'));
+ assert.ok(css.includes('outline:2px solid #f6f2f5'));
+ assert.ok(css.includes('#view-login .primary{background:#702449'));
+ assert.ok(!css.includes('gradient('));
+ for(const rule of css.split('}')){
+  const selector=rule.slice(rule.lastIndexOf('*/')+2).split('{')[0].trim();
+  if(selector&&!selector.startsWith('@media'))assert.ok(selector.startsWith('#view-login'),selector);
+ }
+ const t=setup();try{
+  assert.equal(t.$('checker-code').type,'password');assert.equal(t.$('admin-password').type,'password');
+  assert.equal(t.$('checker-code').maxLength,64);
+ }finally{t.dom.window.close()}
+});
+
+test('browser and native auth use the same real public project configuration',()=>{
+ const native=JSON.parse(asset('gate-config.json')),context={};
+ require('node:vm').runInNewContext(asset('config.js'),context);
+ const browser=context.NavrangConfig;
+ for(const key of ['api','project','publishableKey','oauthRedirect','pollMs'])assert.equal(browser[key],native[key],key+' differs between hosts');
+ assert.equal(native.project,'https://mzesveurjzxjybkejqmx.supabase.co');
+ assert.equal(native.api,native.project+'/functions/v1/navrang-gate');
+ assert.equal(native.oauthRedirect,'navranggate://auth-callback');
+ assert.match(native.publishableKey,/^sb_publishable_[A-Za-z0-9_-]+$/);
+ assert.doesNotMatch(native.publishableKey,/REQUIRED|PLACEHOLDER|sb_secret_|service_role/);
+ assert.ok(native.publishableKey.length>30);
+});

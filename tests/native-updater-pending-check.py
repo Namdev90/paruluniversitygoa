@@ -21,6 +21,8 @@ queue_start = db_source.index(" public synchronized JSONObject queue(")
 queue_end = db_source.index(" public synchronized JSONObject pending(", queue_start)
 queue_method = db_source[queue_start:queue_end]
 sources = {
+"in/navrang/gate/ReleaseSignatureFixture.java": (root / 'tests/ReleaseSignatureFixture.java').read_text(),
+"android/util/Base64.java": '''package android.util;public class Base64 {public static final int DEFAULT=0;public static byte[] decode(String text,int flags){return java.util.Base64.getDecoder().decode(text);}}''',
 "org/json/JSONException.java": "package org.json;public class JSONException extends Exception {}",
 "org/json/JSONObject.java": '''package org.json;import java.util.*;
 public class JSONObject {
@@ -31,13 +33,15 @@ public class JSONObject {
  public String getString(String key){return optString(key);}public int optInt(String key){return values.containsKey(key)?((Number)values.get(key)).intValue():0;}
  public int getInt(String key){return optInt(key);}public long getLong(String key){return ((Number)values.get(key)).longValue();}
  public boolean optBoolean(String key){return Boolean.TRUE.equals(values.get(key));}
+ public JSONObject optJSONObject(String key){Object value=values.get(key);return value instanceof JSONObject?(JSONObject)value:null;}
+ public JSONObject getJSONObject(String key){JSONObject value=optJSONObject(key);if(value==null)throw new IllegalArgumentException(key);return value;}
  public String toString(){String id="json-"+saved.size();saved.put(id,new HashMap<>(values));return id;}
 }''',
 "android/Manifest.java": "package android;public class Manifest {}",
 "android/R.java": "package android;public class R {public static class drawable {public static final int stat_sys_download_done=1;}}",
 "android/net/Uri.java": "package android.net;public class Uri {public static Uri parse(String value){return new Uri();}}",
 "android/provider/Settings.java": 'package android.provider;public class Settings {public static final String ACTION_MANAGE_UNKNOWN_APP_SOURCES="settings";}',
-"android/os/Build.java": "package android.os;public class Build {public static class VERSION {public static int SDK_INT=35;}}",
+"android/os/Build.java": "package android.os;public class Build {public static String[] SUPPORTED_ABIS={\"arm64-v8a\",\"armeabi-v7a\"};public static class VERSION {public static int SDK_INT=35;}}",
 "android/os/Looper.java": "package android.os;public class Looper {public static Looper getMainLooper(){return new Looper();}}",
 "android/os/Handler.java": '''package android.os;import java.util.*;public class Handler {
  private static final Queue<Runnable> tasks=new ArrayDeque<>();public Handler(Looper looper){}
@@ -49,7 +53,7 @@ public class JSONObject {
  public int getInt(String key,int fallback){return (Integer)values.getOrDefault(key,fallback);}public long getLong(String key,long fallback){return (Long)values.getOrDefault(key,fallback);}
  public boolean getBoolean(String key,boolean fallback){return (Boolean)values.getOrDefault(key,fallback);}public Editor edit(){return new Editor();}
  public class Editor {public Editor putString(String key,String value){values.put(key,value);return this;}public Editor putLong(String key,long value){values.put(key,value);return this;}
- public Editor putInt(String key,int value){values.put(key,value);return this;}public Editor putBoolean(String key,boolean value){values.put(key,value);return this;}public void apply(){}}
+ public Editor putInt(String key,int value){values.put(key,value);return this;}public Editor putBoolean(String key,boolean value){values.put(key,value);return this;}public void apply(){}public boolean commit(){return true;}}
 }''',
 "android/content/Context.java": '''package android.content;import java.io.*;import android.app.*;import android.app.job.*;import android.content.pm.*;
 public class Context {public static final String NOTIFICATION_SERVICE="notification",JOB_SCHEDULER_SERVICE="jobs";
@@ -68,7 +72,7 @@ public class Context {public static final String NOTIFICATION_SERVICE="notificat
  @SuppressWarnings("unchecked") public <T>T getParcelableExtra(String key){return (T)extras.get(key);}
 }''',
 "android/content/pm/ApplicationInfo.java": "package android.content.pm;public class ApplicationInfo {public static final int FLAG_DEBUGGABLE=2;public int flags;}",
-"android/content/pm/Signature.java": "package android.content.pm;public class Signature {public byte value=1;public byte[] toByteArray(){return new byte[]{value};}}",
+"android/content/pm/Signature.java": "package android.content.pm;public class Signature {public byte value=1;public byte[] toByteArray(){return value==1?in.navrang.gate.ReleaseSignatureFixture.certificate():new byte[]{value};}}",
 "android/content/pm/SigningInfo.java": "package android.content.pm;public class SigningInfo {public Signature[] getApkContentsSigners(){return new Signature[]{new Signature()};}}",
 "android/content/pm/PackageInfo.java": '''package android.content.pm;public class PackageInfo {public int versionCode;public String versionName="1.0.0",packageName="in.navrang.gate";
  public SigningInfo signingInfo;public Signature[] signatures={new Signature()};}''',
@@ -138,27 +142,35 @@ public class PackageInstaller {
  public synchronized JSONObject snapshot(){return new JSONObject().put("pending",pendingCount());}
 }'''.replace("__CONSTRUCTOR__", db_constructor).replace("__PENDING_COUNT__", pending_count).replace("__QUEUE_METHOD__", queue_method),
 "in/navrang/gate/GateRuntime.java": '''package in.navrang.gate;import android.content.Context;public class GateRuntime {
- public static GateRuntime instance;public static boolean unavailable;public final GateDb db;public GateRuntime(Context c){db=new GateDb(c);}
+ public static GateRuntime instance;public static boolean unavailable,activeAdministrator;public final GateDb db;public GateRuntime(Context c){db=new GateDb(c);}
  public static GateRuntime get(Context c)throws Exception{if(unavailable)throw new Exception("cannot open runtime");return instance;}
+ public boolean foregroundAdministrator(){return activeAdministrator;}
 }''',
 "NativeUpdaterPendingCheck.java": r'''import in.navrang.gate.*;import android.app.*;import android.content.*;import android.content.pm.*;import android.os.Handler;
 import org.json.JSONObject;import java.net.*;import android.app.job.*;import java.io.*;import java.nio.file.*;import java.lang.reflect.*;import java.util.*;import java.util.concurrent.*;
 public class NativeUpdaterPendingCheck {
  static int checks;static final List<String> failures=new ArrayList<>();
- static volatile String manifest="";static volatile int metadataRequests,apkRequests;
+ static volatile String manifest="",conditional="",downloadedTarget="";static volatile int metadataRequests,apkRequests,metadataStatus=200;
  static void fakeNetwork(){URL.setURLStreamHandlerFactory(protocol->new URLStreamHandler(){protected URLConnection openConnection(URL url)throws IOException {
-  if(!url.toString().equals(UpdatePolicy.MANIFEST)&&!url.toString().equals(UpdatePolicy.ROOT+"downloads/Navrang-Gate-1.0.1.apk"))throw new AssertionError("Unexpected network target: "+url);
-  boolean metadata=url.toString().equals(UpdatePolicy.MANIFEST);if(metadata)metadataRequests++;else apkRequests++;
-  return new HttpURLConnection(url){public void connect(){}public void disconnect(){}public boolean usingProxy(){return false;}public int getResponseCode(){return 200;}public InputStream getInputStream(){return new ByteArrayInputStream(metadata?manifest.getBytes(java.nio.charset.StandardCharsets.UTF_8):new byte[100000]);}};
+  boolean allowed=url.toString().equals(UpdatePolicy.MANIFEST)||url.toString().equals(UpdatePolicy.apkUrl("1.0.1",null));for(String abi:UpdatePolicy.ABIS)allowed|=url.toString().equals(UpdatePolicy.apkUrl("1.0.1",abi));if(!allowed)throw new AssertionError("Unexpected network target: "+url);
+  boolean metadata=url.toString().equals(UpdatePolicy.MANIFEST);if(metadata)metadataRequests++;else{apkRequests++;downloadedTarget=url.toString();}
+  return new HttpURLConnection(url){public void connect(){}public void disconnect(){}public boolean usingProxy(){return false;}public int getResponseCode(){return metadata?metadataStatus:200;}public void setRequestProperty(String key,String value){if(metadata&&"If-None-Match".equals(key))conditional=value;super.setRequestProperty(key,value);}public String getHeaderField(String key){return metadata&&"ETag".equals(key)?"\"fixture-release\"":null;}public InputStream getInputStream(){if(metadata&&metadataStatus==304)throw new AssertionError("304 must not read/download a body");return new ByteArrayInputStream(metadata?manifest.getBytes(java.nio.charset.StandardCharsets.UTF_8):new byte[100000]);}};
  }});}
  static void check(boolean ok,String reason){checks++;if(!ok)failures.add(reason);}
  static Field field(String name)throws Exception{Field f=GateUpdater.class.getDeclaredField(name);f.setAccessible(true);return f;}
+ static JSONObject select(Activity a,JSONObject channel)throws Exception{Method m=GateUpdater.class.getDeclaredMethod("selectArtifact",Context.class,JSONObject.class);m.setAccessible(true);return (JSONObject)m.invoke(null,a,channel);}
+ static JSONObject artifact(JSONObject channel,String abi)throws Exception{
+  JSONObject value=new JSONObject(channel.toString()).put("apkUrl",UpdatePolicy.apkUrl(channel.getString("versionName"),abi));
+  value.put("signature",java.util.Base64.getEncoder().encodeToString(ReleaseSignatureFixture.sign(UpdatePolicy.manifestBytes(value.getInt("versionCode"),value.getString("versionName"),value.getString("apkUrl"),value.getLong("size"),value.getString("sha256")))));return value;
+ }
+ static void rejectedRoute(Activity a,JSONObject channel,String reason)throws Exception{try{select(a,channel);check(false,reason);}catch(InvocationTargetException expected){check(true,reason);}}
  static ExecutorService worker()throws Exception{return (ExecutorService)field("work").get(null);}
  static void settle()throws Exception{worker().submit(()->{}).get(3,TimeUnit.SECONDS);Handler.drain();}
  static Activity fixture()throws Exception {
-  settle();GateRuntime.instance=null;GateRuntime.unavailable=false;GateUpdater.scanActive=false;field("confirmation").set(null,null);field("confirmationSession").set(null,-1);field("message").set(null,"");field("installationMessage").set(null,"");field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(null));
+  settle();GateRuntime.instance=null;GateRuntime.unavailable=false;GateRuntime.activeAdministrator=false;metadataStatus=200;conditional="";GateUpdater.scanActive=false;field("confirmation").set(null,null);field("confirmationSession").set(null,-1);field("message").set(null,"");field("installationMessage").set(null,"");field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(null));
   Activity a=new Activity();a.files=Files.createTempDirectory("updater-fixture-").toFile();a.files.deleteOnExit();File apk=new File(a.files,"navrang-update.apk");Files.write(apk.toPath(),new byte[100000]);apk.deleteOnExit();
   JSONObject release=new JSONObject().put("packageName",UpdatePolicy.APP_ID).put("versionCode",2).put("versionName","1.0.1").put("apkUrl",UpdatePolicy.ROOT+"downloads/Navrang-Gate-1.0.1.apk").put("size",100000L).put("sha256",UpdatePolicy.hash(apk));
+  release.put("signature",java.util.Base64.getEncoder().encodeToString(ReleaseSignatureFixture.sign(UpdatePolicy.manifestBytes(2,"1.0.1",release.getString("apkUrl"),100000L,release.getString("sha256")))));
   manifest=release.toString();metadataRequests=0;apkRequests=0;a.getSharedPreferences("navrang-updates",0).edit().putString("release",manifest).putInt("readyCode",2).apply();GateRuntime.instance=new GateRuntime(a);return a;
  }
  static void restart(Activity a)throws Exception{settle();field("message").set(null,"");field("installationMessage").set(null,"");GateRuntime.instance=new GateRuntime(a);GateUpdater.scanActive=false;field("confirmation").set(null,null);field("confirmationSession").set(null,-1);field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(null));}
@@ -170,22 +182,64 @@ public class NativeUpdaterPendingCheck {
  static boolean queueRejected(){try{GateRuntime.instance.db.queue("RACE0001","checker");return false;}catch(Exception e){return e.getClass().getSimpleName().equals("UpdateInProgressException")&&e.getMessage().contains("Finish or cancel");}}
  static void remember(Activity a)throws Exception{field("installerActivity").set(null,new java.lang.ref.WeakReference<Activity>(a));}
  public static void main(String[] args)throws Exception {fakeNetwork();try{
+  Activity routing=fixture();JSONObject channel=new JSONObject(manifest),arm64=artifact(channel,"arm64-v8a"),arm32=artifact(channel,"armeabi-v7a"),x64=artifact(channel,"x86_64"),x32=artifact(channel,"x86");
+  JSONObject variants=new JSONObject().put("arm64-v8a",arm64).put("armeabi-v7a",arm32).put("x86_64",x64).put("x86",x32);channel.put("artifacts",variants);
+  check(select(routing,channel)==arm64,"real updater follows device ABI order");
+  check(select(routing,new JSONObject(manifest).put("artifacts",new JSONObject().put("armeabi-v7a",arm32)))==arm32,"64-bit device can use its listed 32-bit ABI when the preferred variant is absent");
+  for(String abi:UpdatePolicy.ABIS){android.os.Build.SUPPORTED_ABIS=new String[]{abi};check(select(routing,channel)==variants.getJSONObject(abi),"real updater selects self-contained "+abi);}
+  android.os.Build.SUPPORTED_ABIS=new String[]{"future-abi"};check(select(routing,channel)==channel,"unknown ABI uses signed universal");
+  android.os.Build.SUPPORTED_ABIS=new String[]{"arm64-v8a","armeabi-v7a"};check(select(routing,new JSONObject(manifest))!=null,"old signed universal-only metadata stays compatible");
+  variants.put("arm64-v8a",arm32);rejectedRoute(routing,channel,"ABI relabeling is rejected despite valid proof");
+  variants.put("arm64-v8a",new JSONObject(arm64.toString()).put("sha256","f".repeat(64)));rejectedRoute(routing,channel,"selected artifact tampering is rejected");
+  variants.put("arm64-v8a",new JSONObject(arm64.toString()).put("signature",""));rejectedRoute(routing,channel,"selected artifact missing proof is rejected");
+  JSONObject other=artifact(new JSONObject(manifest).put("versionCode",3),"arm64-v8a");variants.put("arm64-v8a",other);rejectedRoute(routing,channel,"individually signed artifact from another release is rejected");
+  variants.put("arm64-v8a",arm64);rejectedRoute(routing,new JSONObject(channel.toString()).put("signature",""),"unsigned universal channel cannot authorize signed variants");
+  // A changed artifact must invalidate readyCode even within the same release.
+  arm64.put("sha256","e".repeat(64));arm64=artifact(arm64,"arm64-v8a");variants.put("arm64-v8a",arm64);manifest=channel.toString();GateUpdater.check(routing,true,false);settle();
+  check(routing.getSharedPreferences("navrang-updates",0).getInt("readyCode",0)==0,"routing to different bytes clears old cached readiness");
+  routing=fixture();channel=new JSONObject(manifest);arm64=artifact(channel,"arm64-v8a");channel.put("artifacts",new JSONObject().put("arm64-v8a",arm64));manifest=channel.toString();new File(routing.files,"navrang-update.apk").delete();GateUpdater.check(routing,true,true);settle();
+  check(apkRequests==1&&downloadedTarget.equals(arm64.getString("apkUrl")),"actual download follows the verified ABI URL");
+  check(GateUpdater.status(routing).optBoolean("ready"),"ABI download still passes archive identity, signer, size and hash checks");
+  SharedPreferences routed=routing.getSharedPreferences("navrang-updates",0);check(new JSONObject(routed.getString("release","")).getString("apkUrl").equals(arm64.getString("apkUrl")),"cache stores the authenticated selected artifact");
+  long stale=System.currentTimeMillis()-1800001;routed.edit().putLong("attempt",stale).putLong("checked",stale).apply();metadataStatus=304;GateUpdater.background(routing);settle();
+  check(metadataRequests==2&&apkRequests==1&&GateUpdater.status(routing).optBoolean("ready"),"conditional 304 preserves signed ABI metadata and verified bytes");
   Activity a=fixture();SharedPreferences settings=a.getSharedPreferences("navrang-updates",0);settings.edit().putBoolean("automatic",false).putString("unrelated","preserve").apply();new File(a.files,"navrang-update.apk").delete();a.notifications.enabled=false;
   check(GateUpdater.automatic(a),"old saved false must never disable the release policy, even before initialization");
   GateUpdater.init(a);settle();
   check(settings.getBoolean("automatic",false),"release initialization migrates the old opt-out preference");
   check("preserve".equals(settings.getString("unrelated","")),"update initialization must not alter unrelated settings");
-  check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"release initialization must check and download a verified APK despite old false");
+  check(metadataRequests==1&&apkRequests==0&&!GateUpdater.status(a).optBoolean("ready")&&GateUpdater.status(a).optBoolean("available"),"initialization checks metadata only; no automatic executable download");
+  GateUpdater.check(a,true,true);settle();
+  check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"explicit download reuses fresh validated metadata without a duplicate check");
   check(a.packages.installer.created==0&&a.launched.isEmpty(),"automatic download must not initiate Android installation");
   check(a.notifications.last==null&&!GateUpdater.status(a).optBoolean("notifications"),"notification denial remains respected while download stays available in Account");
-  JobInfo job=a.jobs.pending.get(3404);check(job!=null&&job.persisted&&job.network==JobInfo.NETWORK_TYPE_ANY&&job.period==15*60*1000L&&job.flex==5*60*1000L&&job.component.type==UpdateJob.class,"release schedule must retain the persisted periodic network job and interval");
+  JobInfo job=a.jobs.pending.get(3404);check(job!=null&&job.persisted&&job.network==JobInfo.NETWORK_TYPE_ANY&&job.period==30*60*1000L&&job.flex==5*60*1000L&&job.component.type==UpdateJob.class,"background checks use one persisted best-effort 30-minute network job");
   GateUpdater.setAutomatic(a,false);settle();check(GateUpdater.automatic(a)&&settings.getBoolean("automatic",false)&&a.jobs.pending.size()==1&&a.jobs.cancelled==0,"legacy off requests cannot disable policy or remove the scheduled job");
   check(metadataRequests==1&&apkRequests==1,"legacy setting call must retain foreground check throttle");
   restart(a);GateUpdater.init(a);settle();check(GateUpdater.automatic(a)&&a.jobs.pending.size()==1&&a.jobs.pending.get(3404).persisted,"restart must preserve automatic policy and a single persisted job");
-  check(metadataRequests==1,"restart must preserve the existing five-minute foreground throttle");
+  check(metadataRequests==1,"restart must preserve the shared metadata check throttle");
   a=fixture();a.getSharedPreferences("navrang-updates",0).edit().putBoolean("automatic",false).apply();new File(a.files,"navrang-update.apk").delete();restart(a);GateUpdater.background(a);settle();
-  check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"a direct persisted-job wake must check/download despite old false without host init");
+  check(metadataRequests==1&&apkRequests==0&&!GateUpdater.status(a).optBoolean("ready"),"a persisted-job wake checks metadata without downloading code");
   check(a.packages.installer.created==0,"background checks/downloads never silently create an installer session");
+  GateUpdater.background(a);settle();check(metadataRequests==1,"a duplicate job shares the persisted last attempt");
+  a=fixture();settings=a.getSharedPreferences("navrang-updates",0);long old=System.currentTimeMillis()-300001;settings.edit().putLong("attempt",old).putLong("checked",old).apply();GateRuntime.activeAdministrator=true;
+  GateUpdater.check(a,false,false);settle();check(metadataRequests==1&&apkRequests==0,"active authenticated admin uses the five-minute metadata fallback only");
+  GateRuntime.activeAdministrator=false;settings.edit().putLong("attempt",old).putLong("checked",old).apply();GateUpdater.check(a,false,false);settle();check(metadataRequests==1,"background or ordinary role does not inherit the admin cadence");
+  old=System.currentTimeMillis()-1800001;settings.edit().putLong("attempt",old).putLong("checked",old).apply();metadataStatus=304;GateUpdater.background(a);settle();
+  check(metadataRequests==2&&apkRequests==0&&"\"fixture-release\"".equals(conditional),"conditional 304 preserves validated cache and reads no body");
+  a=fixture();new File(a.files,"navrang-update.apk").delete();for(int n=0;n<20;n++)GateUpdater.invalidate(a,3);settle();
+  check(metadataRequests==1&&apkRequests==0,"burst release hints coalesce and never download executable code");
+  GateUpdater.invalidate(a,1);GateUpdater.invalidate(a,2);GateUpdater.invalidate(a,-1);settle();check(metadataRequests==1,"old, already-cached and invalid release hints do nothing");
+  a=fixture();metadataStatus=503;GateUpdater.check(a,true,false);settle();for(int n=0;n<10;n++)GateUpdater.check(a,true,false);settle();check(metadataRequests==1&&apkRequests==0,"manual retries respect bounded failure backoff");
+  a=fixture();settings=a.getSharedPreferences("navrang-updates",0);settings.edit().putLong("attempt",System.currentTimeMillis()+86400000).putLong("retry",System.currentTimeMillis()+86400000).apply();for(int n=0;n<10;n++)GateUpdater.check(a,true,false);settle();check(metadataRequests==0,"wall-clock rollback clamps a future schedule without a request storm");
+  a=fixture();settings=a.getSharedPreferences("navrang-updates",0);String trusted=manifest;manifest=new JSONObject(manifest).put("sha256","b".repeat(64)).toString();GateUpdater.check(a,true,true);settle();
+  check(metadataRequests==1&&apkRequests==0&&trusted.equals(settings.getString("release","")),"a tampered network digest cannot replace signed metadata or download an APK");
+  a=fixture();settings=a.getSharedPreferences("navrang-updates",0);settings.edit().putString("release",new JSONObject(manifest).put("signature","").toString()).apply();GateUpdater.install(a);settle();
+  check(a.packages.installer.created==0&&metadataRequests==0,"tampered cached metadata cannot cross the Android install boundary");
+  a=fixture();manifest=new JSONObject(manifest).put("signature","").toString();GateUpdater.check(a,true,true);settle();check(metadataRequests==1&&apkRequests==0,"unsigned metadata is rejected before APK transfer");
+  a=fixture();settings=a.getSharedPreferences("navrang-updates",0);JSONObject newest=new JSONObject(manifest).put("versionCode",3).put("versionName","1.0.2").put("apkUrl",UpdatePolicy.ROOT+"downloads/Navrang-Gate-1.0.2.apk");
+  newest.put("signature",java.util.Base64.getEncoder().encodeToString(ReleaseSignatureFixture.sign(UpdatePolicy.manifestBytes(3,"1.0.2",newest.getString("apkUrl"),100000L,newest.getString("sha256")))));String trustedNewest=newest.toString();settings.edit().putString("release",trustedNewest).apply();GateUpdater.check(a,true,false);settle();
+  check(metadataRequests==1&&apkRequests==0&&trustedNewest.equals(settings.getString("release","")),"a signed older manifest cannot roll back a known newer signed release");
   a=fixture();GateUpdater.scanActive=true;GateUpdater.init(a);GateUpdater.background(a);GateUpdater.check(a,true,true);settle();check(metadataRequests==0&&apkRequests==0&&a.jobs.pending.size()==1,"scanner priority defers every update request while preserving future scheduling");
   for(String build:new String[]{"internal","debuggable","internal-debuggable"}){
    a=fixture();if(build.contains("internal"))a.packageName="in.navrang.gate.internal";if(build.contains("debuggable"))a.appInfo.flags=ApplicationInfo.FLAG_DEBUGGABLE;
@@ -283,6 +337,6 @@ with tempfile.TemporaryDirectory(prefix="navrang-updater-check-") as temp:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(source)
         files.append(str(path))
-    production = [root / "app/java/in/navrang/gate/GateUpdater.java", root / "app/java/in/navrang/gate/UpdatePolicy.java"]
+    production = [root / "app/java/in/navrang/gate/GateUpdater.java", root / "app/java/in/navrang/gate/UpdatePolicy.java", root / "app/java/in/navrang/gate/UpdateCheckPolicy.java"]
     subprocess.run(["java", "--module", "jdk.compiler/com.sun.tools.javac.Main", "-d", str(folder / "classes"), *files, *map(str, production)], check=True)
     subprocess.run(["java", "-cp", str(folder / "classes"), "NativeUpdaterPendingCheck"], check=True, timeout=20)

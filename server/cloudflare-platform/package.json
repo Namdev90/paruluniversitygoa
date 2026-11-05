@@ -1,0 +1,1 @@
+{"name":"navrang-cloudflare-platform","private":true,"type":"module","scripts":{"test":"node --test test/*.test.mjs","check":"node --check worker.mjs && node --check owner.mjs && node --check connector.mjs"},"dependencies":{"pg":"8.23.1"},"devDependencies":{"wrangler":"4.152.0"}}

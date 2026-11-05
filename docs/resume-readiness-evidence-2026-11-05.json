@@ -1,0 +1,65 @@
+{
+  "checkedAtUTC": "2026-11-05T14:59:00Z",
+  "sourceBase": "7f7a1cdb58783f6d87f68097215c197ce6112d3e",
+  "githubMain": "b8605c5e5e694bc741a3d36b26bf76c8ab7f4ac1",
+  "githubPrimary": true,
+  "gitlabBackupOnly": true,
+  "restoredArchiveVersion": 2,
+  "restoredArchiveSha256": "c4074d367b940fb5bb2d9271f89a6b4117c5b50a1b31ab5ba728341c4d603a6a",
+  "verifiedArchivePayloads": 623,
+  "publicConfig": {
+    "newCredentialCreated": false,
+    "publishedNativeBlob": "c9e2ea3820a41aa895ce36234bc5ac0b0228e4dc",
+    "existingEnabledPublicKeyMatches": true,
+    "authSettingsHttp": 200,
+    "gateConfigHttp": 200,
+    "googleEnabled": true,
+    "fullUserOAuth": "NOT_RUN"
+  },
+  "nodeTests": {
+    "total": 857,
+    "pass": 854,
+    "skip": 3,
+    "fail": 0
+  },
+  "nativePolicyChain": "BLOCKED_AT_VOICE_POLICY_INSTALLED_JRE_LACKS_RELEASE17_METADATA",
+  "androidBuild": "NOT_REBUILT_AFTER_ASSET_CHANGES",
+  "priorAndroidSource": "e45f611bc50123a0293a2580167839bd35a60466",
+  "productionChanged": false,
+  "edgeVersion": 7,
+  "optionalFeatureMigrations": "ABSENT_NOT_APPROVED",
+  "workerAuthDbBindings": 0,
+  "notificationCenterEnabled": false,
+  "notificationDeliveryEnabled": false,
+  "voiceEnabled": false,
+  "signing": "NOT_PERFORMED",
+  "publication": "NOT_PERFORMED",
+  "integration": {
+    "recoveryImportedRoot": "0e8af768c618c6c46e4bd3c43748b0116df16d42",
+    "recoveryDescendsFromPublicMain": false,
+    "historicalApksOmittedFromRecovery": 18,
+    "preservePublishedDownloads": true
+  },
+  "artifactFiles": {
+    "app/assets/config.js": {
+      "bytes": 358,
+      "sha256": "8d033e65c28ed1ec8c8931c47196fa672d360a2c45a693f5b6c7760d533b0688"
+    },
+    "app/assets/gate-config.json": {
+      "bytes": 351,
+      "sha256": "655502cf8997af8f8dad9d39b23f5cb03623028ce2a0a6b89002c8ba328fc60a"
+    },
+    "app/assets/locator.js": {
+      "bytes": 18548,
+      "sha256": "229661abb9540e4aad6946de06072114086213ca2d856a8b0ba9fca8f5ad4a1c"
+    },
+    "tests/auth-flow.test.cjs": {
+      "bytes": 7623,
+      "sha256": "75e4847a687555e18b7644431de0b1bc50ae5bfbfaa72cc3f373dcafc52b1afa"
+    },
+    "tests/locator-flow.test.cjs": {
+      "bytes": 15299,
+      "sha256": "907ea7e51d357cd2688fee16041648240330d8958e601150bb53cebd04ae3e76"
+    }
+  }
+}

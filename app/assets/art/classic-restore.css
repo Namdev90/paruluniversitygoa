@@ -56,7 +56,7 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 /* Official vector marks already have alpha. Remove only their added UI backplates. */
 .institution-wordmark,.crafted-login>.official-logo,.official-logo,.brand.official-header .header-logo{background:transparent!important;padding:0;border-radius:0;box-shadow:none}
 .brand.official-header>.classic-header-logo{box-shadow:none;border-radius:0}
-.rows-scroll,#checker-list,#desk-records{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-padding-block:12px}
+.rows-scroll,#checker-list,#desk-records{min-height:0;scrollbar-gutter:stable;scroll-padding-block:12px}
 #checker-list,#desk-records{flex:1}
 .rows-scroll thead{background:#291d2a;box-shadow:0 2px 8px #0004}
 .list-status{flex-shrink:0;min-height:30px;padding:9px 2px 0;font-size:11px;line-height:1.4;color:var(--muted)}
@@ -83,22 +83,22 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 @media(max-height:600px) and (max-width:519px){.intro-content .event-wordmark-hero.classic-event-mark{width:min(150px,28vh)}.intro-content .eyebrow{display:none}.intro-content .pill{display:none}.intro-content>.official-logo{height:24px}.intro{gap:6px;padding-block:12px}}
 @media(prefers-reduced-motion:reduce){.intro .dancer-stage,.intro .dancer-stage>.dancer{animation:none!important;transform:none!important}.intro-content .event-wordmark-hero.classic-event-mark{filter:none}}
 .institution-wordmark,.crafted-login>.official-logo,.official-logo,.intro-content>.official-logo,.brand.official-header .header-logo{border:0;padding:0;border-radius:0}
-#view-desk.desk-list-mode{overflow:hidden;min-height:0}
+#view-desk.desk-list-mode{min-height:0}
 #view-desk.desk-list-mode>.panel-heading,#view-desk.desk-list-mode>.stats{flex-shrink:0}
-#view-desk.desk-list-mode .desk-workspace{flex:1 1 0;min-height:0;overflow:hidden}
+#view-desk.desk-list-mode .desk-workspace{flex:1 0 auto;min-height:0;}
 #view-desk.desk-list-mode .desk-tabs{flex-shrink:0}
-#view-desk.desk-list-mode .desk-list-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#view-desk.desk-list-mode .desk-list-panel{flex:1 0 auto;min-height:0;display:flex;flex-direction:column;}
 #desk-list-panel>.panel-heading,#desk-list-panel>.table-toolbar,.list-footer{flex-shrink:0}
 .list-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px}
 .list-footer .list-status{padding-top:0;min-height:0}.list-footer .button{flex-shrink:0}
 
 /* Reserve real row space; compact viewports can scroll the panel to every action. */
-#admin-console>.admin-tab{overflow:auto;overscroll-behavior:contain}
+#admin-console>.admin-tab{}
 #admin-console>.panel-heading,#admin-console>.namu-guide,#admin-console>.admin-stats{flex-shrink:0}
 #admin-console .rows-scroll{min-height:160px}
 #admin-console #checker-list{min-height:112px;flex:1 0 112px}
 #admin-checkers>#provider-note,#admin-checkers>.table-toolbar,#admin-checkers>.list-status,#admin-checkers>#open-code{flex-shrink:0}
-#admin-console>#admin-updates:not([hidden]){overflow-y:auto;display:block}
+#admin-console>#admin-updates:not([hidden]){display:block}
 #admin-updates>.button{min-height:44px}
 #admin-console .checker-row{min-height:72px}
 #admin-console .checker-row .button{min-height:44px}
@@ -106,7 +106,6 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 .admin-tab td,.table-panel td{font-size:12px}
 .admin-tab .table-link{font-size:12px;min-height:44px}
 @media(max-height:900px){
- #admin-console>.namu-guide{display:none}
  #admin-console{gap:8px}
  #admin-console>.admin-stats{margin-block:4px}
  #admin-console>.admin-stats article{padding-block:8px}
@@ -127,12 +126,12 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 }
 
 .intro .intro-skip{animation:none;opacity:1}
-#view-entries>.table-panel{overflow:auto}
+#view-entries>.table-panel{}
 #view-entries .rows-scroll{min-height:160px}
 @media(max-height:500px){#view-entries .rows-scroll{min-height:112px}}
 input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 /* Staff actions share one toolbar so a compact viewport still has a whole row. */
-#admin-console>#admin-checkers:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto minmax(112px,1fr) auto;gap:6px;overflow:hidden}
+#admin-console>#admin-checkers:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;gap:6px;overflow:visible}
 #admin-checkers>#provider-note{grid-column:1/-1;grid-row:1;margin:0}
 #admin-checkers>.table-toolbar{grid-column:1;grid-row:2;margin:0}
 #admin-checkers>#open-code{grid-column:2;grid-row:2;margin:0;max-width:180px;min-height:44px}
@@ -143,8 +142,8 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
  .brand.official-header>.classic-header-logo{width:32px;height:32px}
  .brand.official-header .header-logo{height:26px}
  .mobile-nav{padding-top:3px;padding-bottom:0}
- .mobile-nav button,.administrator-session .mobile-nav button{min-height:40px;padding:3px}
- .mobile-nav button span{line-height:16px;margin:0}
+ .mobile-nav button,.administrator-session .mobile-nav button{min-height:44px;padding:3px}
+ .mobile-nav button span{line-height:1.2;margin:0}
  #admin-console>#admin-checkers:not([hidden]){grid-template-rows:auto minmax(112px,1fr) auto;gap:4px}
  #admin-checkers>#provider-note{display:none}
  #admin-checkers>.table-toolbar,#admin-checkers>#open-code{grid-row:1}
@@ -169,15 +168,17 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 @media(max-height:560px) and (min-width:520px){.intro-content .event-wordmark-hero.classic-event-mark{width:min(280px,39vw);max-height:34vh}}
 @media(max-width:480px){.brand.official-header>.classic-header-logo{width:64px;height:30px}}
 .badge{white-space:nowrap;word-break:normal}
-.mobile-nav button,.administrator-session .mobile-nav button{white-space:nowrap;overflow-wrap:normal;word-break:normal}
-@media(max-width:360px){
- .mobile-nav button,.administrator-session .mobile-nav button{font-size:10px;padding-inline:0}
+.mobile-nav button,.administrator-session .mobile-nav button{white-space:normal;overflow-wrap:anywhere;word-break:normal}
+@media(max-width:480px){
  #admin-registrations thead{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%)}
  #registration-rows tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 0;border-top:1px solid var(--line)}
  #registration-rows td{display:block;width:auto;border:0;padding:4px 2px}
  #registration-rows td:first-child{grid-column:1/-1}
  #registration-rows td[data-label]:before{content:attr(data-label);display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
  #registration-rows .badge{padding-inline:4px}
+}
+@media(max-width:360px){
+ .mobile-nav button,.administrator-session .mobile-nav button{font-size:10px;padding-inline:0}
  #admin-console>#admin-checkers:not([hidden]){grid-template-rows:auto minmax(112px,1fr) auto}
  #admin-checkers>#provider-note{display:none}
  #admin-checkers>.table-toolbar,#admin-checkers>#open-code{grid-row:1}
@@ -186,19 +187,18 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 }
 
 /* Four equal, tactile admin tabs keep the original burgundy-and-gold character. */
-.admin-tabs{gap:6px;padding:0 0 3px;border:0;border-radius:12px;background:linear-gradient(180deg,#100b1590,#24172160);box-shadow:inset 0 2px 5px #09060d70}
-.admin-tabs button{min-height:44px;height:44px;padding:6px 4px;border:1px solid #ba8b6752;border-radius:10px;background:linear-gradient(155deg,#493040,#2c1c2d);color:#ead5bf;font-size:12px;font-weight:650;line-height:1.2;box-shadow:inset 0 1px #fbe0bc24,0 3px 0 #100a14,0 5px 9px #0003;transition:background .16s,transform .16s}
+.admin-tabs{grid-template-columns:repeat(auto-fit,minmax(min(100%,4em),1fr));gap:6px;padding:0 0 3px;border:0;border-radius:12px;background:linear-gradient(180deg,#100b1590,#24172160);box-shadow:inset 0 2px 5px #09060d70}
+.admin-tabs button{min-height:44px;padding:6px 4px;overflow-wrap:anywhere;border:1px solid #ba8b6752;border-radius:10px;background:linear-gradient(155deg,#493040,#2c1c2d);color:#ead5bf;font-size:12px;font-weight:650;line-height:1.2;box-shadow:inset 0 1px #fbe0bc24,0 3px 0 #100a14,0 5px 9px #0003;transition:background .16s,transform .16s}
 .admin-tabs button.selected{background:linear-gradient(150deg,#853e59,#4a223b);border-color:#dcad777d;color:#ffe4af;box-shadow:inset 0 1px #ffe8bd47,inset 0 -1px #301125,0 3px 0 #240f21,0 6px 10px #0004}
 .admin-tabs button:active{transform:translateY(1px)}
 .admin-tabs button:focus-visible{outline:2px solid #f4cf91;outline-offset:-3px}
 @media(max-width:360px){.admin-tabs button{padding-inline:3px}}
 
-/* A saved Help Desk list has a definite viewport and never collapses its controls.
-   Compact heights can scroll the whole panel; the records retain their own scroll. */
-#view-desk.desk-list-mode{height:100%;overflow-y:auto}
+/* Saved Help Desk records grow naturally with the document and keep actions reachable. */
+#view-desk.desk-list-mode{}
 #view-desk.desk-list-mode .desk-workspace{flex:1 0 auto;overflow:visible}
 #view-desk.desk-list-mode .desk-list-panel{flex:1 0 auto}
-#view-desk.desk-list-mode #desk-records{flex:1 1 112px;min-height:112px}
+#view-desk.desk-list-mode #desk-records{flex:1 0 auto;min-height:112px}
 
 /* Status text and refresh remain reachable on narrow phones. */
 .list-footer{flex-wrap:wrap}
@@ -218,10 +218,10 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 .login-card .login-role-picker{display:grid;gap:12px}
 .login-card #signin-panel>.eyebrow{display:none}
 .login-card #show-checker-login{display:none}
-.app-footer.creator-credit{height:24px;min-height:24px;padding:4px}
+.app-footer.creator-credit{min-height:24px;padding:4px}
 
-/* Consolidated reports: fixed-size panels, explicit tabs and page controls. */
-#view-reports{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;gap:10px;padding-bottom:0}
+/* Consolidated reports: naturally sized panels and accessible tabs. */
+#view-reports{min-height:0;display:flex;flex-direction:column;gap:10px;padding-bottom:0}
 #view-reports[hidden]{display:none}
 #view-reports>.section-title{flex:none;margin:0}
 #view-reports>.section-title .eyebrow,#view-reports>.section-title .micro-note{display:none}
@@ -229,7 +229,7 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 .report-tabs{display:flex;gap:6px;flex:none}
 .report-tabs button{flex:1;min-height:44px;font-size:12px;padding:6px}
 .report-tabs button[aria-selected=true]{background:linear-gradient(150deg,#95516a,#53253e);color:#ffe3b5}
-#view-reports>.panel{flex:1;min-height:0;overflow:hidden;margin:0;padding:14px;display:flex;flex-direction:column;gap:8px}
+#view-reports>.panel{flex:1;min-height:0;margin:0;padding:14px;display:flex;flex-direction:column;gap:8px}
 #view-reports>.panel[hidden]{display:none!important}
 #view-reports .panel-heading{margin:0;flex:none}
 #view-reports h3{font-size:18px;line-height:1.3;margin:0}
@@ -275,7 +275,7 @@ body[data-route=login] .classic-header-logo{transition:width .4s cubic-bezier(.2
 
 /* Navigation motion is owned by presentation-motion.js; never stack legacy entry animations. */
 .view{animation:none!important}
-.rows-scroll,.list-scroll{overscroll-behavior:contain}
+.rows-scroll,.list-scroll{}
 
 body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[data-reduced-motion=true] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 
@@ -293,10 +293,8 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 #report-download-dialog select{min-height:44px}
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 .report-tabs button{overflow-wrap:anywhere}
-.mobile-nav button{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 #view-reports>.section-title{display:none}
-@media(max-height:700px){#admin-console>.admin-stats{display:none}}
 @media(max-height:500px){#admin-console .rows-scroll,#view-entries .rows-scroll{min-height:44px}}
 .rows-scroll.list-condensed thead{display:none}
 .rows-scroll.list-condensed tbody tr{display:flex!important;align-items:center;gap:8px;padding:2px 0!important}
@@ -323,6 +321,30 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 
 .crafted-login[data-auth-stage=welcome]>.combined-brand-login{width:min(300px,100%,42vh);margin-bottom:12px}
 .crafted-login:not([data-auth-stage=welcome])>.combined-brand-login{width:min(150px,45%,18vh);margin-bottom:6px}
+
+/* Quiet sign-in forms only. Keep the approved maroon brand surround and dark shell. */
+#view-login :is(#auth-welcome,#auth-roles,#signin-panel,#admin-signin){
+ --ink:#f6f2f5;--muted:#c9c2cb;
+ padding:18px;background:#211d23;color:var(--ink);border:1px solid #504650;border-radius:16px;
+}
+#view-login :is(#auth-welcome,#auth-roles,#signin-panel,#admin-signin) h2{font-weight:600;letter-spacing:-.4px}
+#view-login .login-role-picker{border:0;margin-block:12px}
+#view-login .login-role{background:#302b32;border:1px solid #625865;border-radius:12px;box-shadow:none}
+#view-login input{min-height:48px;height:auto;padding:12px;font-size:16px;background:#302b32;border:1px solid #817584;border-radius:12px;box-shadow:none;color:#f6f2f5}
+#view-login input::placeholder{color:#c9c2cb}
+#view-login label{font-size:13px;margin-block:12px 6px}
+#view-login :is(button,summary){min-height:48px}
+#view-login #auth-back{min-height:48px}
+#view-login .google-button{height:auto;min-height:48px;padding:12px;line-height:1.4}
+#view-login h2{overflow-wrap:anywhere}
+#view-login :is(.button,.google-button){box-shadow:none}
+#view-login .primary{background:#702449;color:#fff;border-color:#bc7898}
+#view-login .secondary{background:#302b32;color:#f6f2f5;border-color:#817584}
+#view-login :is(button,summary):focus-visible,#view-login input:focus{
+ outline:2px solid #f6f2f5;outline-offset:2px;border-color:#f6f2f5;box-shadow:none;
+}
+#view-login .button:active{transform:none;box-shadow:none}
+@media(max-width:360px){#view-login :is(#auth-welcome,#auth-roles,#signin-panel,#admin-signin){padding:14px}}
 
 @media(max-height:620px){
  .crafted-login{padding-block:8px}

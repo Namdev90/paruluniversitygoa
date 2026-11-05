@@ -2,14 +2,19 @@
  'use strict';
  const C=GateClient,D=NavrangDeskCore,$=id=>document.getElementById(id);
  const fields=['name','email','phone','quantity'];
- let offset=0,total=null,rows=[],selected=null,editing=null,locked=false,pending=null,loading=false,generation=0,searchTimer,refreshQueued=false,reviewGeneration=0,listRevision=0,listQuery='',listChanged=false;
+ let offset=0,total=null,rows=[],selected=null,editing=null,locked=false,pending=null,loading=false,generation=0,searchTimer,refreshQueued=false,queuedSource='auto',reviewGeneration=0,listRevision=0,listQuery='',listChanged=false,pollTimer=null,failures=0,lastSuccessAt=-Infinity,retryNotBefore=0,lastManualRefresh=-Infinity;
  let rowCache=new Map();
  const listBatchSize=8; // Existing server contract caps each role-scoped request at eight records.
  const admin=()=>C.profile()?.role==='admin';
- const allowed=()=>!!C.profile()?.active&&(admin()||C.profile()?.helpdesk===true&&(C.profile()?.station==null||C.profile().station==='helpdesk'));
+ const allowed=()=>{const p=C.profile();return !!p?.active&&[p.expiresAt,p.accessExpiresAt].filter(Boolean).every(value=>{const at=Date.parse(value);return Number.isFinite(at)&&Date.now()<at;})&&(admin()||p?.helpdesk===true&&(p?.station==null||p.station==='helpdesk'))};
  const identity=()=>C.profile()?.checkerId||C.profile()?.role;
  const scope=()=>JSON.stringify([identity(),admin(),allowed()]);let accessScope=scope();
  const current=(version,who,privileged=false)=>version===generation&&who===identity()&&accessScope===scope()&&allowed()&&(!privileged||admin());
+ const monotonicNow=()=>typeof performance!=='undefined'&&typeof performance.now==='function'?performance.now():Date.now();
+ const retryDelay=()=>Math.min(300000,60000*2**Math.min(Math.max(0,failures-1),2))*(1+Math.random()*0.1);
+ const visibleList=()=>!document.hidden&&!$('view-desk').hidden&&!$('desk-list-panel').hidden&&allowed();
+ function cancelPoll(){if(pollTimer!==null)clearTimeout(pollTimer);pollTimer=null}
+ function schedulePoll(delay=60000){cancelPoll();if(visibleList())pollTimer=setTimeout(()=>{pollTimer=null;refresh(false,false,'auto')},delay)}
  const el=(tag,text,cls)=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n};
  function closeReview(){reviewGeneration++;const d=$('desk-review-dialog');if(d.close)d.close();else d.removeAttribute('open');selected=null;for(const id of ['desk-review-name','desk-review-details','desk-review-message'])$(id).textContent='';$('desk-confirm-existing').checked=false;$('desk-approve').disabled=$('desk-reject').disabled=false;}
  function showReview(){const d=$('desk-review-dialog');if(d.showModal)d.showModal();else d.setAttribute('open','')}
@@ -56,18 +61,20 @@
   if(activeId&&activeIndex>=0&&document.activeElement!==active&&cache.has(activeId))cache.get(activeId).card.querySelectorAll('button')[activeIndex]?.focus({preventScroll:true});
   listStatus();
  }
- async function refresh(force=false,append=false){
+ async function refresh(force=false,append=false,source=force?'manual':'auto'){
   if(accessScope!==scope())clear();
   const yes=allowed();$('desk-denied').hidden=yes;$('desk-workspace').hidden=!yes;$('desk-export').hidden=!admin();
   if(!yes){clear();return}if(queryKey()!==listQuery)resetRecords();
-  if(loading){if(force&&!append)refreshQueued=true;return}if(!force&&($('view-desk').hidden||$('desk-list-panel').hidden))return;
+  if(loading){if(force&&!append){refreshQueued=true;if(source==='manual'||source==='mutation'||source==='search'||source==='navigation'||source==='hint')queuedSource=source;}return}if(!force&&!visibleList())return;
+  if((source==='auto'||source==='hint')&&monotonicNow()<retryNotBefore){schedulePoll(retryNotBefore-monotonicNow());return}
+  if(!force&&!append&&monotonicNow()-lastSuccessAt<60000)return;
   if(append&&(listChanged||offset>=total))return;
   if(append&&offset>100000){listChanged=true;listStatus();return}
   loading=true;refreshQueued=false;listStatus();const requestGeneration=generation,requestRevision=listRevision,who=identity(),query={offset:append?offset:0,limit:listBatchSize,search:$('desk-search').value.trim(),status:$('desk-filter').value};let painted=false;
   try{
    const result=await C.api('helpdesk-list',query);
    if(!current(requestGeneration,who))return;
-   if(requestRevision!==listRevision||query.search!==$('desk-search').value.trim()||query.status!==$('desk-filter').value){refreshQueued=true;return}
+   if(requestRevision!==listRevision||query.search!==$('desk-search').value.trim()||query.status!==$('desk-filter').value){refreshQueued=true;queuedSource='search';return}
    const records=result.records,previousTotal=total;total=result.total;$('desk-total').textContent=total;
    const stats=result.stats;$('desk-list-stats').textContent=stats.total+' saved · '+stats.pending+' pending · '+stats.approved+' approved';
    // Offset pagination has no snapshot token. Never silently continue through a
@@ -80,14 +87,14 @@
     if(total!==previousTotal||records.length!==Math.min(listBatchSize,rows.length)||records.some((r,i)=>r.id!==rows[i].id)){listChanged=true;listStatus();return}
     rows.splice(0,records.length,...records);
    }else{rows=records;offset=records.length;listChanged=false}
-   paintRecords();painted=true;
-  }catch(e){if(current(requestGeneration,who)&&requestRevision===listRevision)$('desk-list-stats').textContent=e.message;}
-  finally{if(requestGeneration===generation){loading=false;listStatus();if(refreshQueued){refreshQueued=false;refresh(true)}else if(painted)requestAnimationFrame(fillVisibleList)}}
+   paintRecords();painted=true;failures=0;retryNotBefore=0;lastSuccessAt=monotonicNow();
+  }catch(e){if(current(requestGeneration,who)&&requestRevision===listRevision){$('desk-list-stats').textContent=e.message;failures++;retryNotBefore=monotonicNow()+retryDelay();}}
+  finally{if(requestGeneration===generation){loading=false;listStatus();const queued=refreshQueued,reason=queuedSource;refreshQueued=false;queuedSource='auto';let delay=failures?Math.max(0,retryNotBefore-monotonicNow()):60000*(0.9+Math.random()*0.2);if(queued&&visibleList()){if(failures&&['auto','hint'].includes(reason))delay=Math.max(0,retryNotBefore-monotonicNow());else{refresh(true,false,reason);delay=60000*(0.9+Math.random()*0.2)}}else if(painted)requestAnimationFrame(fillVisibleList);schedulePoll(delay)}}
  }
  function fillVisibleList(){const box=$('desk-records');if(!$('view-desk').hidden&&!$('desk-list-panel').hidden&&box.clientHeight>0&&box.scrollHeight<=box.clientHeight)loadMore()}
  function loadMore(){if(!loading&&allowed()&&!listChanged&&offset<total)refresh(true,true)}
  function clear(){
-  generation++;accessScope=scope();loading=false;refreshQueued=false;clearTimeout(searchTimer);reset();closeReview();
+  generation++;accessScope=scope();loading=false;refreshQueued=false;queuedSource='auto';cancelPoll();failures=0;lastSuccessAt=-Infinity;retryNotBefore=0;clearTimeout(searchTimer);reset();closeReview();
   $('desk-search').value='';$('desk-filter').selectedIndex=0;$('desk-total').textContent='0';$('desk-list-stats').textContent='';resetRecords();$('desk-list-status').textContent='';
   $('view-desk').classList.remove('desk-list-mode');$('desk-form-panel').hidden=false;$('desk-list-panel').hidden=true;$('desk-new').classList.add('selected');$('desk-saved').classList.remove('selected');$('desk-submit').disabled=$('desk-export').disabled=false;
  }
@@ -124,12 +131,17 @@
    else{message('Delivery is unconfirmed. Retry this same save to recover its server receipt. '+e.message);button.textContent='Retry same save';$('desk-fields').disabled=true;}
   }finally{if(requestGeneration===generation)button.disabled=false;}
  };
- $('desk-refresh').onclick=()=>{resetRecords();refresh(true)};
+ $('desk-refresh').onclick=()=>{const now=monotonicNow();if(now-lastManualRefresh<2000)return;lastManualRefresh=now;resetRecords();refresh(true,false,'manual')};
  $('desk-records').addEventListener('scroll',()=>{const box=$('desk-records');if(box.clientHeight>0&&box.scrollHeight-box.scrollTop-box.clientHeight<160)loadMore()},{passive:true});
  $('desk-records').addEventListener('focusin',event=>{const card=event.target.closest('[data-record-id]');if(card&&[...$('desk-records').children].indexOf(card)>=rows.length-2)loadMore()});
- $('desk-search').oninput=()=>{clearTimeout(searchTimer);resetRecords();searchTimer=setTimeout(()=>refresh(true),250)};$('desk-filter').onchange=()=>{resetRecords();refresh(true)};
+ $('desk-search').oninput=()=>{clearTimeout(searchTimer);resetRecords();searchTimer=setTimeout(()=>refresh(true,false,'search'),250)};$('desk-filter').onchange=()=>{resetRecords();refresh(true,false,'search')};
  $('desk-review-close').onclick=()=>closeReview();$('desk-approve').onclick=()=>review('approved',$('desk-approve'));$('desk-reject').onclick=()=>review('rejected',$('desk-reject'));
  $('desk-export').onclick=async()=>{if(!admin())return;const button=$('desk-export'),requestGeneration=generation,who=identity();button.disabled=true;try{const result=await C.api('helpdesk-export');if(!current(requestGeneration,who,true))return;C.save(result.filename,'text/csv',result.csv);$('desk-list-stats').textContent=result.count+' server records prepared for the college export.';}catch(e){if(current(requestGeneration,who,true))$('desk-list-stats').textContent=e.message}finally{if(requestGeneration===generation)button.disabled=false}};
- window.addEventListener('resize',fillVisibleList);paintForm();setInterval(()=>{if(!document.hidden)refresh()},2500);
+ window.addEventListener('resize',fillVisibleList);document.addEventListener('visibilitychange',()=>{if(visibleList())refresh();else cancelPoll()});
+ const unsubscribe=typeof C.on==='function'?C.on(event=>{
+  if(['auth','profile'].includes(event.type)){if(accessScope!==scope())clear();if(visibleList())refresh();else cancelPoll();return}
+  if(event.type==='data-invalidated'&&event.data?.domain==='helpdesk'&&visibleList())refresh(true,false,'hint');
+ }):null;
+ paintForm();schedulePoll();
  rootInstall();function rootInstall(){globalThis.NavrangDesk={refresh,clear,allowed,hasDraft:()=>!locked&&(!!pending||(editing?fields.some(k=>String(editing.details[k]??(k==='quantity'?1:''))!==$('desk-'+k).value):['name','email','phone'].some(k=>$('desk-'+k).value.trim())))};}
 })();

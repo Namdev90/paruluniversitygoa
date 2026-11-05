@@ -22,6 +22,7 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
     private var actionSequence = 0L
     private var signingOut = false
     private var pendingRevocationToken: String? = null
+    private var pendingRevocationRefresh: String? = null
     private var identitySequence = 0L
     private var deskJob: Job? = null
     private var localJob: Job? = null
@@ -298,7 +299,9 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
             message("This Help Desk save is unconfirmed. Retry the same save first.")
             return
         }
-        if (next != Destination.Scanner) GateUpdater.scanActive = false
+        // Unlock can foreground the host before it navigates to the scanner.
+        // Recompute on navigation too, so an active scanner always blocks updates.
+        GateUpdater.scanActive = resumed && next == Destination.Scanner
         mutable.update {
             it.copy(
                 destination = next,
@@ -383,15 +386,20 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
             )
         viewModelScope.launch {
             var oldToken: String? = null
+            var oldRefresh: String? = null
             try {
                 withContext(NonCancellable + Dispatchers.IO) {
                     // Retain the first token in RAM across a failed durable clear.
                     // A retry must still revoke that original server session.
-                    if (pendingRevocationToken == null)
+                    if (pendingRevocationToken == null) {
                         pendingRevocationToken = repo().runtime.sessions.read()?.text("token")
+                        pendingRevocationRefresh = repo().runtime.sessions.read()?.text("refreshToken")
+                    }
                     repo().clearSession()
                     oldToken = pendingRevocationToken
+                    oldRefresh = pendingRevocationRefresh
                     pendingRevocationToken = null
+                    pendingRevocationRefresh = null
                     getApplication<Application>()
                         .getSharedPreferences("navrang-pkce", 0)
                         .edit()
@@ -417,7 +425,7 @@ class GateViewModel @JvmOverloads constructor(app: Application, startRuntime: Bo
                 signingOut = false
                 mutable.update { it.copy(busy = false) }
             }
-            oldToken?.let { repository?.revokeSession(it) }
+            oldToken?.let { repository?.revokeSession(it, oldRefresh.orEmpty()) }
         }
     }
 

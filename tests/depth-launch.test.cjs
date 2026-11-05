@@ -33,7 +33,8 @@ test('admin tabs retain accessible semantics and matching raised touch targets',
  assert.equal(tabs.length,4);
  for(const tab of tabs){assert.equal(tab.getAttribute('role'),'tab');assert.ok(tab.getAttribute('aria-controls'));}
  const css=read('app/assets/art/classic-restore.css');
- assert.match(css,/\.admin-tabs button\{min-height:44px;height:44px;padding:6px 4px;border:1px/);
+ assert.match(css,/\.admin-tabs button\{min-height:44px;padding:6px 4px;overflow-wrap:anywhere;border:1px/);
+ assert.doesNotMatch(css.match(/\.admin-tabs button\{[^}]+\}/)[0],/(?<!min-)height:44px/);
  assert.match(css,/\.admin-tabs button:focus-visible\{outline:2px solid #f4cf91/);
  dom.window.close();
 });

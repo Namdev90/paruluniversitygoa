@@ -1,0 +1,67 @@
+{
+  "checkedAtUTC": "2026-11-05T09:20:41Z",
+  "project": "mzesveurjzxjybkejqmx",
+  "cloudflareAccount": "086fa0481ec044a8a2d474f83e22f88e",
+  "userApproval": "Specific action-time approval after disclosure of password transmission to Cloudflare and sensitive SCRAM verifier retention in Supabase migration history.",
+  "status": "CREATED_AND_INDEPENDENTLY_VERIFIED",
+  "connections": [
+    {
+      "role": "navrang_voice_connector",
+      "capability": "navrang_voice_worker",
+      "name": "navrang-voice-auth-db",
+      "hyperdriveId": "de39ed48f18e4ff38972ca8c86ea31e2",
+      "migrationVersion": "20261105091747",
+      "migrationName": "navrang_voice_connector_v1",
+      "wrapperCount": 2
+    },
+    {
+      "role": "navrang_notification_connector",
+      "capability": "navrang_notification_worker",
+      "name": "navrang-notifications-auth-db",
+      "hyperdriveId": "06bc10c4073f4416a76bafae0ea226bb",
+      "migrationVersion": "20261105091921",
+      "migrationName": "navrang_notification_connector_v1",
+      "wrapperCount": 4
+    }
+  ],
+  "sharedConfiguration": {
+    "originHost": "db.mzesveurjzxjybkejqmx.supabase.co",
+    "originPort": 5432,
+    "database": "postgres",
+    "sslmode": "require",
+    "cachingDisabled": true,
+    "originConnectionLimit": 5,
+    "databaseLoginConnectionLimit": 5,
+    "loginMembershipCount": 1,
+    "inheritCapability": true,
+    "setCapability": false,
+    "adminCapability": false,
+    "superuser": false,
+    "createDatabase": false,
+    "createRole": false,
+    "replication": false,
+    "bypassRls": false,
+    "directPrivateSchemaUsage": false,
+    "serviceRoleMembership": false,
+    "crossCapabilityAccess": false,
+    "broadApplicationRpcExecute": false
+  },
+  "independentGetConfigurationMatches": true,
+  "databaseCatalogPermissionMatrixVerified": true,
+  "notificationCenterEnabled": false,
+  "notificationDeliveryEnabled": false,
+  "voiceWorkerEnabled": false,
+  "workerAuthDbBindings": 0,
+  "notificationWorkerExists": false,
+  "newSecurityAdvisorFindings": 0,
+  "unchangedAdvisories": {
+    "rlsEnabledNoPolicyServicePrivateTables": 29,
+    "authLeakedPasswordProtectionWarning": 1
+  },
+  "workerQueriesThroughHyperdrive": "NOT_RUN_BINDING_NOT_APPROVED",
+  "liveVoiceOrPush": "NOT_RUN",
+  "activeTlsSessionObserved": false,
+  "cleanupNeeded": false,
+  "privateMaterialIncluded": false,
+  "custodyWarning": "Supabase migration history contains sensitive verifier SQL. Never export those migration statements to a source repository, public report or recovery bundle. Passwords and verifiers are omitted from this receipt and all source files."
+}

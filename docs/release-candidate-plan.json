@@ -1,0 +1,100 @@
+{
+  "kind": "NON_PUBLISHABLE_RELEASE_PROPOSAL",
+  "checkedAtUTC": "2026-10-26T03:24:57+00:00",
+  "observedRemoteMain": "b8605c5e5e694bc741a3d36b26bf76c8ab7f4ac1",
+  "observedPublishedRelease": {
+    "packageName": "in.navrang.gate",
+    "versionCode": 18,
+    "versionName": "0.8.0",
+    "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.8.0.apk",
+    "size": 23634731,
+    "sha256": "8dd7423a67b69fa882a9115f5f1313fe930dfe6ec12c26ca62ff8b1215243fe4",
+    "notes": "Approved combined Navrang and Parul University branding on maroon, staged sign-in, consolidated Reports with reachable downloads and accessible pagination, smoother transitions, sign-out confirmation and guarded local report saves. Preserves attendance, authorization, original signing identity and existing update notifications. New messaging, audio messages and live broadcasts are deferred.",
+    "publishedAt": "2026-10-19T05:10:19.650230+00:00"
+  },
+  "versionCodesReserved": false,
+  "recheckRemoteAndLatestAtSourceFreeze": true,
+  "legacyContract": {
+    "packageName": "in.navrang.gate",
+    "maximumApkBytes": 26214400,
+    "fixedManifest": "updates/latest.json",
+    "universalFilenameRequired": true,
+    "sameOriginalCertificateRequired": true
+  },
+  "paths": {
+    "direct": {
+      "proposedVersionName": "0.9.0",
+      "proposedVersionCode": 19,
+      "requiresFinalFeatureCompleteUniversalWithinCap": true,
+      "metadataTemplate": {
+        "packageName": "in.navrang.gate",
+        "versionCode": 19,
+        "versionName": "0.9.0",
+        "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.0.apk",
+        "size": null,
+        "sha256": null,
+        "signature": null,
+        "notes": "PROPOSAL ONLY: final all-feature acceptance and original-key proofs are pending."
+      }
+    },
+    "bridge": {
+      "additionalScopeApprovalRequired": true,
+      "bridge": {
+        "proposedVersionName": "0.8.1",
+        "proposedVersionCode": 19,
+        "scope": "Existing v0.8 capabilities plus compatible updater; not the all-feature v0.9 release",
+        "metadataTemplate": {
+          "packageName": "in.navrang.gate",
+          "versionCode": 19,
+          "versionName": "0.8.1",
+          "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.8.1.apk",
+          "size": null,
+          "sha256": null,
+          "signature": null,
+          "notes": "PROPOSAL ONLY: final all-feature acceptance and original-key proofs are pending."
+        }
+      },
+      "final": {
+        "proposedVersionName": "0.9.0",
+        "proposedVersionCode": 20,
+        "allAgreedFeaturesRequired": true,
+        "metadataTemplate": {
+          "packageName": "in.navrang.gate",
+          "versionCode": 20,
+          "versionName": "0.9.0",
+          "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.0.apk",
+          "size": null,
+          "sha256": null,
+          "signature": null,
+          "notes": "PROPOSAL ONLY: final all-feature acceptance and original-key proofs are pending."
+        }
+      }
+    }
+  },
+  "currentDiagnostic": {
+    "sourceVersion": "0.8.0/code18",
+    "signed": false,
+    "acceptedVoice": false,
+    "universalMiB": 38.55,
+    "legacyCompatible": false,
+    "x86DailyLibraryPresent": false
+  },
+  "requiredGates": [
+    "all requirements accepted for frozen source",
+    "INR0 transport/configuration accepted without paid activation",
+    "final universal/ABI completeness and size",
+    "original-key signatures for APK and each core metadata payload",
+    "device upgrade preserving data",
+    "physical feature acceptance",
+    "public download independently verified before release push hint"
+  ],
+  "never": [
+    "raise only the new updater cap to bypass old clients",
+    "serve different bytes for one universal hash",
+    "publish an unsigned metadata template",
+    "silently omit voice or an unsupported ABI dependency",
+    "uninstall/reset existing app",
+    "overwrite historical APKs or lower versionCode",
+    "create keys/accounts/credentials or deploy from this plan"
+  ]
+}

@@ -1,7 +1,7 @@
 name: Native Compose verification
 on:
   pull_request:
-    paths: ['native-app/**', 'app/java/**', 'app/res/**', 'app/assets/**', 'gradle/**', '*.gradle.kts', 'gradle.properties', 'tools/**', '.github/workflows/navrang-native.yml']
+    paths: ['native-app/**', 'app/java/**', 'app/res/**', 'app/assets/**', 'gradle/**', '*.gradle.kts', 'gradle.properties', 'tools/**', 'third_party/opus/**', 'tests/relay-opus/**', 'tests/relay-opus-*.py', '.github/workflows/navrang-native.yml']
   push:
     branches: [codex/native-compose-rebuild]
 permissions:
@@ -22,6 +22,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Verify Opus packaging policy and host encoder core
+        run: |
+          python3 tests/relay-opus-packaging-check.py
+          python3 tests/relay-opus-core-check.py
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
