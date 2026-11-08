@@ -17,7 +17,7 @@ async function rpc(action:string,payload:unknown,hash:string,{signal}:{signal?:A
   if(!r.ok)throw Error('Database request failed');return r.json();
 }
 const handler=createHandler({
- renewalEnabled:Deno.env.get('NAVRANG_RENEWAL_ENABLED')==='true',
+ renewalEnabled:false,
  rpc,
  // No acceptance/configuration boolean can activate provider operations here.
  // An accepted private service transport remains a separate integration gate.
@@ -33,5 +33,5 @@ const handler=createHandler({
   return google;
  }
 });
-const forwardVoice=createEdgeVoiceForwarder({origin:Deno.env.get('NAVRANG_VOICE_CONTROL_ORIGIN')});
+const forwardVoice=createEdgeVoiceForwarder({origin:undefined});
 Deno.serve(request=>forwardVoice(request,handler));
