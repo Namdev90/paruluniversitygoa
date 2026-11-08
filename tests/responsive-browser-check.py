@@ -110,9 +110,9 @@ def run():
     page.wait_for_function("[...document.querySelectorAll('.combined-brand-mark>img')].every(e=>e.complete&&e.naturalWidth===2400)")
     page.wait_for_timeout(50)
    def navigate(page,view):
-    if view=='admin' or view=='reports' and page.evaluate("GateClient.profile()?.role==='admin'"):
+    if view in ('settings','admin') or view=='reports' and page.evaluate("GateClient.profile()?.role==='admin'"):
      if page.evaluate('document.body.dataset.route')!='account':page.locator('#main-nav [data-view="account"]').click()
-     page.locator('#admin-nav' if view=='admin' else '#admin-account-reports').click()
+     page.locator({'settings':'#account-settings','admin':'#admin-nav','reports':'#admin-account-reports'}[view]).click()
     else:page.locator(f'#main-nav [data-view="{view}"]').click()
     assert page.evaluate('document.body.dataset.route')==view
    def measure(page,role,view,width,height):
@@ -257,9 +257,17 @@ def run():
     shot(page,'admin','helpdesk-saved-record');shot(page,'admin','helpdesk-saved-record-lower','#desk-submit')
     page.locator('#desk-close-record').click()
     navigate(page,'account');shot(page,'admin','account-tools','#admin-account-tools')
-    # Android readiness is deliberately hidden in the browser and is not fabricated.
-    if page.locator('#readiness-panel').is_visible():shot(page,'admin','account-readiness','#readiness-panel')
-    shot(page,'admin','account-update-settings','#automatic-updates')
+    navigate(page,'settings')
+    assert page.locator('#app-updates').is_hidden()
+    shot(page,'admin','settings','#settings-location-audio summary')
+    page.locator('#settings-location-audio summary').click()
+    shot(page,'admin','settings-location-audio')
+    if width>=960:
+     page.locator('#portal-menu-toggle').click()
+     shot(page,'admin','portal-menu-collapsed')
+     page.locator('#portal-menu-toggle').click()
+    navigate(page,'account')
+    dialog(page,'#notifications-button','#notifications-center','notifications','#notifications-close')
     navigate(page,'admin');page.locator('[data-admin-tab="checkers"]').click()
     dialog(page,'#checker-list .checker-row button','#staff-dialog','staff-access','#close-staff','#staff-access-form button')
     dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
@@ -278,7 +286,7 @@ def run():
     # Native-only shared-web controls, with a separately labelled mocked bridge.
     # Android OS permission prompts, file pickers and real camera remain excluded.
     ctx,page=fresh('admin',mocked_native=True)
-    navigate(page,'account')
+    navigate(page,'settings')
     assert page.locator('#readiness-panel').is_visible()
     shot(page,'mock-native-admin','account-readiness','#readiness-panel')
     shot(page,'mock-native-admin','account-update-settings','#automatic-updates')
@@ -329,7 +337,7 @@ def run():
     check('search includes final record',page.locator('#registration-rows tr').count()==1)
     page.locator('#student-search').fill('')
     page.locator('[data-admin-tab="registrations"]').focus();page.keyboard.press('End')
-    check('admin tabs support End',page.evaluate("document.activeElement.dataset.adminTab==='location-audio'&&!document.getElementById('admin-location-audio').hidden"))
+    check('admin tabs support End',page.evaluate("document.activeElement.dataset.adminTab==='updates'&&!document.getElementById('admin-updates').hidden"))
     page.keyboard.press('Home')
     check('admin tabs support Home',page.evaluate("document.activeElement.dataset.adminTab==='registrations'"))
     navigate(page,'reports');page.locator('#report-tab-downloads').focus();page.keyboard.press('Home')
@@ -470,12 +478,25 @@ def run():
       page.screenshot(path=str(out/f'{role}-{width}.png'))
      if role=='admin':
       measure_scroll(page,'students')
-      for target in ('reports','desk','account','entries','station'):
+      for target in ('reports','desk','account','settings','entries','station'):
        if target=='station':
         navigate(page,'account');page.locator('#switch-station').click()
        else:navigate(page,target)
        page.wait_for_timeout(70);measure(page,role,target,width,height)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
+       if target=='settings':
+        summary=page.locator('#settings-location-audio summary')
+        measure_control(page,'#settings-location-audio summary','Location & audio settings')
+        assert not page.locator('#settings-location-audio').evaluate('e=>e.open')
+        summary.click();assert page.locator('#settings-location-audio').evaluate('e=>e.open')
+        measure(page,role,'settings-location-audio',width,height)
+        if width>=960:
+         toggle=page.locator('#portal-menu-toggle')
+         assert page.locator('#main-nav').bounding_box()['x'] < page.locator('main').bounding_box()['x']
+         toggle.click()
+         assert toggle.get_attribute('aria-expanded')=='false' and page.locator('#main-nav').is_hidden()
+         toggle.click()
+         assert toggle.get_attribute('aria-expanded')=='true' and page.locator('#main-nav').is_visible()
        if target=='reports':
         measure_report_downloads(page)
         if args.report_stress:
@@ -512,7 +533,7 @@ def run():
         measure_control(page,'#entry-coverage','Entry list footer',minimum=0,scroll=True)
         measure_scroll(page,'entries')
       navigate(page,'admin')
-      for tab in ('registrations','admissions','checkers','updates','location-audio'):
+      for tab in ('registrations','admissions','checkers','updates'):
        page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
        if tab=='checkers':
         measure_control(page,'#checker-list .checker-row button','Manage access')

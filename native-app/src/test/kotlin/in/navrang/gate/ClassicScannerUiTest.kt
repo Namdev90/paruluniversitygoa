@@ -107,12 +107,13 @@ class ClassicScannerUiTest {
     }
 
     @Composable
-    private fun CameraFixture(onVerify: (String) -> Unit, initialResult: ScanResult? = null) {
+    private fun CameraFixture(onVerify: (String) -> Unit, initialResult: ScanResult? = null, reducedMotion: Boolean = false) {
         var idOpen by remember { mutableStateOf(false) }
         ClassicScannerTheme {
             Surface(Modifier.fillMaxSize()) {
                 ClassicScannerCameraLayout(
                     s = GateState(ready = true, online = true, result = initialResult,
+                        appearance = Appearance(reducedMotion = reducedMotion),
                         profile = Profile.from(json("role" to "admin", "active" to true))),
                     exactIdOpen = idOpen,
                     onExactIdOpen = { idOpen = it },
@@ -134,6 +135,7 @@ class ClassicScannerUiTest {
         val verified = mutableListOf<String>()
         compose.setContent { CameraFixture({ verified += it }) }
         compose.onNodeWithTag("scanner-frame").assertIsDisplayed()
+        compose.onNodeWithTag("scanner-sweep").assertIsDisplayed()
         compose.onNodeWithContentDescription("Camera zoom").assertDoesNotExist()
         compose.onNodeWithText("Light: auto").assertDoesNotExist()
         screenshot("classic-scanner-automatic-layout")
@@ -141,6 +143,7 @@ class ClassicScannerUiTest {
         compose.onNodeWithText("Reset zoom").assertDoesNotExist()
         screenshot("classic-scanner-camera-layout")
         compose.onNodeWithText("Find ID").performClick()
+        compose.onNodeWithTag("scanner-sweep").assertDoesNotExist()
         compose.onNodeWithText("Find ID").assertDoesNotExist()
         compose.onNodeWithText("Hide ID").assertDoesNotExist()
         compose.onNodeWithContentDescription("Camera zoom").assertDoesNotExist()
@@ -173,6 +176,12 @@ class ClassicScannerUiTest {
         screenshot("classic-scanner-compact-id-controls")
         compose.onNodeWithText("Entry confirmed").performScrollTo().assertIsDisplayed()
         screenshot("classic-scanner-compact-confirmed-result")
+    }
+
+    @Test fun reducedMotionKeepsTheCameraFrameWithoutTheSweep() {
+        compose.setContent { CameraFixture({}, reducedMotion = true) }
+        compose.onNodeWithTag("scanner-frame").assertIsDisplayed()
+        compose.onNodeWithTag("scanner-sweep").assertDoesNotExist()
     }
 
     @Test fun partialResultOmitsMissingFieldsButKeepsZeroAndFalse() {

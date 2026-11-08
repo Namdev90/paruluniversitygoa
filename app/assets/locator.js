@@ -3,9 +3,9 @@
  const eventId='O9KL3',validId=value=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
  const eligible=p=>p&&p.active===true&&(p.role==='admin'||p.role==='checker'&&(p.scanner===true||p.helpdesk===true));
  const signature=p=>eligible(p)?JSON.stringify([p.role,p.checkerId||'admin',p.active,p.scanner,p.helpdesk,p.name]):'';
- function mount({client,container=root.document.getElementById('view-account'),now=Date.now,autoStart=true,onShareOnce,onSound,onBright}={}){
+ function mount({client,container=root.document.getElementById('settings-locator-host')||root.document.getElementById('view-account'),now=Date.now,autoStart=true,onShareOnce,onSound,onBright}={}){
   if(!client||typeof client.api!=='function'||typeof client.profile!=='function'||!container)throw Error('Locator requires an authenticated station host.');
-  const doc=container.ownerDocument,adminContainer=doc.getElementById('admin-locator-host')||container,owned=new Set(),performed=new Set(),intentIds=new Map();
+  const doc=container.ownerDocument,owned=new Set(),performed=new Set(),intentIds=new Map();
   let generation=0,profile=null,profileKey='',alive=true,section,dialog,state={},statusKnown=false,inbox=[],roster=[],selected=null,selectedFix=null,message='',busy=false,inFlight=null,sample=null,expiryTimer=null,lastRefresh=-Infinity,dirty=false;
   const make=(tag,text,id)=>{const el=doc.createElement(tag);if(text!==undefined)el.textContent=text;if(id)el.id=id;return el};
   const button=(text,id,fn)=>{const el=make('button',text,id);el.type='button';el.className='button secondary';el.onclick=fn;return el};
@@ -22,7 +22,7 @@
   function hideConsent(){if(typeof dialog?.close==='function'&&dialog.open)dialog.close();else dialog?.removeAttribute('open');}
   function build(){
    section=make('article',undefined,'locator-panel');section.className='panel locator-panel';owned.add(section);
-   (profile.role==='admin'?adminContainer:container).append(section);
+   container.append(section);
    section.append(make('h3',profile.role==='admin'?'Find one on-duty volunteer':'Voluntary duty & find-me'));
    section.append(make('p','Optional duty sharing is visible and expires. Missing location does not imply misconduct.','locator-purpose'));
    const status=make('p','','locator-status');status.setAttribute('role','status');section.append(status);

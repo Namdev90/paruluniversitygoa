@@ -63,16 +63,25 @@ test('browser ticket action focuses manual entry while Android retains camera ta
  }
 });
 
-test('Account offers manual update checks only in the Android host',async()=>{
+test('Account Settings offers manual update checks only in the Android host',async()=>{
  for(const native of [false,true]){
   const t=setup({role:'admin',name:'Synthetic Admin',active:true},{native}),{w,dom,$}=t;try{
    await tick();const actions=[],state=native?{currentVersion:'0.9.0',automatic:true}:{message:'App updates are managed in the Android app.'};
    w.GateClient.update=action=>{actions.push(action);return state};
+   w.document.querySelector('#main-nav [data-view="account"]').click();t.click('account-settings');
+   assert.equal($('view-settings').hidden,false);
+   assert.ok($('view-settings').contains($('check-update')));
    t.event({type:'update',data:state});
+   assert.equal($('app-updates').hidden,!native);
    assert.equal($('check-update').hidden,!native);
    assert.equal($('update-message').textContent,native?'Your app is up to date.':state.message);
    t.click('check-update');
    assert.deepEqual(actions,native?['check']:[]);
+   if(native){
+    t.click('account-tool-back');t.event({type:'update',data:{...state,available:true,versionName:'0.9.1'}});
+    assert.equal($('update-banner').hidden,false);t.click('open-update');
+    assert.equal($('view-settings').hidden,false);
+   }
   }finally{await tick();dom.window.close()}
  }
 });

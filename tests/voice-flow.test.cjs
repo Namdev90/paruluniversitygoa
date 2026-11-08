@@ -6,8 +6,8 @@ const source=fs.readFileSync(path.join(__dirname,'../app/assets/voice.js'),'utf8
 const notifications=fs.readFileSync(path.join(__dirname,'../app/assets/notifications.js'),'utf8');
 const admin={role:'admin',active:true},staff={role:'checker',checkerId:'00000000-0000-4000-8000-000000000001',active:true,scanner:true};
 const state=(name='idle',overrides={})=>({available:true,ready:['listening','requesting','talking'].includes(name),state:name,microphone:name==='talking',canTalk:['listening','requesting','talking'].includes(name),message:'Native public status',...overrides});
-function fixture({initial=state(),profile=admin,integration=false,missingBridge=false,adminHost=false}={}){
- const dom=new JSDOM('<header class="topbar"><div class="top-actions"></div></header><main>'+(adminHost?'<section id="view-admin" hidden><div id="admin-location-audio" role="tabpanel" hidden><div id="admin-voice-host"></div></div></section>':'')+'</main>',{url:'https://fixture.invalid/',runScripts:'outside-only',pretendToBeVisual:true});
+function fixture({initial=state(),profile=admin,integration=false,missingBridge=false}={}){
+ const dom=new JSDOM('<header class="topbar"><div class="top-actions"></div></header><main>'+(integration?'<section id="view-settings" hidden><details id="settings-location-audio"><summary>Location &amp; audio</summary><div id="settings-voice-host"></div></details></section>':'')+'</main>',{url:'https://fixture.invalid/',runScripts:'outside-only',pretendToBeVisual:true});
  const w=dom.window,listeners=new Set(),calls=[];let current=profile,snapshot=initial,handler;
  const C={profile:()=>current,on:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},api:async()=>{throw Error('No API calls allowed in voice fixture.')}};
  if(!missingBridge)C.voice=(action,payload)=>{calls.push({action,payload:JSON.parse(JSON.stringify(payload))});if(handler)return handler(action,payload);if(action==='join')snapshot=state('listening');if(action==='press')snapshot=state('requesting');if(action==='release'||action==='cancel')snapshot=state('listening');if(action==='leave')snapshot=state('closed');return snapshot};
@@ -74,22 +74,21 @@ test('revocation during an active hold cancels and cannot resume automatically',
 test('inactive, expired and unauthorized profiles cannot query or join voice',()=>{
  for(const profile of [null,{...admin,active:false},{...staff,scanner:false,reports:false,helpdesk:false},{...admin,expiresAt:'2020-01-01T00:00:00Z'}]){const f=fixture({profile});try{f.show();f.$('join').click();assert.deepEqual(f.actions(),[]);assert.equal(f.$('talk').disabled,true);}finally{f.close()}}
 });
-test('notification center integrates show, close, Escape and teardown without auto join',()=>{
- const f=fixture({integration:true});try{assert.ok(f.w.document.querySelector('#notifications-center #notification-voice'));assert.deepEqual(f.actions(),[]);f.show();assert.deepEqual(f.actions(),['status']);f.$('join').click();key(f,'keydown');f.w.document.getElementById('notifications-center').dispatchEvent(new f.w.Event('cancel'));assert.equal(f.actions().at(-1),'cancel');f.hide();f.show();assert.equal(f.actions().filter(a=>a==='join').length,1);f.api.destroy();assert.equal(f.w.document.getElementById('notification-voice'),null);}finally{f.close()}
-});
-test('Admin audio reuses the voice panel and cancels a held press when leaving it',async()=>{
- const f=fixture({integration:true,adminHost:true});try{
-  const doc=f.w.document,view=doc.getElementById('view-admin'),tab=doc.getElementById('admin-location-audio'),voice=doc.getElementById('notification-voice'),center=doc.getElementById('notifications-center');
-  view.hidden=false;tab.hidden=false;await Promise.resolve();
-  assert.equal(voice.parentElement.id,'admin-voice-host');assert.deepEqual(f.actions(),['status']);
+test('voice lives only in Settings and cancels a held press when the controls are hidden',async()=>{
+ const f=fixture({integration:true});try{
+  const doc=f.w.document,view=doc.getElementById('view-settings'),details=doc.getElementById('settings-location-audio'),voice=doc.getElementById('notification-voice'),center=doc.getElementById('notifications-center');
+  assert.equal(voice.parentElement.id,'settings-voice-host');
+  f.show();assert.equal(center.contains(voice),false);assert.deepEqual(f.actions(),[]);f.hide();
+  view.hidden=false;await Promise.resolve();assert.deepEqual(f.actions(),[]);
+  details.open=true;await Promise.resolve();assert.deepEqual(f.actions(),['status']);
   f.$('join').click();key(f,'keydown');assert.equal(f.actions().at(-1),'press');
-  tab.hidden=true;await Promise.resolve();
-  assert.equal(f.actions().at(-1),'cancel');assert.equal(voice.parentElement,center);
-  f.show();assert.equal(doc.querySelectorAll('#notification-voice').length,1);assert.equal(f.actions().at(-1),'status');
-  tab.hidden=false;await Promise.resolve();assert.equal(voice.parentElement,center);
-  center.removeAttribute('open');await Promise.resolve();assert.equal(voice.parentElement.id,'admin-voice-host');
-  f.setProfile(staff);assert.equal(voice.parentElement,center);assert.equal(f.$('talk').disabled,true);
-  f.show();assert.equal(f.actions().at(-1),'status');assert.equal(f.actions().filter(action=>action==='join').length,1);
+  details.open=false;await Promise.resolve();assert.equal(f.actions().at(-1),'cancel');
+  details.open=true;await Promise.resolve();key(f,'keydown');f.show();assert.equal(f.actions().at(-1),'cancel');
+  center.removeAttribute('open');await Promise.resolve();
+  assert.equal(doc.querySelector('[aria-controls="notifications-center"]').getAttribute('aria-expanded'),'false');
+  key(f,'keydown');view.hidden=true;await Promise.resolve();assert.equal(f.actions().at(-1),'cancel');
+  assert.equal(f.actions().filter(action=>action==='join').length,1);
+  f.api.destroy();assert.equal(doc.getElementById('notification-voice'),null);
  }finally{f.close()}
 });
 test('controls have accessible labels, status semantics and reusable existing layout classes',()=>{

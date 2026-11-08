@@ -5,7 +5,7 @@
  if(location.hash==='#desk')C.destination?.('desk');
  const pendingResults=new Map(),pendingAcknowledged=new Set();
  let model=emptyModel(),uiGeneration=0,pollRun=0,wasAdmin=false;function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
- const titles={home:'Navrang Gate',entries:'Entry log',account:'Your station',admin:'Admin console',login:'Navrang Gate',desk:'Help Desk',station:'Choose your station',reports:'Teacher Reports'};
+ const titles={home:'Navrang',entries:'Entry log',account:'Account',settings:'Settings',admin:'Admin console',login:'Navrang',desk:'Help Desk',station:'Choose your station',reports:'Teacher Reports'};
  const initials=name=>(name||'NG').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
  const when=at=>at?new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(at)):'—';
  const money=amount=>amount==null?'Review':'₹'+Number(amount).toLocaleString('en-IN',{maximumFractionDigits:2});
@@ -21,7 +21,7 @@
  const canScan=()=>!!C.profile()?.active&&!expired(C.profile())&&(isAdmin()||station()==='checker'&&C.profile()?.scanner!==false);
  const canDesk=()=>!!C.profile()?.active&&!expired(C.profile())&&(isAdmin()||station()==='helpdesk'&&C.profile()?.helpdesk===true);
  const canReports=()=>{const p=C.profile();return isAdmin()||p?.role==='checker'&&p.active===true&&!expired(p)&&p.reports===true;};
- const inAdminTool=(next=view)=>isAdmin()&&(next==='admin'||next==='reports');
+ const inAccountTool=(next=view)=>next==='settings'||isAdmin()&&(next==='admin'||next==='reports');
  const assignedView=()=>isAdmin()?'account':needsName(C.profile())?'station':canScan()?'home':canDesk()?'desk':canReports()?'reports':'station';
  const listViews=new Map(); // Only already-authorized RAM records enter the searchable lists.
  function feedback(kind){if(typeof C.feedback==='function')C.feedback(kind,true);}
@@ -34,12 +34,12 @@
  function destination(){return C.destination?.()||'home'}
  function needsName(p){return p?.role==='checker'&&p.method==='google'&&p.nameConfirmed===false&&!p.reports}
  function renderAuth(){
-  const p=C.profile(),admin=isAdmin(),lostAdmin=wasAdmin&&!admin;if(lostAdmin){uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;clearAdminView()}wasAdmin=admin;document.body.classList.toggle('login-mode',!p||view==='login');$('main-nav').hidden=!p;$('admin-account-tools').hidden=!admin;$('account-tool-back').hidden=!inAdminTool();
+  const p=C.profile(),admin=isAdmin(),lostAdmin=wasAdmin&&!admin;if(lostAdmin){uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;clearAdminView()}wasAdmin=admin;document.body.classList.toggle('login-mode',!p||view==='login');$('main-nav').hidden=!p;$('admin-account-tools').hidden=!admin;$('account-tool-back').hidden=!inAccountTool();
   if(!canScan()&&lastResult){queuedResults=[];releaseResult();}
   $('scan').disabled=!canScan()||needsName(p)||held;$('manual-submit').disabled=!canScan()||needsName(p)||held;
   $('scan-nav').hidden=!canScan();$('entries-nav').hidden=!admin;$('desk-nav').hidden=!canDesk();$('reports-nav').hidden=admin||!canReports();$('switch-station').hidden=!admin;document.querySelector('[data-view=station]').hidden=!admin&&(canScan()||canDesk()||canReports());$('name-form').querySelector('button').textContent=needsName(p)||!station()?'Save name & choose station':'Save real name';
   $('home-stats').classList.toggle('staff-stats',!admin);$('home-total-label').textContent=admin?'Registered':'My scans';$('home-entered-label').textContent=admin?'Entered':'Total entries';$('home-remaining-card').hidden=!admin;$('device-strip').hidden=!admin;$('desk-staff-stats').hidden=admin||!p?.active;
-  $('account').textContent=initials(p?.name);$('welcome').textContent=p?'Welcome, '+p.name.split(' ')[0]+'.':'Ready to welcome.';
+  $('account-initials').textContent=$('account').textContent=initials(p?.name);$('welcome').textContent=p?'Welcome, '+p.name.split(' ')[0]+'.':'Ready to welcome.';
   if(p){$('checker-name').textContent=p.name;$('checker-access').textContent=admin?'Administrator · all stations':p.active?[(p.scanner!==false?'Checker':''),(p.helpdesk?'Help Desk':''),(p.reports?'Teacher Reports':'')].filter(Boolean).join(' + ')+' · '+(p.method==='google'?'Google verified':'assigned staff code'):'Waiting for Namdev to assign access.';}
   $('change-name').hidden=p?.role!=='checker'||p.method!=='google';$('admin-role-message').textContent=p&&!admin?'Administrator credentials are required here.':'';
   if(!p&&view!=='login')setView('login');
@@ -49,9 +49,9 @@
  }
  function setView(next,{sensitive=false}={}){const commit=()=>commitView(next);return globalThis.NavrangMotion?globalThis.NavrangMotion.navigate(commit,{sensitive:sensitive||!C.profile()||next==='login'}):commit();}
  function commitView(next){
-  if(!titles[next])next='home';if(!C.profile())next='login';if(C.profile()&&!isAdmin()&&(next==='admin'||next==='entries'||next==='station'&&(station()||canReports())&&(canScan()||canDesk()||canReports())))next=assignedView();if(C.profile()&&((next==='home'&&!canScan())||(next==='desk'&&!canDesk())||(next==='reports'&&!canReports())||needsName(C.profile())&&next!=='account'))next=assignedView();if(next!==view&&$('section-info').open)closeSectionInfo();view=next;document.body.dataset.route=next;
+  if(!titles[next])next='home';if(!C.profile())next='login';if(C.profile()&&!isAdmin()&&(next==='admin'||next==='entries'||next==='station'&&(station()||canReports())&&(canScan()||canDesk()||canReports())))next=assignedView();if(C.profile()&&((next==='home'&&!canScan())||(next==='desk'&&!canDesk())||(next==='reports'&&!canReports())||needsName(C.profile())&&!['account','settings'].includes(next)))next=assignedView();if(next!==view&&$('section-info').open)closeSectionInfo();view=next;document.body.dataset.route=next;
   for(const name of Object.keys(titles))$('view-'+name).hidden=name!==next;
-  const primary=inAdminTool(next)?'account':next;
+  const primary=inAccountTool(next)?'account':next;
   for(const b of document.querySelectorAll('[data-view]')){const active=b.dataset.view===(b.closest('#main-nav')?primary:next);b.classList.toggle('selected',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')}document.querySelector('main').scrollTop=0;if(document.scrollingElement)document.scrollingElement.scrollTop=0;
   $('page-title').textContent=titles[next];history.replaceState(null,'','#'+next);renderAuth();if(next==='admin')renderAdmin();if(next==='entries')renderLocal();if(next==='desk')globalThis.NavrangDesk?.refresh(true);if(next==='reports')globalThis.NavrangReports?.refresh();
  }
@@ -186,11 +186,19 @@
 
  async function signIn(button,action,payload){await busy(button,async()=>{await C.api(action,payload);$('notice').hidden=true;$('checker-code').value='';feedback('success');afterSignIn();})}
  for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>{if(b.dataset.view==='desk'||b.dataset.view==='home')C.destination?.(b.dataset.view);setView(b.dataset.view)};for(const b of document.querySelectorAll('[data-admin-tab]'))b.onclick=()=>setAdminTab(b.dataset.adminTab);
- const mainNav=$('main-nav');
+ const mainNav=$('main-nav'),portalMenu=$('portal-menu-toggle');
+ if(!C.native&&portalMenu){
+  document.body.classList.add('portal-layout');
+  portalMenu.onclick=()=>{
+   const collapsed=document.body.classList.toggle('portal-menu-collapsed');
+   portalMenu.setAttribute('aria-expanded',String(!collapsed));
+   portalMenu.textContent=collapsed?'Show menu':'Hide menu';
+  };
+ }
  if(globalThis.ResizeObserver)new ResizeObserver(()=>document.documentElement.style.setProperty('--nav-clearance',mainNav.getBoundingClientRect().height+'px')).observe(mainNav,{box:'border-box'});
  const swipeSurface=document.querySelector('main');
  const swipeEditable='input,textarea,select,[contenteditable]';
- const swipeBlocked=()=>{const p=C.profile();return !p?.active||expired(p)||held||view==='login'||inAdminTool()||!$('intro').hidden||document.querySelector('dialog[open]')||document.activeElement?.matches(swipeEditable)};
+ const swipeBlocked=()=>{const p=C.profile();return !p?.active||expired(p)||held||view==='login'||inAccountTool()||!$('intro').hidden||document.querySelector('dialog[open]')||document.activeElement?.matches(swipeEditable)};
  let swipeStart=null;
  swipeSurface.addEventListener('touchstart',event=>{
   swipeStart=null;
@@ -222,10 +230,10 @@
  const sectionInfo={
   'sign-in':['Sign in','Sign in with Google or an assigned staff code. Administrators use separate credentials.'],
   station:['Stations','Checker handles ticket entry. Help Desk saves registration cases. Your administrator assigns station access.'],
-  scan:['Ticket checks','Use the exact eight-character Transaction ID from the ticket email. Camera scanning is available in the Android app.'],
+  scan:['Ticket checks','Use the exact eight-character Transaction ID from the ticket email. In the Android app, tap the scanner or swipe down to open the camera. Green confirms entry.'],
   entries:['Entry log','This temporary view shows server-confirmed entries. Times are in IST.'],
   account:['Account','Your station and permissions are assigned by the server. Your display name identifies the scans and Help Desk records you save. Your Google email stays private from other checkers.'],
-  admin:['Admin console','Manage event records, staff access, and device options from Admin console. Location sharing is voluntary and limited to assigned roles.'],
+  admin:['Admin console','Manage event records and staff access. Location sharing is voluntary and available under Account → Settings.'],
   reports:['Reports','All records combines registration and attendance. Download datasets as CSV or Excel. The PDF contains summary statistics. Files are saved locally and are not sent automatically.'],
   helpdesk:['Help Desk','Save registration cases on the server for administrator review. Saving a case does not approve entry.'],
   staff:['Staff access','Review requests, assign station access, and save display names. Only administrators can grant or change access.']
@@ -297,7 +305,7 @@
   let updateState={};
  function renderUpdate(state){updateState=state||{};$('app-version').textContent=C.native?'Version '+(state.currentVersion||'0.7.8'):'Android app updates';$('update-message').textContent=state.downloading?'Downloading update · '+(state.progress||0)+'%':state.message||'Your app is up to date.';$('automatic-updates').textContent=!C.native?'Automatic updates are available in the Android app.':state.automatic?'Automatic checks: on. Choose Download when an update is available.':'Automatic updates are unavailable in this build.';$('check-update').hidden=!C.native;$('update-notifications').hidden=state.notifications||!C.native;$('install-update').hidden=!state.installing&&(!state.available||state.downloading);$('install-update').textContent=state.installing?'Finish app update':state.ready?'Install '+state.versionName:'Download '+state.versionName;$('update-banner').hidden=!state.available&&!state.installing;$('update-banner-text').textContent=state.installing?'Android app update unfinished':state.downloading?'Updating download · '+(state.progress||0)+'%':state.ready?'Version '+state.versionName+' ready':'New version '+state.versionName;}
  function updateAction(action,value=true){if(typeof C.update==='function')renderUpdate(C.update(action,value));}
- $('check-update').onclick=()=>{if(C.native)updateAction('check')};$('install-update').onclick=()=>updateAction(updateState.installing||updateState.ready?'install':'download');$('update-notifications').onclick=()=>updateAction('notifications');$('open-update').onclick=()=>setView('account');updateAction('status');setInterval(()=>{if(!document.hidden)updateAction('background')},300000);
+ $('check-update').onclick=()=>{if(C.native)updateAction('check')};$('install-update').onclick=()=>updateAction(updateState.installing||updateState.ready?'install':'download');$('update-notifications').onclick=()=>updateAction('notifications');$('app-updates').hidden=!C.native;$('open-update').onclick=()=>setView('settings');updateAction('status');setInterval(()=>{if(!document.hidden)updateAction('background')},300000);
  C.on(e=>{if(e.type==='result'){result(e.data)}else if(e.type==='error'||e.type==='notice')notice(e.data.message);else if(e.type==='sync'){renderAuth();renderLocal();if(C.native){if(isAdmin())poll();else connection(true)}}else if(e.type==='registrations-imported'){if(isAdmin())poll(true)}else if(e.type==='connection')connection(false,e.data.status===403?'Access blocked':'Offline');else if(e.type==='update'){renderUpdate(e.data)}else if(e.type==='readiness'){renderReadiness()}else if(e.type==='profile'){if(C.profile()&&view==='login'&&!expired(C.profile()))afterSignIn();else renderAuth();globalThis.NavrangDesk?.refresh()}else if(e.type==='auth'){if(C.profile()){afterSignIn();feedback('success')}else clearSessionView()}});
 
  if(C.native){
@@ -306,7 +314,7 @@
   pull.addEventListener('touchend',e=>{if(startY!==null){const dy=e.changedTouches[0].clientY-startY,dx=e.changedTouches[0].clientX-startX;if(dy>70&&dy>Math.abs(dx)*2&&canStartTicketCheck())C.scan()}startY=null},{passive:true});
  }
 
- globalThis.onBackRequested=async()=>{if(held||$('result-popup').open)return;const dialog=[...document.querySelectorAll('dialog[open]')].find(d=>d.id!=='name-dialog'&&d.id!=='exit-dialog');if(dialog){if(dialog.id==='section-info')closeSectionInfo();else close(dialog.id);return;}if(view==='login'&&globalThis.NavrangAuth?.back())return;if($('exit-dialog').open)return;if(inAdminTool()){setView('account');return;}const snapshot=await C.local('snapshot').catch(()=>({pending:0})),draft=globalThis.NavrangDesk?.hasDraft();$('exit-message').textContent=snapshot.pending?String(snapshot.pending)+' scan(s) are still awaiting server confirmation. Keep the app open until they finish.':draft?'Your Help Desk form has unsaved details. Save it before closing. Confirmed entries are already stored on the server.':'Confirmed entries are safely stored on the server. Your station will be ready when you return.';show('exit-dialog');feedback('close')};
+ globalThis.onBackRequested=async()=>{if(held||$('result-popup').open)return;const dialog=[...document.querySelectorAll('dialog[open]')].find(d=>d.id!=='name-dialog'&&d.id!=='exit-dialog');if(dialog){if(dialog.id==='section-info')closeSectionInfo();else close(dialog.id);return;}if(view==='login'&&globalThis.NavrangAuth?.back())return;if($('exit-dialog').open)return;if(inAccountTool()){setView('account');return;}const snapshot=await C.local('snapshot').catch(()=>({pending:0})),draft=globalThis.NavrangDesk?.hasDraft();$('exit-message').textContent=snapshot.pending?String(snapshot.pending)+' scan(s) are still awaiting server confirmation. Keep the app open until they finish.':draft?'Your Help Desk form has unsaved details. Save it before closing. Confirmed entries are already stored on the server.':'Confirmed entries are safely stored on the server. Your station will be ready when you return.';show('exit-dialog');feedback('close')};
  $('exit-keep').onclick=()=>close('exit-dialog');$('exit-confirm').onclick=()=>{feedback('close');$('exit-dialog').classList.add('closing');setTimeout(()=>{if(C.native&&typeof Native.exit==='function')Native.exit();else{close('exit-dialog');$('exit-dialog').classList.remove('closing')}},220)};
  function endIntro(){if(introEnded)return;introEnded=true;feedback('stop-intro');$('intro').classList.add('leaving');setTimeout(()=>{$('intro').hidden=true;renderAuth();renderReadiness('startup')},globalThis.NavrangReducedMotion?0:550)}$('skip-intro').onclick=endIntro;feedback('intro');setTimeout(endIntro,(globalThis.NavrangReducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches)?100:6200);
  (async()=>{try{await C.finishGoogle()}catch(e){notice(e.message)}renderAuth();setView(C.profile()?assignedView():'login');await renderLocal();try{const cfg=await C.api('config');$('google-status').textContent=cfg.googleEnabled?'Google is available. Save your name, then choose an approved station.':'Google sign-in is unavailable. Ask Namdev for an assigned code.';$('provider-note').textContent='Manage names, approve requests and assign Checker, Help Desk or both. Only admin can change access.'}catch{connection(false)}if(C.profile()){try{if(C.native)await C.local('refresh');else await C.api('me');renderAuth()}catch(e){notice(e.message)}await poll(true)}else connection(false,'Sign in')})().catch(e=>notice(e.message));

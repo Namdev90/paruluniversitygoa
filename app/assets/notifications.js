@@ -73,28 +73,22 @@
   const previewResult=make('section',null,'notification-preview-result');previewResult.id='notification-preview-result';previewResult.setAttribute('aria-label','Announcement preview');previewResult.hidden=true;
   const formActions=make('div',null,'notification-form-actions'),previewButton=button('notification-preview','Preview recipients','button secondary'),send=button('notification-send','Send announcement','button primary');send.disabled=true;formActions.append(previewButton,send);form.append(composeStatus,previewResult,formActions);
   center.append(heading,status,retry,live,restoreLive,listTitle,list,empty,composeToggle,form);doc.body.append(center);
-  voicePanel=root.NavrangVoice?.mount({client:C,container:center})||null;
-  const voiceNode=doc.getElementById('notification-voice'),adminVoiceHost=doc.getElementById('admin-voice-host');
+  const voiceHost=doc.getElementById('settings-voice-host'),audioSettings=voiceHost?.closest('details');
+  voicePanel=audioSettings?root.NavrangVoice?.mount({client:C,container:voiceHost})||null:null;
   function syncVoice(force=false){
    if(!voicePanel||destroyed)return;
-   const adminVisible=adminVoiceHost&&!center.open&&isAdmin()&&!adminVoiceHost.closest('[hidden]');
-   const visible=!!adminVisible||center.open,host=adminVisible?adminVoiceHost:center;
-   const moved=voiceNode.parentElement!==host;
-   if(!force&&!moved&&visible===voiceVisible)return;
-   // Stop any held microphone input before moving the one existing voice panel.
-   if(voiceVisible&&(!visible||moved))voicePanel.hide();
-   if(moved)host.append(voiceNode);
+   const visible=audioSettings.open&&!center.open&&!voiceHost.closest('[hidden]');
+   if(!force&&visible===voiceVisible)return;
+   if(voiceVisible)voicePanel.hide();
    if(visible)voicePanel.show();
    voiceVisible=visible;
   }
-  const voiceObserver=voicePanel&&adminVoiceHost?new root.MutationObserver(()=>{opener.setAttribute('aria-expanded',String(center.open));syncVoice()}):null;
+  const voiceObserver=voicePanel?new root.MutationObserver(()=>{opener.setAttribute('aria-expanded',String(center.open));syncVoice()}):null;
   if(voiceObserver){
+   voiceObserver.observe(doc.getElementById('view-settings'),{attributes:true,attributeFilter:['hidden']});
+   voiceObserver.observe(audioSettings,{attributes:true,attributeFilter:['open']});
    voiceObserver.observe(center,{attributes:true,attributeFilter:['open']});
-   for(const node of [adminVoiceHost.closest('[role="tabpanel"]'),doc.getElementById('view-admin')]){
-    if(node)voiceObserver.observe(node,{attributes:true,attributeFilter:['hidden']});
-   }
   }
-  center.addEventListener('cancel',()=>{voicePanel?.hide();voiceVisible=false});
   center.addEventListener('close',()=>{if(!center.open){opener.setAttribute('aria-expanded','false');syncVoice()}});
   function invalidatePreview(message='Preview again after changing the announcement.'){composeEpoch++;preview=null;previewResult.replaceChildren();previewResult.hidden=true;send.disabled=true;if(message)composeStatus.textContent=message;}
   function paintComposer(){

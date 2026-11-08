@@ -57,7 +57,7 @@ test('Admin tools live under Account and each child returns to its parent',async
   const account=$('main-nav').querySelector('[data-view=account]');
   assert.equal(route(),'account');assert.equal($('admin-account-tools').hidden,false);
   assert.equal($('admin-nav').closest('#main-nav'),null);assert.equal($('reports-nav').hidden,true);
-  for(const [button,target] of [['admin-nav','admin'],['admin-account-reports','reports']]){
+  for(const [button,target] of [['admin-nav','admin'],['admin-account-reports','reports'],['account-settings','settings']]){
    $(button).click();assert.equal(route(),target);assert.equal(account.getAttribute('aria-current'),'page');assert.equal($('account-tool-back').hidden,false);
    await w.onBackRequested();assert.equal(route(),'account');assert.equal($('exit-dialog').open,false);assert.equal($('account-tool-back').hidden,true);
   }
@@ -100,8 +100,8 @@ test('admin tabs support arrow, home and end navigation and announce the active 
   await tick();const $=id=>w.document.getElementById(id),tabs=[...w.document.querySelectorAll('[data-admin-tab]')];
   assert.equal(tabs[0].getAttribute('aria-selected'),'true');assert.equal(tabs[0].tabIndex,0);assert.equal(tabs[1].tabIndex,-1);
   tabs[0].dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[1]);assert.equal($('admin-admissions').hidden,false);assert.equal($('admin-registrations').hidden,true);assert.equal(tabs[1].getAttribute('aria-selected'),'true');
-  tabs[1].dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,$('tab-location-audio'));assert.equal($('admin-location-audio').hidden,false);
-  $('tab-location-audio').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[0]);assert.equal($('admin-registrations').hidden,false);
+  tabs[1].dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,$('tab-updates'));assert.equal($('admin-updates').hidden,false);
+  $('tab-updates').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[0]);assert.equal($('admin-registrations').hidden,false);
  }finally{await tick();dom.window.close()}
 });
 

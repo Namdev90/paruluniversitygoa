@@ -199,7 +199,7 @@
   if(!(bytes instanceof Uint8Array))throw fail('Invalid report file.');
   if(bytes.length>12*1024*1024)throw fail('This report is too large to save from the app.');
   if(native){
-   if(typeof Native.saveReport!=='function')throw fail('Please install Navrang Gate 0.7.7 to download reports.');
+   if(typeof Native.saveReport!=='function')throw fail('Please install Navrang 0.7.7 to download reports.');
    let binary='';for(let i=0;i<bytes.length;i+=16384)binary+=String.fromCharCode(...bytes.subarray(i,i+16384));
    if(operationId){
     if(typeof operationId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(operationId))throw fail('Invalid report operation.');

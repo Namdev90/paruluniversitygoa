@@ -10,8 +10,8 @@ const admin={role:'admin',name:'Synthetic Administrator',active:true};
 const status={eventId:'O9KL3',disclosureVersion:1,location:true,findMe:true,onDuty:true,version:1,expiresAt:new Date(now+1800000).toISOString()};
 const request={requestId:id(8),volunteerId:id(1),administrator:'Namdev',delivery:'queued',state:'queued',expiresAt:new Date(now+120000).toISOString()};
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
-function fixture(profile=staff,{adminHost=false,...options}={}){
- const dom=new JSDOM('<main><section id="view-account"></section>'+(adminHost?'<div id="admin-locator-host"></div>':'')+'</main>',{url:'https://fixture.invalid',runScripts:'outside-only',pretendToBeVisual:true});
+function fixture(profile=staff,{settingsHost=false,...options}={}){
+ const dom=new JSDOM('<main><section id="view-account"></section>'+(settingsHost?'<section id="view-settings"><div id="settings-locator-host"></div></section>':'')+'</main>',{url:'https://fixture.invalid',runScripts:'outside-only',pretendToBeVisual:true});
  const w=dom.window,listeners=new Set(),calls=[];let current=profile;
  let handler=(action)=>action==='locator-status'?(profile.role==='admin'?{administrator:true,assigned:true}:status):{items:[]};
  const client={profile:()=>current,on:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},api:async(action,payload)=>{calls.push({action,payload});return handler(action,payload)}};
@@ -85,17 +85,17 @@ test('administrator roster fetches coordinates only for the one selected volunte
   assert.match(f.$('locator-selected').textContent,/no current shared location/i);
  }finally{f.close()}
 });
-test('administrator Find Me has one dedicated host and volunteers keep Account consent',async()=>{
- const f=fixture(admin,{autoStart:false,adminHost:true});try{
+test('Settings keeps administrator Find Me and volunteer controls in one role-sensitive host',async()=>{
+ const f=fixture(admin,{autoStart:false,settingsHost:true});try{
   f.setHandler(action=>action==='locator-status'?{administrator:true,assigned:true}:action==='locator-roster'?{items:[{volunteerId:id(1),name:'Synthetic private volunteer',location:true,findMe:true}]}:{fix:null});
   await f.component.refresh();
   const retainedControl=f.$('locator-roster').querySelector('button');
-  assert.equal(f.$('locator-panel').parentElement,f.$('admin-locator-host'));
+  assert.equal(f.$('locator-panel').parentElement,f.$('settings-locator-host'));
   assert.equal(f.$('view-account').childElementCount,0);
   f.setProfile(staff);retainedControl.click();await tick();
   assert.equal(f.calls.some(x=>x.action==='locator-view'),false);
-  assert.equal(f.$('admin-locator-host').childElementCount,0);
-  assert.equal(f.$('locator-panel').parentElement,f.$('view-account'));
+  assert.equal(f.$('locator-roster'),null);
+  assert.equal(f.$('locator-panel').parentElement,f.$('settings-locator-host'));
   assert.ok(f.$('locator-consent-dialog'));
  }finally{f.close()}
 });
