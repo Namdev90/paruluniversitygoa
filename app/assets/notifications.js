@@ -23,7 +23,7 @@
  function mount({client:C=root.GateClient,poll=true,autoStart=true,pollMs=60000,now=()=>Date.now()}={}){
   const doc=root.document,actions=doc?.querySelector('.top-actions');if(!C||!actions||doc.getElementById('notifications-button'))return null;
   let epoch=0,identity='',revision=0,feedRevision=0,items=[],dashboard=null,serverTime='',receivedAt=0,stale=true,destroyed=false,timer=null,inFlight=null,failures=0,dirtyQueued=false,lastManualRefresh=0;
-  let preview=null,composeEpoch=0,sending=false,previewing=false,liveBusy=false,endBusy=false,voicePanel=null;const readBusy=new Set();
+  let preview=null,composeEpoch=0,sending=false,previewing=false,liveBusy=false,endBusy=false,voicePanel=null,voiceVisible=false;const readBusy=new Set();
   pollMs=Math.max(60000,Number.isFinite(pollMs)?pollMs:60000);
   const make=(tag,text,cls)=>{const n=doc.createElement(tag);if(text!==undefined&&text!==null)n.textContent=String(text);if(cls)n.className=cls;return n};
   const button=(id,label,cls='button quiet')=>{const n=make('button',label,cls);n.id=id;n.type='button';return n};
@@ -39,8 +39,8 @@
   const runnable=()=>!destroyed&&!!identity&&identity===profileKey()&&!doc.hidden&&root.navigator?.onLine!==false;
   const cancelTimer=()=>{if(timer!==null)root.clearTimeout(timer);timer=null};
   function schedule(delay=pollMs){cancelTimer();if(poll&&runnable())timer=root.setTimeout(()=>{timer=null;refresh()},delay);}
-  function close(){voicePanel?.hide();if(center.open&&typeof center.close==='function')center.close();center.removeAttribute('open');opener.setAttribute('aria-expanded','false');}
-  function open(){if(!identity||identity!==profileKey())return;opener.setAttribute('aria-expanded','true');if(!center.open){if(typeof center.showModal==='function')center.showModal();else center.setAttribute('open','');}voicePanel?.show();if(autoStart)refresh();}
+  function close(){if(center.open&&typeof center.close==='function')center.close();center.removeAttribute('open');opener.setAttribute('aria-expanded','false');syncVoice();}
+  function open(){if(!identity||identity!==profileKey())return;opener.setAttribute('aria-expanded','true');if(!center.open){if(typeof center.showModal==='function')center.showModal();else center.setAttribute('open','');}syncVoice();if(autoStart)refresh();}
   const opener=button('notifications-button',null,'notifications-button icon-button');opener.setAttribute('aria-label','Notifications');opener.setAttribute('aria-haspopup','dialog');opener.setAttribute('aria-controls','notifications-center');opener.setAttribute('aria-expanded','false');
   const bell=make('span','🔔','notification-bell');bell.setAttribute('aria-hidden','true');const badge=make('span','','notification-badge');badge.hidden=true;opener.append(bell,badge);opener.onclick=open;actions.append(opener);const topbar=actions.closest('.topbar');topbar?.classList.add('has-notification-center');
   const center=make('dialog',null,'notification-center');center.id='notifications-center';center.setAttribute('aria-labelledby','notifications-title');
@@ -74,8 +74,28 @@
   const formActions=make('div',null,'notification-form-actions'),previewButton=button('notification-preview','Preview recipients','button secondary'),send=button('notification-send','Send announcement','button primary');send.disabled=true;formActions.append(previewButton,send);form.append(composeStatus,previewResult,formActions);
   center.append(heading,status,retry,live,restoreLive,listTitle,list,empty,composeToggle,form);doc.body.append(center);
   voicePanel=root.NavrangVoice?.mount({client:C,container:center})||null;
-  center.addEventListener('cancel',()=>voicePanel?.hide());
-  center.addEventListener('close',()=>{voicePanel?.hide();opener.setAttribute('aria-expanded','false')});
+  const voiceNode=doc.getElementById('notification-voice'),adminVoiceHost=doc.getElementById('admin-voice-host');
+  function syncVoice(force=false){
+   if(!voicePanel||destroyed)return;
+   const adminVisible=adminVoiceHost&&!center.open&&isAdmin()&&!adminVoiceHost.closest('[hidden]');
+   const visible=!!adminVisible||center.open,host=adminVisible?adminVoiceHost:center;
+   const moved=voiceNode.parentElement!==host;
+   if(!force&&!moved&&visible===voiceVisible)return;
+   // Stop any held microphone input before moving the one existing voice panel.
+   if(voiceVisible&&(!visible||moved))voicePanel.hide();
+   if(moved)host.append(voiceNode);
+   if(visible)voicePanel.show();
+   voiceVisible=visible;
+  }
+  const voiceObserver=voicePanel&&adminVoiceHost?new root.MutationObserver(()=>{opener.setAttribute('aria-expanded',String(center.open));syncVoice()}):null;
+  if(voiceObserver){
+   voiceObserver.observe(center,{attributes:true,attributeFilter:['open']});
+   for(const node of [adminVoiceHost.closest('[role="tabpanel"]'),doc.getElementById('view-admin')]){
+    if(node)voiceObserver.observe(node,{attributes:true,attributeFilter:['hidden']});
+   }
+  }
+  center.addEventListener('cancel',()=>{voicePanel?.hide();voiceVisible=false});
+  center.addEventListener('close',()=>{if(!center.open){opener.setAttribute('aria-expanded','false');syncVoice()}});
   function invalidatePreview(message='Preview again after changing the announcement.'){composeEpoch++;preview=null;previewResult.replaceChildren();previewResult.hidden=true;send.disabled=true;if(message)composeStatus.textContent=message;}
   function paintComposer(){
    const admin=isAdmin();composeToggle.hidden=!admin;if(!admin){form.hidden=true;composeToggle.setAttribute('aria-expanded','false');}
@@ -90,8 +110,8 @@
    epoch++;cancelTimer();inFlight=null;dirtyQueued=false;readBusy.clear();revision=0;feedRevision=0;items=[];dashboard=null;serverTime='';receivedAt=0;stale=true;failures=0;liveBusy=false;endBusy=false;previewing=false;sending=false;
    invalidatePreview('');form.reset();composeStatus.textContent='';form.hidden=true;composeToggle.setAttribute('aria-expanded','false');for(const input of form.querySelectorAll('input,select,textarea,button'))input.disabled=false;send.disabled=true;retry.disabled=false;close();
   }
-  function clear(){clearState();identity=profileKey();render();}
-  function synchronizeIdentity(force=false){const next=profileKey();if(force||next!==identity){clearState();identity=next;render();return true}return false;}
+  function clear(){clearState();identity=profileKey();render();syncVoice(true);}
+  function synchronizeIdentity(force=false){const next=profileKey();if(force||next!==identity){clearState();identity=next;render();syncVoice(true);return true}return false;}
   function messageExtras(value){
    if(!value)return[];const nodes=[],kind=value.templateType?templateTypes[value.templateType]:'',level=value.urgency==='urgent'?'Urgent':value.urgency==='emergency'?'Emergency':'';
    const label=[kind,level].filter((text,index,array)=>text&&array.indexOf(text)===index).join(' · ');if(label)nodes.push(make('p',label,'notification-kind'));
@@ -219,7 +239,7 @@
    else if(event.type==='push-open')openPush(event.data);
   });
   synchronizeIdentity();if(autoStart&&runnable())refresh();
-  return{refresh,open,close,clear,destroy(){if(destroyed)return;destroyed=true;epoch++;cancelTimer();if(typeof unsubscribe==='function')unsubscribe();doc.removeEventListener('visibilitychange',onVisibility);root.removeEventListener('online',onVisibility);root.removeEventListener('offline',onOffline);close();voicePanel?.destroy();center.remove();opener.remove();topbar?.classList.remove('has-notification-center');}};
+  return{refresh,open,close,clear,destroy(){if(destroyed)return;destroyed=true;epoch++;cancelTimer();if(typeof unsubscribe==='function')unsubscribe();doc.removeEventListener('visibilitychange',onVisibility);root.removeEventListener('online',onVisibility);root.removeEventListener('offline',onOffline);voiceObserver?.disconnect();close();voicePanel?.destroy();center.remove();opener.remove();topbar?.classList.remove('has-notification-center');}};
  }
  root.NavrangNotificationCenter={mount};if(root.GateClient)root.NavrangNotifications=mount();
 })(globalThis);

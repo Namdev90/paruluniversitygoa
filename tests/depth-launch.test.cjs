@@ -30,8 +30,9 @@ test('requested screenshots are enabled without changing session or permission c
 test('admin tabs retain accessible semantics and matching raised touch targets',()=>{
  const dom=new JSDOM(read('app/assets/index.html'));
  const tabs=[...dom.window.document.querySelectorAll('.admin-tabs button')];
- assert.equal(tabs.length,4);
+ assert.equal(tabs.length,5);
  for(const tab of tabs){assert.equal(tab.getAttribute('role'),'tab');assert.ok(tab.getAttribute('aria-controls'));}
+ assert.equal(dom.window.document.getElementById('tab-location-audio').parentElement.children.length,1);
  const css=read('app/assets/art/classic-restore.css');
  assert.match(css,/\.admin-tabs button\{min-height:44px;padding:6px 4px;overflow-wrap:anywhere;border:1px/);
  assert.doesNotMatch(css.match(/\.admin-tabs button\{[^}]+\}/)[0],/(?<!min-)height:44px/);

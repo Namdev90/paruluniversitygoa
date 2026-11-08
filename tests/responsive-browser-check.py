@@ -318,7 +318,7 @@ def run():
     check('search includes final record',page.locator('#registration-rows tr').count()==1)
     page.locator('#student-search').fill('')
     page.locator('[data-admin-tab="registrations"]').focus();page.keyboard.press('End')
-    check('admin tabs support End',page.evaluate("document.activeElement.dataset.adminTab==='updates'&&!document.getElementById('admin-updates').hidden"))
+    check('admin tabs support End',page.evaluate("document.activeElement.dataset.adminTab==='location-audio'&&!document.getElementById('admin-location-audio').hidden"))
     page.keyboard.press('Home')
     check('admin tabs support Home',page.evaluate("document.activeElement.dataset.adminTab==='registrations'"))
     page.locator('#reports-nav').click();page.locator('#report-tab-downloads').focus();page.keyboard.press('Home')

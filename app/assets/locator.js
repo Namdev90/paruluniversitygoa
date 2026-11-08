@@ -5,12 +5,13 @@
  const signature=p=>eligible(p)?JSON.stringify([p.role,p.checkerId||'admin',p.active,p.scanner,p.helpdesk,p.name]):'';
  function mount({client,container=root.document.getElementById('view-account'),now=Date.now,autoStart=true,onShareOnce,onSound,onBright}={}){
   if(!client||typeof client.api!=='function'||typeof client.profile!=='function'||!container)throw Error('Locator requires an authenticated station host.');
-  const doc=container.ownerDocument,owned=new Set(),performed=new Set(),intentIds=new Map();
+  const doc=container.ownerDocument,adminContainer=doc.getElementById('admin-locator-host')||container,owned=new Set(),performed=new Set(),intentIds=new Map();
   let generation=0,profile=null,profileKey='',alive=true,section,dialog,state={},statusKnown=false,inbox=[],roster=[],selected=null,selectedFix=null,message='',busy=false,inFlight=null,sample=null,expiryTimer=null,lastRefresh=-Infinity,dirty=false;
   const make=(tag,text,id)=>{const el=doc.createElement(tag);if(text!==undefined)el.textContent=text;if(id)el.id=id;return el};
   const button=(text,id,fn)=>{const el=make('button',text,id);el.type='button';el.className='button secondary';el.onclick=fn;return el};
   const uuid=()=>{if(root.crypto?.randomUUID)return root.crypto.randomUUID();const bytes=new Uint8Array(16);root.crypto.getRandomValues(bytes);bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;return Array.from(bytes,(v,i)=>([4,6,8,10].includes(i)?'-':'')+v.toString(16).padStart(2,'0')).join('')};
-  const live=g=>alive&&g===generation&&eligible(client.profile());
+  const identity=p=>eligible(p)&&!client.sessionExpired?.(p)?signature(p):'';
+  const live=g=>alive&&g===generation&&!!profileKey&&profileKey===identity(client.profile());
   const currentRequest=id=>inbox.find(item=>item.requestId===id&&Date.parse(item.expiresAt)>now()&&!['expired','stopped','declined','found'].includes(item.state));
   const duty=()=>state.onDuty===true&&Date.parse(state.expiresAt)>now();
   function cancelSample(){sample?.abort();sample=null;}
@@ -20,7 +21,8 @@
   function showConsent(){if(!dialog||!statusKnown)return;doc.getElementById('locator-location-consent').checked=state.location===true;doc.getElementById('locator-findme-consent').checked=state.findMe===true;if(typeof dialog.showModal==='function'&&!dialog.open)dialog.showModal();else dialog.setAttribute('open','');root.NavrangMotion?.enter(dialog);}
   function hideConsent(){if(typeof dialog?.close==='function'&&dialog.open)dialog.close();else dialog?.removeAttribute('open');}
   function build(){
-   section=make('article',undefined,'locator-panel');section.className='panel locator-panel';owned.add(section);container.append(section);
+   section=make('article',undefined,'locator-panel');section.className='panel locator-panel';owned.add(section);
+   (profile.role==='admin'?adminContainer:container).append(section);
    section.append(make('h3',profile.role==='admin'?'Find one on-duty volunteer':'Voluntary duty & find-me'));
    section.append(make('p','Optional duty sharing is visible and expires. Missing location does not imply misconduct.','locator-purpose'));
    const status=make('p','','locator-status');status.setAttribute('role','status');section.append(status);
@@ -94,13 +96,14 @@
    }
   }
   async function selectPerson(person){
+   if(!live(generation)||profile.role!=='admin')return;
    selected={...person};selectedFix=null;render();const g=generation,id=person.volunteerId;
    if(!person.location)return;
    try{const result=await client.api('locator-view',{eventId,volunteerId:id});if(live(g)&&selected?.volunteerId===id){selectedFix=result.fix||null;render()}}
    catch(e){if(live(g)&&selected?.volunteerId===id)setMessage(e.message||'Current shared location is unavailable.')}
   }
   async function mutate(action,payload,after){
-   if(!alive||!eligible(profile)||!statusKnown||busy)return;
+   if(!live(generation)||!statusKnown||busy)return;
    const g=generation,key=action+JSON.stringify(payload),params={eventId,...payload};
    if(!params.requestId){if(!intentIds.has(key))intentIds.set(key,uuid());params.requestId=intentIds.get(key)}
    busy=true;render();
@@ -115,12 +118,12 @@
    await mutate('locator-consent',{disclosureVersion:1,location:!decline&&doc.getElementById('locator-location-consent').checked,findMe:!decline&&doc.getElementById('locator-findme-consent').checked});
   }
   async function stop(){
-   if(!alive)return;generation++;cancelSample();closeOwned();inbox=[];state={...state,onDuty:false};busy=false;inFlight=null;const g=generation;setMessage('Stopped on this device. Confirming server stop.');render();
+   if(!live(generation))return;generation++;cancelSample();closeOwned();inbox=[];state={...state,onDuty:false};busy=false;inFlight=null;const g=generation;setMessage('Stopped on this device. Confirming server stop.');render();
    try{const result=await client.api('locator-stop',{eventId,requestId:uuid()});if(live(g)){state=result;setMessage('Off duty. Sharing and pending requests are stopped.');render()}}
    catch(e){if(live(g))setMessage('Stopped on this device. Server confirmation is pending; the last shared fix expires within two minutes.')}
   }
   async function shareOnce(requestId){
-   if(!statusKnown||!duty()||!state.location||sample||requestId&&!currentRequest(requestId))return;
+   if(!live(generation)||!statusKnown||!duty()||!state.location||sample||requestId&&!currentRequest(requestId))return;
    if(typeof onShareOnce!=='function'){setMessage('One-shot location is not available in this host. Existing station work remains available.');return;}
    const g=generation,controller=new root.AbortController();sample=controller;render();
    try{
@@ -145,7 +148,7 @@
    });
   }
   async function refresh({manual=false}={}){
-   if(!alive||!eligible(profile))return;if(inFlight)return inFlight;if(manual&&now()-lastRefresh<5000){setMessage('Status was checked recently. Try again in a few seconds.');return;}
+   if(!live(generation))return;if(inFlight)return inFlight;if(manual&&now()-lastRefresh<5000){setMessage('Status was checked recently. Try again in a few seconds.');return;}
    const g=generation;lastRefresh=now();dirty=false;
    const operation=(async()=>{
     try{
@@ -165,7 +168,7 @@
    })();inFlight=operation;return operation;
   }
   function changed(event){
-   const next=client.profile(),key=signature(next);
+   const next=client.profile(),key=identity(next);
    if(key!==profileKey){clear();profile=next;profileKey=key;if(key){build();render();if(autoStart)refresh()}return;}
    if(event?.type==='locator-invalidated'&&event.data?.eventId===eventId&&event.data?.principal===(profile.role==='admin'?'admin':profile.checkerId)){dirty=true;if(!doc.hidden)refresh();}
   }

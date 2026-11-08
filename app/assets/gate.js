@@ -184,6 +184,37 @@
 
  async function signIn(button,action,payload){await busy(button,async()=>{await C.api(action,payload);$('notice').hidden=true;$('checker-code').value='';feedback('success');afterSignIn();})}
  for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>{if(b.dataset.view==='desk'||b.dataset.view==='home')C.destination?.(b.dataset.view);setView(b.dataset.view)};for(const b of document.querySelectorAll('[data-admin-tab]'))b.onclick=()=>setAdminTab(b.dataset.adminTab);
+ const swipeSurface=document.querySelector('main');
+ const swipeEditable='input,textarea,select,[contenteditable]';
+ const swipeBlocked=()=>{const p=C.profile();return !p?.active||expired(p)||held||view==='login'||!$('intro').hidden||document.querySelector('dialog[open]')||document.activeElement?.matches(swipeEditable)};
+ let swipeStart=null;
+ swipeSurface.addEventListener('touchstart',event=>{
+  swipeStart=null;
+  if(event.touches.length!==1||swipeBlocked()||event.target.closest(swipeEditable+',button,a,label,summary,[role=button],dialog'))return;
+  const touch=event.touches[0],width=document.documentElement.clientWidth||innerWidth;
+  if(touch.clientX<24||touch.clientX>width-24)return;
+  for(let target=event.target;target&&target!==swipeSurface;target=target.parentElement){
+   if(target.scrollWidth>target.clientWidth+1&&['auto','scroll'].includes(getComputedStyle(target).overflowX))return;
+  }
+  swipeStart={id:touch.identifier,x:touch.clientX,y:touch.clientY,view,generation:uiGeneration};
+ },{passive:true});
+ swipeSurface.addEventListener('touchmove',event=>{
+  if(!swipeStart)return;
+  const touch=event.touches[0];
+  if(event.touches.length!==1||touch.identifier!==swipeStart.id||Math.abs(touch.clientY-swipeStart.y)>Math.max(16,Math.abs(touch.clientX-swipeStart.x)))swipeStart=null;
+ },{passive:true});
+ swipeSurface.addEventListener('touchcancel',()=>{swipeStart=null},{passive:true});
+ swipeSurface.addEventListener('touchend',event=>{
+  const start=swipeStart;swipeStart=null;
+  if(!start||event.touches.length||start.view!==view||start.generation!==uiGeneration||swipeBlocked())return;
+  const touch=Array.from(event.changedTouches).find(item=>item.identifier===start.id);
+  if(!touch)return;
+  const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
+  if(Math.abs(dx)<64||Math.abs(dx)<Math.abs(dy)*1.5)return;
+  const tabs=Array.from($('main-nav').querySelectorAll('button[data-view]:not([hidden]):not(:disabled)')).filter(tab=>tab.getClientRects().length&&getComputedStyle(tab).visibility==='visible');
+  const current=tabs.findIndex(tab=>tab.dataset.view===view);
+  if(current!==-1)tabs[current+(dx<0?1:-1)]?.click();
+ },{passive:true});
  document.addEventListener('click',e=>{if(e.target.closest('button,summary'))feedback('tap')});
  $('account').onclick=()=>setView('account');$('scan').onclick=()=>{if(!held&&canScan()&&!needsName(C.profile()))C.scan()};
  $('show-admin-login').onclick=()=>{$('signin-panel').hidden=true;$('admin-signin').hidden=false};$('show-checker-login').onclick=()=>{$('admin-signin').hidden=true;$('signin-panel').hidden=false};

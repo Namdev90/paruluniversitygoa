@@ -67,8 +67,8 @@ test('admin tabs support arrow, home and end navigation and announce the active 
   await tick();const $=id=>w.document.getElementById(id),tabs=[...w.document.querySelectorAll('[data-admin-tab]')];
   assert.equal(tabs[0].getAttribute('aria-selected'),'true');assert.equal(tabs[0].tabIndex,0);assert.equal(tabs[1].tabIndex,-1);
   tabs[0].dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[1]);assert.equal($('admin-admissions').hidden,false);assert.equal($('admin-registrations').hidden,true);assert.equal(tabs[1].getAttribute('aria-selected'),'true');
-  tabs[1].dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[3]);assert.equal($('admin-updates').hidden,false);
-  tabs[3].dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[0]);assert.equal($('admin-registrations').hidden,false);
+  tabs[1].dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,$('tab-location-audio'));assert.equal($('admin-location-audio').hidden,false);
+  $('tab-location-audio').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));assert.equal(w.document.activeElement,tabs[0]);assert.equal($('admin-registrations').hidden,false);
  }finally{await tick();dom.window.close()}
 });
 
