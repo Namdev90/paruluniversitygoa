@@ -1,10 +1,11 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 18,
-  "versionName": "0.8.0",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.8.0.apk",
-  "size": 23634731,
-  "sha256": "8dd7423a67b69fa882a9115f5f1313fe930dfe6ec12c26ca62ff8b1215243fe4",
-  "notes": "Approved combined Navrang and Parul University branding on maroon, staged sign-in, consolidated Reports with reachable downloads and accessible pagination, smoother transitions, sign-out confirmation and guarded local report saves. Preserves attendance, authorization, original signing identity and existing update notifications. New messaging, audio messages and live broadcasts are deferred.",
-  "publishedAt": "2026-10-19T05:10:19.650230+00:00"
+  "versionCode": 19,
+  "versionName": "0.9.0",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.0.apk",
+  "size": 24689847,
+  "sha256": "b60029212bad77461e506b09271df529ec213d74222ca91d9de53447ff6f7550",
+  "notes": "Updates the original Navrang interface, adds app lock and guarded report operations, and integrates opt-in Find Me with the matching backend.",
+  "publishedAt": "2026-11-08T15:01:17.337278+00:00",
+  "signature": "Za9gcdTjZV+lygq2htbL//QrZyuXNr0UDvhdf+lVzB2TtMokZeaFHIMwM7g44kaFlLgwcptOBm7r2XWh/I9qG0fT9Bax9FaqC+qTVZWfktygUCSLs8cgeHiKj7jZGRpVOX7vgZGaCranjm/b61hcGh9KdspByyZYJDXcDNDDzX0rEmhAckHu54JaBBP5w6jOgi3r6bQHlvcMMQl2/1GJ1fOr8YPQDAtU50bqTnhzkPGFouOpm3bjM2hXH+29E4BotlvrZOCiYE6hwCnCu6tdCPxsdWdicPPxqul5kUwRW+gJ0/sp5epxhUfFcNzpxlBgQE67XawDAvJWIJbEm1ND3A=="
 }

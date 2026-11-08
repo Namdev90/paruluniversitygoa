@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 — Android code 19 · 8 November 2026
+
+- Swipe horizontally between available screens. Bottom tabs stay reachable on long Admin and Account pages.
+- Admin has a dedicated Location & audio entry for Find Me and voice status. Volunteer consent stays in Account. Find Me requires an event administrator assignment. Live audio and push remain disabled.
+- Original-key APK passed a physical in-place upgrade and phone retest. Size 24,689,847 bytes. SHA-256 `b60029212bad77461e506b09271df529ec213d74222ca91d9de53447ff6f7550`. [Release evidence](docs/restoration-release-approval.json).
+
 ## 0.8.0 — Android code 18 · 19 October 2026
 
 - Approved combined Navrang/Parul University artwork and maroon styling, staged sign-in, confirmation before sign-out and reduced-motion-aware screen transitions.
