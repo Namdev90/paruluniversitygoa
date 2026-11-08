@@ -36,6 +36,47 @@ test('Help Desk-only staff open their saved station directly and cannot scan or 
  t.click('station-helpdesk');await tick();assert.equal($('view-desk').hidden,false);
  }finally{dom.window.close()}
 });
+
+test('browser ticket action focuses manual entry while Android retains camera tap and downward swipe',async()=>{
+ const checker={role:'checker',checkerId:'synthetic',name:'Synthetic Checker',active:true,scanner:true,station:'checker'};
+ for(const native of [false,true]){
+  const t=setup(checker,{native}),{w,dom,calls,$}=t;try{
+   await tick();
+   const cameraCalls=()=>calls.filter(call=>call.action==='camera').length;
+   const swipe=()=>{
+    for(const [type,touches,changedTouches]of [['touchstart',[{identifier:1,clientX:150,clientY:100}],[]],['touchend',[],[{identifier:1,clientX:150,clientY:190}]]]){
+     const event=new w.Event(type,{bubbles:true});Object.assign(event,{touches,changedTouches});$('pull-to-scan').dispatchEvent(event);
+    }
+   };
+   assert.equal($('scan-action-title').textContent,native?'Start scanning':'Enter ticket ID');
+   assert.equal($('scan-action-badge').hidden,!native);
+   assert.equal($('scan').getAttribute('aria-label'),native?'Open continuous QR scanner':'Enter ticket ID manually');
+   t.click('scan');
+   assert.equal(cameraCalls(),native?1:0);
+   assert.equal(w.document.activeElement===$('ticket-id'),!native);
+   assert.equal(calls.some(call=>call.action==='checkin'),false);
+   $('ticket-id').blur();swipe();assert.equal(cameraCalls(),native?2:0);
+   t.event({type:'result',data:{code:'blocked',id:'DEMO0001',message:'Synthetic issue'}});
+   assert.equal($('scan').disabled,true);t.click('scan');swipe();assert.equal(cameraCalls(),native?2:0);
+   assert.notEqual(w.document.activeElement,$('ticket-id'));
+  }finally{await tick();dom.window.close()}
+ }
+});
+
+test('Account offers manual update checks only in the Android host',async()=>{
+ for(const native of [false,true]){
+  const t=setup({role:'admin',name:'Synthetic Admin',active:true},{native}),{w,dom,$}=t;try{
+   await tick();const actions=[],state=native?{currentVersion:'0.9.0',automatic:true}:{message:'App updates are managed in the Android app.'};
+   w.GateClient.update=action=>{actions.push(action);return state};
+   t.event({type:'update',data:state});
+   assert.equal($('check-update').hidden,!native);
+   assert.equal($('update-message').textContent,native?'Your app is up to date.':state.message);
+   t.click('check-update');
+   assert.deepEqual(actions,native?['check']:[]);
+  }finally{await tick();dom.window.close()}
+ }
+});
+
 test('a station request never self-authorizes; approved access appears on the existing session',async()=>{
  const pending={role:'checker',checkerId:'pending',name:'Raju',method:'google',nameConfirmed:true,active:false,scanner:false,helpdesk:false};const t=setup(pending),{dom,calls,$}=t;
  try{await tick();t.click('station-helpdesk');await tick();assert.equal(calls.find(c=>c.action==='staff-request').payload.station,'helpdesk');assert.equal($('station-helpdesk').disabled,true);assert.equal($('view-desk').hidden,true);assert.ok(!calls.some(c=>c.action==='sync'));

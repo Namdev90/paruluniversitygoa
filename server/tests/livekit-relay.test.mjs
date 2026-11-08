@@ -85,15 +85,22 @@ test('provider errors, non-JSON success and missing participants are never false
  }
 });
 
-test('hung network and body reads are bounded and abort the request', async () => {
+test('hung network and body reads are bounded and abort the request', { timeout: 5000 }, async t => {
+ t.mock.timers.enable({ apis: ['setTimeout'] });
  for (const bodyHangs of [false, true]) {
-  let signal;
+  let signal, markStarted;
+  const started = new Promise(resolve => { markStarted = resolve; });
+  const hang = () => { markStarted(); return new Promise(() => {}); };
   const relay = createLiveKitCloudRelay({ ...options, timeoutMs: 20, fetchImpl: async (_, request) => {
    signal = request.signal;
-   if (bodyHangs) return { ok: true, json: () => new Promise(() => {}) };
-   return new Promise(() => {});
+   return bodyHangs ? { ok: true, json: hang } : hang();
   } });
-  assert.deepEqual(await relay.revoke({ ...membership, strict: true }), { revoked: false, code: 'RELAY_UNAVAILABLE' });
+  const pending = relay.revoke({ ...membership, strict: true });
+  assert.equal(await Promise.race([started.then(() => true), pending.then(() => false)]), true);
+  t.mock.timers.tick(19);
+  assert.equal(signal.aborted, false);
+  t.mock.timers.tick(1);
+  assert.deepEqual(await pending, { revoked: false, code: 'RELAY_UNAVAILABLE' });
   assert.equal(signal.aborted, true);
  }
 });

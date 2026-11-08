@@ -139,7 +139,13 @@
    empty.hidden=items.length>0;paintComposer();if(!identity)status.textContent='Sign in to view notifications.';
    if(focusedId&&center.open){const row=[...list.children].find(n=>n.dataset.notificationId===focusedId);let target=row?.querySelector(focusedOpen?'[data-open-notification]':'[data-mark-read]')||row?.querySelector('button')||row||closeButton;if(target.disabled)target=row||closeButton;target.focus({preventScroll:true});}
   }
-  function destinationControl(value){if(!destinations.has(value))return null;return [...doc.querySelectorAll('[data-view]')].find(button=>button.dataset.view===value&&!button.disabled&&!button.hidden&&!button.closest('[hidden]')&&button.getAttribute('aria-disabled')!=='true')||null;}
+  function destinationControl(value){
+   const admin=isAdmin();if(!destinations.has(value)||value==='admin'&&!admin)return null;
+   const adminTool=admin&&(value==='admin'||value==='reports');
+   // Authorized Account tools can be opened directly while the Account view is hidden.
+   return [...doc.querySelectorAll('[data-view]')].find(button=>button.dataset.view===value&&!button.disabled&&!button.hidden&&button.getAttribute('aria-disabled')!=='true'&&
+    (!button.closest('[hidden]')||adminTool&&button.closest('#admin-account-tools:not([hidden])')))||null;
+  }
   function checkedFeed(result){
    const value=result?.feed||result;if(!value||!Number.isSafeInteger(value.revision)||value.revision<0||!validTime(value.serverTime)||!Array.isArray(value.items)||value.items.length>5||!Array.isArray(value.activeIds)||value.activeIds.length>5||value.activeIds.some(id=>!validId(id))||new Set(value.activeIds).size!==value.activeIds.length)throw Error('The server returned an incomplete notification feed.');
    const restricted=isInactive(),updated=new Map(items.filter(item=>!restricted||item.kind==='access-change').map(item=>[item.id,item])),newIds=new Set();for(const item of value.items){

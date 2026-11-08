@@ -22,13 +22,13 @@ function key(f,type,value=' ',extra={}){const event=new f.w.KeyboardEvent(type,{
 function listen(f){f.show();f.$('join').click();assert.equal(f.$('talk').disabled,false);}
 
 test('disabled build reports unavailable and opening never joins or requests microphone',()=>{
- const f=fixture({initial:state('unavailable',{available:false,ready:false,canTalk:false})});try{f.show();assert.deepEqual(f.actions(),['status']);assert.match(f.$('status').textContent,/unavailable/i);for(const id of ['join','leave','talk'])assert.equal(f.$(id).disabled,true);f.$('join').click();pointer(f,'pointerdown');key(f,'keydown');assert.deepEqual(f.actions(),['status']);}finally{f.close()}
+ const f=fixture({initial:state('unavailable',{available:false,ready:false,canTalk:false})});try{f.show();assert.deepEqual(f.actions(),['status']);assert.match(f.$('status').textContent,/unavailable/i);assert.equal(f.$('help').hidden,true);assert.equal(f.$('join').parentElement.hidden,true);for(const id of ['join','leave','talk'])assert.equal(f.$(id).disabled,true);f.$('join').click();pointer(f,'pointerdown');key(f,'keydown');assert.deepEqual(f.actions(),['status']);}finally{f.close()}
 });
 test('browser without native bridge stays unavailable without fallback media APIs',()=>{
  const f=fixture({missingBridge:true});try{f.show();assert.equal(f.$('talk').disabled,true);assert.match(f.$('status').textContent,/unavailable/);assert.deepEqual(f.actions(),[]);assert.equal(f.w.navigator.mediaDevices,undefined);}finally{f.close()}
 });
 test('available transport can join before receive connection is ready',()=>{
- const f=fixture();try{f.show();assert.equal(f.$('join').disabled,false);assert.equal(f.$('talk').disabled,true);f.setHandler(action=>action==='join'?state('joining'):state());f.$('join').click();assert.equal(f.$('join').disabled,true);assert.equal(f.$('leave').disabled,false);assert.match(f.$('status').textContent,/Joining/);assert.equal(f.$('talk').disabled,true);}finally{f.close()}
+ const f=fixture();try{f.show();assert.equal(f.$('join').disabled,false);assert.equal(f.$('join').parentElement.hidden,false);assert.equal(f.$('talk').disabled,true);f.setHandler(action=>action==='join'?state('joining'):state());f.$('join').click();assert.equal(f.$('join').disabled,true);assert.equal(f.$('leave').disabled,false);assert.match(f.$('status').textContent,/Joining/);assert.equal(f.$('talk').disabled,true);}finally{f.close()}
 });
 test('explicit join listens and pointer press release is momentary',()=>{
  const f=fixture();try{listen(f);assert.deepEqual(f.actions(),['status','join']);pointer(f,'pointerdown');assert.equal(f.$('talk').getAttribute('aria-pressed'),'false');f.setState(state('talking'));f.event({type:'voice'});assert.equal(f.$('talk').getAttribute('aria-pressed'),'true');pointer(f,'pointerup');assert.deepEqual(f.actions(),['status','join','press','status','release']);assert.equal(f.$('talk').getAttribute('aria-pressed'),'false');assert.ok(f.calls.every(c=>Object.keys(c.payload).length===0));}finally{f.close()}

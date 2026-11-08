@@ -94,6 +94,23 @@ test('notification content is plain text and destinations use only existing auth
  }finally{f.close()}
 });
 
+test('admin notification destinations reach authorized Account tools even while Account is hidden',async()=>{
+ const f=fixture();try{
+  const doc=f.w.document,account=doc.createElement('section');account.hidden=true;
+  account.innerHTML='<div id="admin-account-tools"><button data-view="admin">Admin console</button><button data-view="reports">Reports</button></div>';
+  doc.body.append(account);
+  const opened=[];for(const button of account.querySelectorAll('button'))button.onclick=()=>opened.push(button.dataset.view);
+  f.setHandler(action=>action==='notifications-feed'?{...feed([2,1]),items:[{...item(2),destination:'admin'},{...item(1),destination:'reports'}]}:{read:true});
+  await f.api.refresh();
+  for(const number of [2,1]){
+   const button=f.$('notification-open-'+id(number));assert.ok(button);button.click();await settle();
+  }
+  assert.deepEqual(opened,['admin','reports']);
+  f.setProfile(faculty);await f.api.refresh();
+  assert.equal(f.$('notifications-items').querySelector('[data-open-notification]'),null);
+ }finally{f.close()}
+});
+
 test('unavailable transport is an error and an oversized feed cannot masquerade as five valid items',async()=>{
  const f=fixture();try{
   f.setHandler(()=>{throw Error('Communications not configured.')});await f.api.refresh();assert.match(f.$('notifications-status').textContent,/unavailable|not configured/i);assert.equal(f.w.document.querySelectorAll('[data-notification-id]').length,0);

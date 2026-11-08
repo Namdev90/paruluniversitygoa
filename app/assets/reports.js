@@ -1,7 +1,7 @@
 (function(root){
  'use strict';
  const C=root.GateClient,E=root.NavrangReportExport,$=id=>document.getElementById(id);
- const kinds={all:'Complete registration and attendance master',attended:'All confirmed attendees',absent:'Eligible registrations with no verified entry',blocked:'Ineligible / blocked registrations',issues:'Server-recorded entry issues',resolved:'Issues resolved by admission',unresolved:'Issues without verified entry',duplicates:'Duplicate scan attempts',activity:'Gate activity and timing evidence',helpdesk:'Help Desk cases',pending:'Pending Help Desk cases',corrections:'Admitted — registration data missing'};
+ const kinds={all:'All records',attended:'Confirmed attendees',absent:'Eligible, no entry',blocked:'Blocked registrations',issues:'Recorded entry issues',resolved:'Resolved entry issues',unresolved:'Unresolved entry issues',duplicates:'Duplicate attempts',activity:'Gate activity',helpdesk:'Help Desk cases',pending:'Pending Help Desk',corrections:'Admitted — registration data missing'};
  const registrationColumns=['Ticket ID','Name','Name status','In registration master','Registration retained','Eligible','Eligibility issue','Payment result','Amount INR','Attendance','Admission basis','Note','Verified entry UTC','Original scan UTC','Record created UTC','Organizer confirmation UTC','Checker / record source','Server issue attempts','Duplicate attempts'];
  const issueColumns=['Ticket ID','Name','Issue codes','Issue attempts','First issue UTC','Outcome','Admission basis','Note','Verified entry UTC','Record created UTC'];
  const helpdeskColumns=['Ticket ID','Name','Status','Created UTC','Reviewed UTC','Recorded by'];

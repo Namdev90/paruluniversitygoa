@@ -102,6 +102,7 @@ test('a native session recovered after startup leaves the login view without a n
   current={role:'admin',name:'Synthetic Admin',active:true};
   listener({type:'profile',data:current});
   await new Promise(resolve=>setImmediate(resolve));
-  assert.equal(w.document.body.dataset.route,'admin');
+  assert.equal(w.document.body.dataset.route,'account');
+  assert.equal(w.document.getElementById('admin-account-tools').hidden,false);
  }finally{w.close()}
 });

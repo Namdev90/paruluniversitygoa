@@ -29,30 +29,37 @@ test('horizontal swipe follows the visible tab order without wrapping or bypassi
  const t=setup();try{await tick();t.$('intro').hidden=true;
   const route=()=>t.w.document.body.dataset.route;
   for(const tab of t.$('main-nav').querySelectorAll('button[data-view]'))tab.getClientRects=()=>tab.style.display==='none'?[]:[{}];
-  assert.equal(route(),'admin');swipe(t,t.$('view-admin'),[320,320],[160,320]);assert.equal(route(),'account');
+  assert.equal(route(),'account');swipe(t,t.$('view-account'),[160,320],[320,320]);assert.equal(route(),'entries');
+  swipe(t,t.$('view-entries'),[320,320],[160,320]);assert.equal(route(),'account');
   swipe(t,t.$('view-account'),[320,320],[160,320]);assert.equal(route(),'account');
-  swipe(t,t.$('view-account'),[160,320],[320,320]);assert.equal(route(),'admin');
+  t.$('admin-nav').click();swipe(t,t.$('view-admin'),[320,320],[160,320]);assert.equal(route(),'admin');
+  t.$('account-tool-back').click();t.$('admin-account-reports').click();
+  swipe(t,t.$('view-reports'),[160,320],[320,320]);assert.equal(route(),'reports');
   t.$('station-nav').style.display='none';t.$('scan-nav').click();
   swipe(t,t.$('view-home'),[160,320],[320,320]);assert.equal(route(),'home');
   t.setProfile({role:'checker',checkerId:'synthetic',name:'Synthetic Staff',active:true,scanner:true,station:'checker'});await tick();
   assert.equal(route(),'home');swipe(t,t.$('view-home'),[320,320],[160,320]);assert.equal(route(),'account');
   swipe(t,t.$('view-account'),[160,320],[320,320]);assert.equal(route(),'home');
+  t.setProfile({role:'checker',checkerId:'synthetic-faculty',name:'Synthetic Faculty',active:true,scanner:false,reports:true});await tick();
+  assert.equal(route(),'reports');swipe(t,t.$('view-reports'),[320,320],[160,320]);assert.equal(route(),'account');
+  swipe(t,t.$('view-account'),[160,320],[320,320]);assert.equal(route(),'reports');
  }finally{await tick();t.dom.window.close()}
 });
 
 test('swipe leaves scrolling, forms, modals, screen edges and cancelled touches alone',async()=>{
  const t=setup();try{await tick();t.$('intro').hidden=true;
-  const view=t.$('view-admin'),route=()=>t.w.document.body.dataset.route;
+  t.$('entries-nav').click();
+  const view=t.$('view-entries'),route=()=>t.w.document.body.dataset.route;
   swipe(t,view,[320,320],[285,322]);swipe(t,view,[320,320],[235,460]);
   swipe(t,view,[12,320],[170,320]);swipe(t,view,[320,320],[160,320],'touchcancel');
-  swipe(t,t.$('student-search'),[320,320],[160,320]);
+  swipe(t,t.$('entry-search'),[320,320],[160,320]);
   const start={identifier:1,clientX:320,clientY:320};
   touch(t,view,'touchstart',[start,{...start,identifier:2}]);touch(t,view,'touchend',[],[{...start,clientX:160}]);
   t.$('student-dialog').setAttribute('open','');swipe(t,view,[320,320],[160,320]);
   t.$('student-dialog').removeAttribute('open');
-  const scroller=t.$('registration-rows').closest('.rows-scroll');
+  const scroller=t.$('all-entry-rows').closest('.rows-scroll');
   scroller.style.overflowX='auto';Object.defineProperties(scroller,{scrollWidth:{value:400},clientWidth:{value:250}});
-  swipe(t,scroller,[320,320],[160,320]);assert.equal(route(),'admin');
+  swipe(t,scroller,[320,320],[160,320]);assert.equal(route(),'entries');
  }finally{await tick();t.dom.window.close()}
 });
 

@@ -10,8 +10,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -84,6 +87,7 @@ internal fun ScannerExactIdPanel(
     cameraAvailable: Boolean = true,
 ) {
     var input by remember { mutableStateOf("") }
+    var showInfo by remember(enabled) { mutableStateOf(false) }
     val normalized = exactScannerId(input)
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -99,12 +103,17 @@ internal fun ScannerExactIdPanel(
         Modifier.fillMaxWidth().testTagCompat("scanner-id-panel"),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Find by ticket ID", style = MaterialTheme.typography.titleMedium, color = ScannerGold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Find by ticket ID", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = ScannerGold)
+            IconButton(onClick = { showInfo = true }, enabled = enabled, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Outlined.Info, contentDescription = "About ticket verification", tint = ScannerGold)
+            }
+        }
         Text(
-            "Verify entry checks the server and records admission for an eligible ticket. Only a confirmed receipt permits entry.",
+            "Verify entry records admission for an eligible ticket. Wait for a confirmed receipt.",
             style = MaterialTheme.typography.bodySmall,
         )
-        Text("Exact eight-character ticket ID", style = MaterialTheme.typography.labelLarge)
+        Text("Eight-character ticket ID", style = MaterialTheme.typography.labelLarge)
         BasicTextField(
             value = input,
             onValueChange = { input = it },
@@ -124,9 +133,9 @@ internal fun ScannerExactIdPanel(
                 .padding(14.dp).semantics { contentDescription = "Exact eight-character ticket ID" }
                 .testTagCompat("scanner-exact-id"),
         )
-        Text(if (input.isNotBlank() && normalized == null) "Use exactly eight ASCII letters or digits."
-             else if (cameraAvailable) "Camera stays open; QR reading is paused while you enter the ID."
-             else "You can verify an ID without camera permission.", style = MaterialTheme.typography.bodySmall)
+        if (input.isNotBlank() && normalized == null) {
+            Text("Use exactly eight ASCII letters or digits.", style = MaterialTheme.typography.bodySmall)
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ClassicScannerButton(
                 onClick = { verify() },
@@ -141,9 +150,18 @@ internal fun ScannerExactIdPanel(
                     onClose()
                 },
                 modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-            ) { Text(if (cameraAvailable) "Resume camera" else "Hide ID entry") }
+            ) { Text(if (cameraAvailable) "Resume camera" else "Close ID entry") }
         }
     }
+    if (showInfo) AlertDialog(
+        onDismissRequest = { showInfo = false },
+        title = { Text("About ticket verification") },
+        text = {
+            Text(if (cameraAvailable) "QR reading pauses while you type. Resume camera to scan again."
+                 else "You can verify a ticket ID without camera access.")
+        },
+        confirmButton = { TextButton(onClick = { showInfo = false }) { Text("Done") } },
+    )
 }
 
 @Composable
@@ -154,7 +172,7 @@ internal fun ClassicScanOutcomeCard(result: ScanResult, onDetails: () -> Unit) {
         else -> Color(0xffffbdad)
     }
     Surface(
-        modifier = Modifier.fillMaxWidth().shadow(8.dp, RoundedCornerShape(12.dp)),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, ScannerGold.copy(alpha = .38f)),
         color = Color(0xff211923),
@@ -169,7 +187,7 @@ internal fun ClassicScanOutcomeCard(result: ScanResult, onDetails: () -> Unit) {
             Text(listOf(result.id, result.name).filter { it.isNotBlank() }.joinToString(" · "))
             if (result.pending) Text("Wait for the server receipt. Entry is not confirmed.", style = MaterialTheme.typography.bodySmall)
             ClassicScannerButton(onClick = onDetails, contentPadding = PaddingValues(horizontal = 0.dp)) {
-                Text("View ticket and entry details")
+                Text("Ticket details")
             }
         }
     }

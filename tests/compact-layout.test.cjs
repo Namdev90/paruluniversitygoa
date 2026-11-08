@@ -12,6 +12,15 @@ test('all eleven metrics remain visible without paging controls',()=>{const t=la
 test('role loss immediately removes teacher access and restores a permitted tab',()=>{
  const t=layout();try{t.$('report-tab-teachers').click();assert.equal(t.$('report-manage').hidden,false);t.set({role:'checker',active:true,reports:true});assert.equal(t.$('report-manage').hidden,true);assert.equal(t.$('report-tab-teachers').hidden,true);assert.equal(t.$('report-downloads').hidden,false)}finally{t.dom.window.close()}
 });
+test('inactive administrators lose private report state and teacher access',()=>{
+ const t=layout();try{
+  t.w.NavrangReportLayout.setMetrics([['Private attendance total',42]]);
+  t.$('report-tab-teachers').click();t.$('report-notes-dialog').setAttribute('open','');
+  t.set({role:'admin',active:false,reports:true});
+  assert.equal(t.$('report-tab-teachers').hidden,true);assert.equal(t.$('report-manage').hidden,true);
+  assert.equal(t.$('report-stats').childElementCount,0);assert.equal(t.$('report-notes-dialog').open,false);
+ }finally{t.dom.window.close()}
+});
 test('report tab keyboard navigation skips forbidden tabs',()=>{
  const t=layout(false);try{t.$('report-tab-downloads').dispatchEvent(new t.w.KeyboardEvent('keydown',{key:'Home',bubbles:true}));assert.equal(t.$('report-tab-overview').getAttribute('aria-selected'),'true');assert.equal(t.w.document.activeElement.id,'report-tab-overview')}finally{t.dom.window.close()}
 });

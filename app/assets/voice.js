@@ -18,7 +18,7 @@
   const panel=make('section',null,'notification-live');panel.id='notification-voice';panel.setAttribute('aria-labelledby','notification-voice-title');
   const heading=make('h3','Voice');heading.id='notification-voice-title';
   const status=make('p',null,'notification-live-state');status.id='notification-voice-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.setAttribute('aria-atomic','true');
-  const help=make('p','Join to listen. Hold Talk, Space, or Enter to speak; release to stop. Leaving this panel or moving focus stops talking. If Android asks for microphone access, allow it, then hold Talk again.');help.id='notification-voice-help';
+  const help=make('p','Hold Talk, Space or Enter to speak. Release or leave the panel to stop.');help.id='notification-voice-help';
   const controls=make('div',null,'notification-item-actions'),join=button('notification-voice-join','Go on duty and join','button secondary'),leave=button('notification-voice-leave','Leave voice'),talk=button('notification-voice-talk','Hold to talk','button primary');
   talk.setAttribute('aria-describedby',help.id+' '+status.id);talk.setAttribute('aria-pressed','false');talk.style.touchAction='none';
   controls.append(join,leave,talk);panel.append(heading,status,help,controls);container.append(panel);
@@ -32,6 +32,7 @@
    const available=usable()&&snapshot.available,allowed=available&&snapshot.ready,joined=['joining','listening','requesting','talking'].includes(snapshot.state);
    join.disabled=!available||!['idle','closed'].includes(snapshot.state);leave.disabled=!usable()||!joined;talk.disabled=!allowed||!(snapshot.canTalk||held);
    talk.setAttribute('aria-pressed',String(usable()&&snapshot.microphone));
+   help.hidden=!available;controls.hidden=!available&&!joined;
    const messages={unavailable:'Voice is unavailable in this build.',idle:'Voice is off. Join when you are ready.',joining:'Joining voice. Microphone is off.',listening:'Listening. Microphone is off.',requesting:'Requesting a turn. Microphone is off.',talking:'Microphone is on. Release Talk to stop.',closed:'Voice is disconnected. Join again when you are ready.'};
    status.textContent=!visible?'Voice is off.':!scope?'Sign in with approved staff access to use voice.':root.navigator?.onLine===false?'Voice is disconnected while offline.':!snapshot.available?'Voice is unavailable. No audio is connected.':messages[snapshot.state];
   }

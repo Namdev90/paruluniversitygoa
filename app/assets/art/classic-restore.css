@@ -49,7 +49,7 @@ input:focus,select:focus{border-color:var(--gold);box-shadow:inset 0 2px 5px #00
 .secondary,.icon-button,.avatar{background:linear-gradient(155deg,#4c3043,#291d2f);box-shadow:inset 0 1px #f5d3b421,0 3px 0 #100b15,0 7px 14px #0003;border-color:#b7826870}
 .button:active{transform:translateY(2px);box-shadow:inset 0 1px #ffffff13,0 1px 0 #100b15,0 3px 6px #0003}
 .mobile-nav{position:sticky;bottom:env(safe-area-inset-bottom,0px);z-index:2;background:linear-gradient(#17111c,#1e1521);box-shadow:0 -12px 24px -20px #000d;border-top:1px solid #dbb08424}
-body:not(.login-mode) main :focus{scroll-margin-block-end:calc(max(80px,7rem) + env(safe-area-inset-bottom,0px))}
+@supports not selector(html:has(body)){body:not(.login-mode) main :focus{scroll-margin-block-end:calc(max(80px,7rem) + env(safe-area-inset-bottom,0px))}}
 .mobile-nav button.selected,.admin-tabs button.selected{background:linear-gradient(145deg,#71354d,#3b2036);border-color:#d7a36d65;box-shadow:inset 0 1px #f5d7b12b,0 3px 0 #100b15;color:#ffe0aa}
 .mobile-nav button:focus-visible,.admin-tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 dialog{background:radial-gradient(ellipse at 0 0,#8d4a5e30,transparent 58%),linear-gradient(145deg,#302232,#1b1521);box-shadow:inset 0 1px #ffe9c92b,var(--shadow-high);border-color:#d7a36d80}
@@ -357,3 +357,62 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
  .auth-roles h2{font-size:22px}
  .login-card .login-foot{margin-top:6px}
 }
+
+/* Account keeps administration a step below the primary station navigation. */
+#view-account>.section-title{display:block}
+.section-heading{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.section-info-button{display:inline-grid;place-items:center;flex:0 0 44px;width:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--gold)}
+.section-info-button span{display:grid;place-items:center;width:21px;height:21px;border:1px solid currentColor;border-radius:50%;font:700 13px/1 system-ui,sans-serif}
+.section-info-button:focus-visible,.account-tool-row:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.section-info-dialog{width:min(420px,calc(100% - 32px))}
+.section-info-dialog p{margin-block:8px 16px;color:var(--muted)}
+#signedin-panel.account-identity{padding:14px 16px}
+.account-identity-row{display:flex;align-items:center;gap:12px}
+#view-account .account-identity .identity-mark{display:grid;flex:none;width:38px;height:38px;margin:0;background:#422e3e;border-color:#a4736b;color:var(--gold)}
+.account-identity-copy{min-width:0;overflow-wrap:anywhere}
+.account-identity-copy h3,.account-identity-copy p{margin:0}
+.account-identity-copy p{margin-top:3px}
+.account-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.account-actions .button,.account-sign-out,.account-tool-back{min-height:44px}
+#admin-account-tools{padding:12px 16px}
+.account-tools h3{margin:0 0 6px;font-size:14px;color:var(--muted)}
+.account-tool-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:9px 2px;border:0;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-weight:700;text-align:left}
+.account-tool-row+.account-tool-row{border-top:1px solid var(--line)}
+.account-tool-row>span:last-child{color:var(--gold);font-size:24px;line-height:1}
+.account-sign-out{align-self:flex-start;margin:8px 0}
+.account-tool-back{display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;color:var(--gold)}
+#view-reports>.report-context{display:flex;align-items:center;gap:4px;margin:0 0 4px}
+.report-context p{margin:0}
+
+/* Shared grouped surfaces and touch controls across the station views. */
+.section-heading :is(h2,h3){margin:0}
+:where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account) .panel,
+#notification-center .notification-live{background:linear-gradient(145deg,#2a1e2b,#1c1621);border-color:#a2726b4a;box-shadow:0 4px 15px #09060d42}
+:where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account) .panel-heading{flex-wrap:wrap}
+:where(#view-home,#view-desk,#view-reports,#view-admin,#view-account) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-height:44px;font-size:max(16px,1rem)}
+:where(#view-desk,#view-admin,#view-reports) :is(.desk-tabs,.admin-tabs,.report-tabs) button{min-height:44px;line-height:1.25;word-break:normal}
+.login-mode #notifications-button{display:none}
+.intro .intro-skip{min-height:48px}
+@media(orientation:portrait){.intro .dancer-stage>.dancer{object-position:center 56%}}
+@media(max-height:560px){
+ .crafted-login:has(#code-login[open])>.combined-brand-login{display:none}
+ #view-login .crafted-login:has(#code-login[open]){padding-block:10px}
+ .crafted-login #code-login[open]{margin-top:8px}
+}
+#pull-to-scan .scan-launch{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:2px 14px;min-height:96px;height:auto;padding:12px;text-align:left;align-content:center;justify-content:stretch}
+#pull-to-scan .scan-launch .scan-emblem{grid-row:1/span 2;display:grid;place-items:center;width:52px;height:52px;margin:0;align-self:center}
+#pull-to-scan .scan-emblem svg{width:35px;height:35px}
+#scan-action-title,#scan-action-copy{grid-column:2;overflow-wrap:anywhere}
+#scan-action-copy{color:var(--muted);font-size:12px;line-height:1.35}
+.scan-safety{margin-top:9px}
+#view-entries .table-link,#admin-console .table-link{line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+#view-reports .report-tabs{flex-wrap:wrap}
+#view-reports .report-tabs button{flex:1 1 auto;min-inline-size:min-content;max-inline-size:100%;overflow-wrap:normal;white-space:normal}
+#report-kind{width:100%;max-width:100%;height:auto;min-height:44px;padding-block:8px}
+#desk-form #desk-bill{padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+#view-admin:has(#admin-location-audio:not([hidden])) :is(.namu-guide,.admin-stats){display:none}
+@media(min-width:760px){#admin-location-audio:not([hidden]){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px}}
+#locator-consent-dialog label{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:start;gap:10px;min-height:44px}
+#locator-consent-dialog input[type=checkbox]{width:20px;height:20px;min-width:20px;min-height:20px;margin:2px 0 0;justify-self:start}
+#notification-center{padding:clamp(12px,4vw,20px)}
+#notification-center button{min-height:44px}

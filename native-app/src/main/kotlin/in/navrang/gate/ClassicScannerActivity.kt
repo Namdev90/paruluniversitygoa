@@ -38,14 +38,15 @@ class ClassicScannerActivity : FragmentActivity() {
                 }
             }
             ClassicScannerTheme {
-                Surface(Modifier.fillMaxSize()) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     BackHandler { close() }
                     Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
-                        Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Image(painterResource(R.drawable.app_icon), "Navrang", Modifier.size(44.dp))
-                            Text("Navrang · live scanner", Modifier.weight(1f).padding(horizontal = 12.dp), style = MaterialTheme.typography.titleMedium)
-                            TextButton(onClick = close, enabled = state.held == null) { Text("Close") }
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Image(painterResource(R.drawable.app_icon), "Navrang", Modifier.size(36.dp))
+                            Text("Scan ticket", Modifier.weight(1f).padding(horizontal = 10.dp), style = MaterialTheme.typography.titleMedium)
+                            TextButton(onClick = close, enabled = state.held == null, modifier = Modifier.heightIn(min = 48.dp)) { Text("Close") }
                         }
+                        HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = ScannerGold.copy(alpha = .3f))
                         if (state.ready && state.profile?.canScan == true) {
                             Box(Modifier.weight(1f)) { ScannerScreen(state, model, close) }
                         } else if (state.ready) {

@@ -5,7 +5,7 @@
  if(!C||!$('view-login'))return;
  const el=(tag,content,cls)=>{const n=document.createElement(tag);if(content!=null)n.textContent=content;if(cls)n.className=cls;return n;};
  const identity=()=>{const p=C.profile();return [p?.role||'',p?.checkerId||'',p?.active===true,p?.reports===true].join(':');};
- const reportsAllowed=()=>{const p=C.profile();return p?.role==='admin'||p?.active===true&&p?.reports===true;};
+ const reportsAllowed=()=>{const p=C.profile();return p?.role==='checker'&&p.active===true&&p.reports===true&&!C.sessionExpired?.(p);};
  let requestBusy=false,requestGeneration=0,lastIdentity=identity(),requestedFor='';
  function eventMark(size){
   const mark=el('span',null,'event-wordmark classic-event-mark '+(size||''));mark.setAttribute('role','img');mark.setAttribute('aria-label','Navrang');
@@ -41,18 +41,17 @@
  function paint(){
   const p=C.profile(),admin=p?.role==='admin',allowed=reportsAllowed(),staffStation=!!p?.scanner||!!p?.helpdesk;
   document.body.classList.toggle('administrator-session',!!admin);
-  if($('reports-nav'))$('reports-nav').hidden=!allowed;
-  faculty.hidden=!!p&&!admin&&staffStation&&!allowed;
-  accountReports.hidden=!p||(!allowed&&(p.method!=='google'||staffStation));
+  faculty.hidden=admin||!!p&&staffStation&&!allowed;
+  accountReports.hidden=!p||admin||(!allowed&&(p.method!=='google'||staffStation));
   accountReports.textContent=allowed?'Open faculty reports':'Request faculty reports';
   const requested=p?.reportsRequested===true||requestedFor===(p?.checkerId||'');
-  facultyState.textContent=allowed?(admin?'Administrator · all reports included':'Report access approved'):requested?'Access requested · awaiting administrator approval':'Administrator approval required';
+  facultyState.textContent=allowed?'Report access approved':requested?'Access requested · awaiting administrator approval':'Administrator approval required';
   facultyAction.textContent=allowed?'Open reports':requested?'Access requested':'Request reports';
   faculty.disabled=requestBusy||(!allowed&&p?.method!=='google');
  }
  async function openFaculty(){
   const p=C.profile();if(reportsAllowed()){$('reports-nav')?.click();return;}
-  if(!p||p.method!=='google'||requestBusy)return;
+  if(!p||p.role==='admin'||p.method!=='google'||C.sessionExpired?.(p)||requestBusy)return;
   if(p.scanner||p.helpdesk){const n=$('notice');if(n){n.textContent='Ask the administrator to change your existing station before requesting faculty access.';n.hidden=false;}return;}
   const who=identity(),version=++requestGeneration;requestBusy=true;paint();
   try{await C.api('reports-request',{});if(version!==requestGeneration||identity()!==who)return;requestedFor=p.checkerId||'';facultyState.textContent='Access requested · awaiting administrator approval';facultyAction.textContent='Access requested';}

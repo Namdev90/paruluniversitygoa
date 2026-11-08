@@ -4,7 +4,7 @@
  let view='home',adminTab='registrations',selected=null,syncBusy=false,syncAgain=false,resultTimer=null,queueTimer=null,held=false,lastResult=null,queuedResults=[],introEnded=false,staffSelected=null;
  if(location.hash==='#desk')C.destination?.('desk');
  const pendingResults=new Map(),pendingAcknowledged=new Set();
- let model=emptyModel(),uiGeneration=0,pollRun=0,previousRole=C.profile()?.role||'';function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
+ let model=emptyModel(),uiGeneration=0,pollRun=0,wasAdmin=false;function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
  const titles={home:'Navrang Gate',entries:'Entry log',account:'Your station',admin:'Admin console',login:'Navrang Gate',desk:'Help Desk',station:'Choose your station',reports:'Teacher Reports'};
  const initials=name=>(name||'NG').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
  const when=at=>at?new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(at)):'—';
@@ -16,12 +16,13 @@
  function receiptDetails(entry){if(!entry||!['checker','checkerId','at','actualAdmittedAt','observedScanAt','source','seq','note','admissionBasis'].some(key=>hasValue(entry[key])))return[];const correction=entry.admissionBasis==='organizer_confirmed';return[['Entry basis',correction?'Organizer-confirmed attendance':'Server-confirmed entry'],[correction?'Recorded by':'Checked by',entry.checker],[correction?'Correction recorded':'Confirmed entry',fullWhen(correction?entry.at:entry.actualAdmittedAt||entry.at)],['Observed scan',correction?fullWhen(entry.observedScanAt):''],['Physical entry',correction?fullWhen(entry.actualAdmittedAt):''],['Checker ID',entry.checkerId],['Receipt source',entry.source],['Receipt number',entry.seq],['Entry note',entry.note]].filter(([,value])=>hasValue(value))}
 
  const expired=p=>typeof C.sessionExpired==='function'?C.sessionExpired(p):!!p&&[p.accessExpiresAt,p.expiresAt].filter(Boolean).some(value=>{const at=Date.parse(value);return !Number.isFinite(at)||Date.now()>=at});
- const isAdmin=()=>C.profile()?.role==='admin'&&!expired(C.profile());const data=()=>model;
+ const isAdmin=()=>{const p=C.profile();return p?.role==='admin'&&p.active===true&&!expired(p);};const data=()=>model;
  function station(p=C.profile()){if(!p)return '';if(p.station!=null)return p.station;return p.scanner!==false&&!p.helpdesk?'checker':p.scanner===false&&p.helpdesk?'helpdesk':'';}
  const canScan=()=>!!C.profile()?.active&&!expired(C.profile())&&(isAdmin()||station()==='checker'&&C.profile()?.scanner!==false);
  const canDesk=()=>!!C.profile()?.active&&!expired(C.profile())&&(isAdmin()||station()==='helpdesk'&&C.profile()?.helpdesk===true);
- const canReports=()=>isAdmin()||!!C.profile()?.active&&!expired(C.profile())&&C.profile()?.reports===true;
- const assignedView=()=>isAdmin()?'admin':needsName(C.profile())?'station':canScan()?'home':canDesk()?'desk':canReports()?'reports':'station';
+ const canReports=()=>{const p=C.profile();return isAdmin()||p?.role==='checker'&&p.active===true&&!expired(p)&&p.reports===true;};
+ const inAdminTool=(next=view)=>isAdmin()&&(next==='admin'||next==='reports');
+ const assignedView=()=>isAdmin()?'account':needsName(C.profile())?'station':canScan()?'home':canDesk()?'desk':canReports()?'reports':'station';
  const listViews=new Map(); // Only already-authorized RAM records enter the searchable lists.
  function feedback(kind){if(typeof C.feedback==='function')C.feedback(kind,true);}
  let noticeTimer;function notice(text){clearTimeout(noticeTimer);$('notice').textContent=text;$('notice').hidden=false;if(!/client ID|client secret|organizer.s attention/i.test(text))noticeTimer=setTimeout(()=>{$('notice').hidden=true},9000)}
@@ -33,31 +34,32 @@
  function destination(){return C.destination?.()||'home'}
  function needsName(p){return p?.role==='checker'&&p.method==='google'&&p.nameConfirmed===false&&!p.reports}
  function renderAuth(){
-  const p=C.profile(),admin=isAdmin();if(previousRole==='admin'&&!admin){uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;clearAdminView()}previousRole=p?.role||'';document.body.classList.toggle('login-mode',!p||view==='login');$('main-nav').hidden=!p;$('admin-nav').hidden=!admin;
+  const p=C.profile(),admin=isAdmin(),lostAdmin=wasAdmin&&!admin;if(lostAdmin){uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;clearAdminView()}wasAdmin=admin;document.body.classList.toggle('login-mode',!p||view==='login');$('main-nav').hidden=!p;$('admin-account-tools').hidden=!admin;$('account-tool-back').hidden=!inAdminTool();
   if(!canScan()&&lastResult){queuedResults=[];releaseResult();}
   $('scan').disabled=!canScan()||needsName(p)||held;$('manual-submit').disabled=!canScan()||needsName(p)||held;
-  $('scan-nav').hidden=!canScan();$('entries-nav').hidden=!admin;$('desk-nav').hidden=!canDesk();$('reports-nav').hidden=!canReports();$('switch-station').hidden=!admin;document.querySelector('[data-view=station]').hidden=!admin&&(canScan()||canDesk()||canReports());$('name-form').querySelector('button').textContent=needsName(p)||!station()?'Save name & choose station':'Save real name';
+  $('scan-nav').hidden=!canScan();$('entries-nav').hidden=!admin;$('desk-nav').hidden=!canDesk();$('reports-nav').hidden=admin||!canReports();$('switch-station').hidden=!admin;document.querySelector('[data-view=station]').hidden=!admin&&(canScan()||canDesk()||canReports());$('name-form').querySelector('button').textContent=needsName(p)||!station()?'Save name & choose station':'Save real name';
   $('home-stats').classList.toggle('staff-stats',!admin);$('home-total-label').textContent=admin?'Registered':'My scans';$('home-entered-label').textContent=admin?'Entered':'Total entries';$('home-remaining-card').hidden=!admin;$('device-strip').hidden=!admin;$('desk-staff-stats').hidden=admin||!p?.active;
   $('account').textContent=initials(p?.name);$('welcome').textContent=p?'Welcome, '+p.name.split(' ')[0]+'.':'Ready to welcome.';
   if(p){$('checker-name').textContent=p.name;$('checker-access').textContent=admin?'Administrator · all stations':p.active?[(p.scanner!==false?'Checker':''),(p.helpdesk?'Help Desk':''),(p.reports?'Teacher Reports':'')].filter(Boolean).join(' + ')+' · '+(p.method==='google'?'Google verified':'assigned staff code'):'Waiting for Namdev to assign access.';}
   $('change-name').hidden=p?.role!=='checker'||p.method!=='google';$('admin-role-message').textContent=p&&!admin?'Administrator credentials are required here.':'';
   if(!p&&view!=='login')setView('login');
-  if(p&&(['admin','entries'].includes(view)&&!admin||['home','entries'].includes(view)&&(!canScan()||needsName(p))||view==='desk'&&(!canDesk()||needsName(p))||view==='reports'&&!canReports()||view==='station'&&!admin&&!needsName(p)&&(canScan()||canDesk()||canReports())))setView(assignedView(),{sensitive:true});
+  if(p&&(['admin','entries'].includes(view)&&!admin||['home','entries'].includes(view)&&(!canScan()||needsName(p))||view==='desk'&&(!canDesk()||needsName(p))||view==='reports'&&(lostAdmin||!canReports())||view==='station'&&!admin&&!needsName(p)&&(canScan()||canDesk()||canReports())))setView(assignedView(),{sensitive:true});
   paintStations();
   if(needsName(p)&&introEnded&&!$('name-dialog').open){$('real-name').value=p.name==='Checker'?'':p.name;show('name-dialog')}
  }
  function setView(next,{sensitive=false}={}){const commit=()=>commitView(next);return globalThis.NavrangMotion?globalThis.NavrangMotion.navigate(commit,{sensitive:sensitive||!C.profile()||next==='login'}):commit();}
  function commitView(next){
-  if(!titles[next])next='home';if(!C.profile())next='login';if(C.profile()&&!isAdmin()&&(next==='admin'||next==='entries'||next==='station'&&(station()||canReports())&&(canScan()||canDesk()||canReports())))next=assignedView();if(C.profile()&&((next==='home'&&!canScan())||(next==='desk'&&!canDesk())||(next==='reports'&&!canReports())||needsName(C.profile())&&next!=='account'))next=assignedView();view=next;document.body.dataset.route=next;
+  if(!titles[next])next='home';if(!C.profile())next='login';if(C.profile()&&!isAdmin()&&(next==='admin'||next==='entries'||next==='station'&&(station()||canReports())&&(canScan()||canDesk()||canReports())))next=assignedView();if(C.profile()&&((next==='home'&&!canScan())||(next==='desk'&&!canDesk())||(next==='reports'&&!canReports())||needsName(C.profile())&&next!=='account'))next=assignedView();if(next!==view&&$('section-info').open)closeSectionInfo();view=next;document.body.dataset.route=next;
   for(const name of Object.keys(titles))$('view-'+name).hidden=name!==next;
-  for(const b of document.querySelectorAll('[data-view]')){const active=b.dataset.view===next;b.classList.toggle('selected',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')}document.querySelector('main').scrollTop=0;if(document.scrollingElement)document.scrollingElement.scrollTop=0;
+  const primary=inAdminTool(next)?'account':next;
+  for(const b of document.querySelectorAll('[data-view]')){const active=b.dataset.view===(b.closest('#main-nav')?primary:next);b.classList.toggle('selected',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')}document.querySelector('main').scrollTop=0;if(document.scrollingElement)document.scrollingElement.scrollTop=0;
   $('page-title').textContent=titles[next];history.replaceState(null,'','#'+next);renderAuth();if(next==='admin')renderAdmin();if(next==='entries')renderLocal();if(next==='desk')globalThis.NavrangDesk?.refresh(true);if(next==='reports')globalThis.NavrangReports?.refresh();
  }
  function paintStations(){const p=C.profile();if(!p)return;const chosen=station();$('station-title').textContent='Your station, '+p.name.split(' ')[0]+'.';$('station-copy').textContent=needsName(p)?'Save your real name to continue.':chosen&&!isAdmin()?'Station saved. Only Namdev can change it.':'Choose your station once. Namdev controls later changes.';
-  for(const role of ['checker','helpdesk']){const allowed=!!p.active&&(isAdmin()||(role==='checker'?p.scanner!==false:p.helpdesk===true)),requested=p.requestedRole===role,b=$('station-'+role);b.hidden=!isAdmin()&&!!chosen&&chosen!==role;b.classList.toggle('ready',allowed);b.classList.toggle('requested',!allowed&&requested);b.disabled=needsName(p)||!isAdmin()&&!!chosen&&!allowed;$('station-'+role+'-status').textContent=allowed?'Access approved':requested?'Awaiting Namdev’s approval':'Admin approval required';$('station-'+role+'-action').textContent=allowed?(role==='checker'?'Start scanning →':'Open Help Desk →'):chosen?'Station saved':'Choose this station →';}
+  for(const role of ['checker','helpdesk']){const allowed=!!p.active&&(isAdmin()||(role==='checker'?p.scanner!==false:p.helpdesk===true)),requested=p.requestedRole===role,b=$('station-'+role);b.hidden=!isAdmin()&&!!chosen&&chosen!==role;b.classList.toggle('ready',allowed);b.classList.toggle('requested',!allowed&&requested);b.disabled=needsName(p)||!isAdmin()&&!!chosen&&!allowed;$('station-'+role+'-status').textContent=allowed?'Access approved':requested?'Awaiting Namdev’s approval':'Admin approval required';$('station-'+role+'-action').textContent=allowed?(role==='checker'?(C.native?'Start scanning →':'Enter ticket ID →'):'Open Help Desk →'):chosen?'Station saved':'Choose this station →';}
   $('station-message').textContent=(p.accessExpiresAt?'Temporary access · until '+when(p.accessExpiresAt)+' IST. ':'')+(chosen?'Your '+(chosen==='checker'?'Checker':'Help Desk')+' station is saved. Only Namdev can change it in Admin → Staff.':'Your first choice is saved to your account. Choosing a station does not grant permission.');
  }
- async function chooseStation(role){const button=$('station-'+role);await busy(button,async()=>{if(needsName(C.profile()))return;if(!isAdmin()){if(station()){if(station()!==role){notice('Only Namdev can change your saved station.');return}}else{await C.api('staff-request',{station:role});await C.api('me')}}const allowed=role==='checker'?canScan():canDesk();setView(assignedView());if(!allowed){paintStations();feedback('pending');return}C.destination?.(role==='checker'?'home':'desk');setView(role==='checker'?'home':'desk');feedback('transition');if(role==='checker'&&C.native)C.scan()});paintStations()}
+ async function chooseStation(role){const button=$('station-'+role);await busy(button,async()=>{if(needsName(C.profile()))return;if(!isAdmin()){if(station()){if(station()!==role){notice('Only Namdev can change your saved station.');return}}else{await C.api('staff-request',{station:role});await C.api('me')}}const allowed=role==='checker'?canScan():canDesk();if(!allowed){setView(assignedView());paintStations();feedback('pending');return}C.destination?.(role==='checker'?'home':'desk');setView(role==='checker'?'home':'desk');feedback('transition');if(role==='checker'&&C.native)C.scan()});paintStations()}
  $('station-checker').onclick=()=>chooseStation('checker');$('station-helpdesk').onclick=()=>chooseStation('helpdesk');$('switch-station').onclick=()=>{if(isAdmin())setView('station')};
  function afterSignIn(){globalThis.NavrangAuth?.reset();uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;clearAdminView();renderAuth();setView(assignedView());globalThis.NavrangDesk?.refresh();poll(true)}
  function setAdminTab(next){adminTab=next;for(const b of document.querySelectorAll('[data-admin-tab]')){const yes=b.dataset.adminTab===next;b.classList.toggle('selected',yes);b.setAttribute('aria-selected',String(yes));b.tabIndex=yes?0:-1;$('admin-'+b.dataset.adminTab).hidden=!yes}}
@@ -184,9 +186,11 @@
 
  async function signIn(button,action,payload){await busy(button,async()=>{await C.api(action,payload);$('notice').hidden=true;$('checker-code').value='';feedback('success');afterSignIn();})}
  for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>{if(b.dataset.view==='desk'||b.dataset.view==='home')C.destination?.(b.dataset.view);setView(b.dataset.view)};for(const b of document.querySelectorAll('[data-admin-tab]'))b.onclick=()=>setAdminTab(b.dataset.adminTab);
+ const mainNav=$('main-nav');
+ if(globalThis.ResizeObserver)new ResizeObserver(()=>document.documentElement.style.setProperty('--nav-clearance',mainNav.getBoundingClientRect().height+'px')).observe(mainNav,{box:'border-box'});
  const swipeSurface=document.querySelector('main');
  const swipeEditable='input,textarea,select,[contenteditable]';
- const swipeBlocked=()=>{const p=C.profile();return !p?.active||expired(p)||held||view==='login'||!$('intro').hidden||document.querySelector('dialog[open]')||document.activeElement?.matches(swipeEditable)};
+ const swipeBlocked=()=>{const p=C.profile();return !p?.active||expired(p)||held||view==='login'||inAdminTool()||!$('intro').hidden||document.querySelector('dialog[open]')||document.activeElement?.matches(swipeEditable)};
  let swipeStart=null;
  swipeSurface.addEventListener('touchstart',event=>{
   swipeStart=null;
@@ -215,8 +219,39 @@
   const current=tabs.findIndex(tab=>tab.dataset.view===view);
   if(current!==-1)tabs[current+(dx<0?1:-1)]?.click();
  },{passive:true});
- document.addEventListener('click',e=>{if(e.target.closest('button,summary'))feedback('tap')});
- $('account').onclick=()=>setView('account');$('scan').onclick=()=>{if(!held&&canScan()&&!needsName(C.profile()))C.scan()};
+ const sectionInfo={
+  'sign-in':['Sign in','Sign in with Google or an assigned staff code. Administrators use separate credentials.'],
+  station:['Stations','Checker handles ticket entry. Help Desk saves registration cases. Your administrator assigns station access.'],
+  scan:['Ticket checks','Use the exact eight-character Transaction ID from the ticket email. Camera scanning is available in the Android app.'],
+  entries:['Entry log','This temporary view shows server-confirmed entries. Times are in IST.'],
+  account:['Account','Your station and permissions are assigned by the server. Your display name identifies the scans and Help Desk records you save. Your Google email stays private from other checkers.'],
+  admin:['Admin console','Manage event records, staff access, and device options from Admin console. Location sharing is voluntary and limited to assigned roles.'],
+  reports:['Reports','All records combines registration and attendance. Download datasets as CSV or Excel. The PDF contains summary statistics. Files are saved locally and are not sent automatically.'],
+  helpdesk:['Help Desk','Save registration cases on the server for administrator review. Saving a case does not approve entry.'],
+  staff:['Staff access','Review requests, assign station access, and save display names. Only administrators can grant or change access.']
+ };
+ let infoOpener=null;
+ function closeSectionInfo(){close('section-info');if(infoOpener?.isConnected&&!infoOpener.closest('[hidden]'))infoOpener.focus();infoOpener=null}
+ $('close-section-info').onclick=closeSectionInfo;
+ $('section-info').addEventListener('cancel',event=>{event.preventDefault();closeSectionInfo()});
+ document.addEventListener('click',e=>{
+  if(e.target.closest('button,summary'))feedback('tap');
+  const trigger=e.target.closest('[data-section-info]'),key=trigger?.dataset.sectionInfo;
+  if(!trigger||trigger.closest('[hidden]')||!Object.hasOwn(sectionInfo,key))return;
+  infoOpener=trigger;
+  const [title,copy]=sectionInfo[key];
+  $('section-info-title').textContent=title;$('section-info-text').textContent=copy;
+  show('section-info');$('close-section-info').focus();
+ });
+ $('account').onclick=()=>setView('account');
+ const scanAction=$('scan'),canStartTicketCheck=()=>!held&&canScan()&&!needsName(C.profile());
+ $('scan-action-mode').textContent=C.native?'CONTINUOUS QR SCANNER':'MANUAL TICKET ENTRY';
+ $('scan-action-badge').hidden=!C.native;
+ $('scan-action-title').textContent=C.native?'Start scanning':'Enter ticket ID';
+ $('scan-action-copy').textContent=C.native?'Tap or swipe down ↓':'Use the eight-character Transaction ID';
+ $('scan-manual-label').textContent=C.native?'Camera fallback · exact Transaction ID':'Exact Transaction ID';
+ scanAction.setAttribute('aria-label',C.native?'Open continuous QR scanner':'Enter ticket ID manually');
+ scanAction.onclick=()=>{if(!canStartTicketCheck())return;if(C.native)C.scan();else $('ticket-id').focus()};
  $('show-admin-login').onclick=()=>{$('signin-panel').hidden=true;$('admin-signin').hidden=false};$('show-checker-login').onclick=()=>{$('admin-signin').hidden=true;$('signin-panel').hidden=false};
  $('google-browser-signin').hidden=!C.native;$('google-browser-signin').onclick=()=>busy($('google-browser-signin'),()=>C.googleBrowserLogin());
  $('google-signin').onclick=()=>busy($('google-signin'),()=>C.googleLogin());$('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
@@ -260,14 +295,18 @@
  function renderReadiness(action='status'){const state=C.readiness?.(action)||{};globalThis.NavrangReducedMotion=state.reducedMotion===true;globalThis.NavrangMotion?.setReducedMotion(globalThis.NavrangReducedMotion);$('readiness-panel').hidden=!C.native;$('readiness-status').textContent=[state.camera?'Camera ready':'Camera: optional, requested when scanning',state.notifications?'Notifications ready':'Notifications: optional',state.fullVolume?'Full media volume':'Volume limited by device',state.vibration?'Strong scan vibration':'No vibration hardware',state.adaptiveBrightness?'Adaptive brightness':'System brightness'].join(' · ');}
  $('readiness-permissions').onclick=()=>renderReadiness('permissions');$('readiness-settings').onclick=()=>renderReadiness('settings');$('readiness-volume').onclick=()=>renderReadiness('volume');renderReadiness();
   let updateState={};
- function renderUpdate(state){updateState=state||{};$('app-version').textContent=C.native?'Version '+(state.currentVersion||'0.7.8'):'Android app updates';$('update-message').textContent=state.downloading?'Downloading update · '+(state.progress||0)+'%':state.message||'Your app is up to date.';$('automatic-updates').textContent=!C.native?'Automatic updates are available in the Android app.':state.automatic?'Automatic checks: on. Choose Download when an update is available.':'Automatic updates are unavailable in this build.';$('update-notifications').hidden=state.notifications||!C.native;$('install-update').hidden=!state.installing&&(!state.available||state.downloading);$('install-update').textContent=state.installing?'Finish app update':state.ready?'Install '+state.versionName:'Download '+state.versionName;$('update-banner').hidden=!state.available&&!state.installing;$('update-banner-text').textContent=state.installing?'Android app update unfinished':state.downloading?'Updating download · '+(state.progress||0)+'%':state.ready?'Version '+state.versionName+' ready':'New version '+state.versionName;}
+ function renderUpdate(state){updateState=state||{};$('app-version').textContent=C.native?'Version '+(state.currentVersion||'0.7.8'):'Android app updates';$('update-message').textContent=state.downloading?'Downloading update · '+(state.progress||0)+'%':state.message||'Your app is up to date.';$('automatic-updates').textContent=!C.native?'Automatic updates are available in the Android app.':state.automatic?'Automatic checks: on. Choose Download when an update is available.':'Automatic updates are unavailable in this build.';$('check-update').hidden=!C.native;$('update-notifications').hidden=state.notifications||!C.native;$('install-update').hidden=!state.installing&&(!state.available||state.downloading);$('install-update').textContent=state.installing?'Finish app update':state.ready?'Install '+state.versionName:'Download '+state.versionName;$('update-banner').hidden=!state.available&&!state.installing;$('update-banner-text').textContent=state.installing?'Android app update unfinished':state.downloading?'Updating download · '+(state.progress||0)+'%':state.ready?'Version '+state.versionName+' ready':'New version '+state.versionName;}
  function updateAction(action,value=true){if(typeof C.update==='function')renderUpdate(C.update(action,value));}
- $('check-update').onclick=()=>updateAction('check');$('install-update').onclick=()=>updateAction(updateState.installing||updateState.ready?'install':'download');$('update-notifications').onclick=()=>updateAction('notifications');$('open-update').onclick=()=>setView('account');updateAction('status');setInterval(()=>{if(!document.hidden)updateAction('background')},300000);
+ $('check-update').onclick=()=>{if(C.native)updateAction('check')};$('install-update').onclick=()=>updateAction(updateState.installing||updateState.ready?'install':'download');$('update-notifications').onclick=()=>updateAction('notifications');$('open-update').onclick=()=>setView('account');updateAction('status');setInterval(()=>{if(!document.hidden)updateAction('background')},300000);
  C.on(e=>{if(e.type==='result'){result(e.data)}else if(e.type==='error'||e.type==='notice')notice(e.data.message);else if(e.type==='sync'){renderAuth();renderLocal();if(C.native){if(isAdmin())poll();else connection(true)}}else if(e.type==='registrations-imported'){if(isAdmin())poll(true)}else if(e.type==='connection')connection(false,e.data.status===403?'Access blocked':'Offline');else if(e.type==='update'){renderUpdate(e.data)}else if(e.type==='readiness'){renderReadiness()}else if(e.type==='profile'){if(C.profile()&&view==='login'&&!expired(C.profile()))afterSignIn();else renderAuth();globalThis.NavrangDesk?.refresh()}else if(e.type==='auth'){if(C.profile()){afterSignIn();feedback('success')}else clearSessionView()}});
 
- let startY=null,startX=0;const pull=$('pull-to-scan');pull.addEventListener('touchstart',e=>{if(!e.target.closest('button,input')){startY=e.touches[0].clientY;startX=e.touches[0].clientX}},{passive:true});pull.addEventListener('touchend',e=>{if(startY!==null){const dy=e.changedTouches[0].clientY-startY,dx=e.changedTouches[0].clientX-startX;if(dy>70&&dy>Math.abs(dx)*2&&!held&&canScan()&&!needsName(C.profile())){C.scan()}}startY=null},{passive:true});
+ if(C.native){
+  let startY=null,startX=0;const pull=$('pull-to-scan');
+  pull.addEventListener('touchstart',e=>{if(!e.target.closest('button,input')){startY=e.touches[0].clientY;startX=e.touches[0].clientX}},{passive:true});
+  pull.addEventListener('touchend',e=>{if(startY!==null){const dy=e.changedTouches[0].clientY-startY,dx=e.changedTouches[0].clientX-startX;if(dy>70&&dy>Math.abs(dx)*2&&canStartTicketCheck())C.scan()}startY=null},{passive:true});
+ }
 
- globalThis.onBackRequested=async()=>{if(held||$('result-popup').open)return;const dialog=[...document.querySelectorAll('dialog[open]')].find(d=>d.id!=='name-dialog'&&d.id!=='exit-dialog');if(dialog){close(dialog.id);return;}if(view==='login'&&globalThis.NavrangAuth?.back())return;if($('exit-dialog').open)return;const snapshot=await C.local('snapshot').catch(()=>({pending:0})),draft=globalThis.NavrangDesk?.hasDraft();$('exit-message').textContent=snapshot.pending?String(snapshot.pending)+' scan(s) are still awaiting server confirmation. Keep the app open until they finish.':draft?'Your Help Desk form has unsaved details. Save it before closing. Confirmed entries are already stored on the server.':'Confirmed entries are safely stored on the server. Your station will be ready when you return.';show('exit-dialog');feedback('close')};
+ globalThis.onBackRequested=async()=>{if(held||$('result-popup').open)return;const dialog=[...document.querySelectorAll('dialog[open]')].find(d=>d.id!=='name-dialog'&&d.id!=='exit-dialog');if(dialog){if(dialog.id==='section-info')closeSectionInfo();else close(dialog.id);return;}if(view==='login'&&globalThis.NavrangAuth?.back())return;if($('exit-dialog').open)return;if(inAdminTool()){setView('account');return;}const snapshot=await C.local('snapshot').catch(()=>({pending:0})),draft=globalThis.NavrangDesk?.hasDraft();$('exit-message').textContent=snapshot.pending?String(snapshot.pending)+' scan(s) are still awaiting server confirmation. Keep the app open until they finish.':draft?'Your Help Desk form has unsaved details. Save it before closing. Confirmed entries are already stored on the server.':'Confirmed entries are safely stored on the server. Your station will be ready when you return.';show('exit-dialog');feedback('close')};
  $('exit-keep').onclick=()=>close('exit-dialog');$('exit-confirm').onclick=()=>{feedback('close');$('exit-dialog').classList.add('closing');setTimeout(()=>{if(C.native&&typeof Native.exit==='function')Native.exit();else{close('exit-dialog');$('exit-dialog').classList.remove('closing')}},220)};
  function endIntro(){if(introEnded)return;introEnded=true;feedback('stop-intro');$('intro').classList.add('leaving');setTimeout(()=>{$('intro').hidden=true;renderAuth();renderReadiness('startup')},globalThis.NavrangReducedMotion?0:550)}$('skip-intro').onclick=endIntro;feedback('intro');setTimeout(endIntro,(globalThis.NavrangReducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches)?100:6200);
  (async()=>{try{await C.finishGoogle()}catch(e){notice(e.message)}renderAuth();setView(C.profile()?assignedView():'login');await renderLocal();try{const cfg=await C.api('config');$('google-status').textContent=cfg.googleEnabled?'Google is available. Save your name, then choose an approved station.':'Google sign-in is unavailable. Ask Namdev for an assigned code.';$('provider-note').textContent='Manage names, approve requests and assign Checker, Help Desk or both. Only admin can change access.'}catch{connection(false)}if(C.profile()){try{if(C.native)await C.local('refresh');else await C.api('me');renderAuth()}catch(e){notice(e.message)}await poll(true)}else connection(false,'Sign in')})().catch(e=>notice(e.message));

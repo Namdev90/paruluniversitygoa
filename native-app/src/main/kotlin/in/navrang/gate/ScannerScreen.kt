@@ -78,8 +78,8 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Camera access is needed to scan ticket QR codes.")
-            Button(onClick = { request.launch(Manifest.permission.CAMERA) }) {
+            Text("Allow camera access to scan QR codes, or use a ticket ID.")
+            ClassicScannerButton(onClick = { request.launch(Manifest.permission.CAMERA) }, primary = true) {
                 Text("Allow camera")
             }
             if (!exactIdOpen) ClassicScannerButton(onClick = { exactIdOpen = true }) {
@@ -287,7 +287,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
         onVerify = vm::submit,
         onDetails = { frameGate.invalidate(); inspectedResult = it },
         status = when {
-            exactIdOpen -> "Camera open · QR reading paused for exact ID"
+            exactIdOpen -> "QR reading paused · ticket ID"
             inspectedResult != null -> "Camera open · QR reading paused for details"
             else -> status
         },
@@ -357,11 +357,11 @@ internal fun ClassicScannerCameraLayout(
                     onVerify = onVerify,
                     onClose = { onExactIdOpen(false) },
                 )
-                ClassicScannerButton(
-                    onClick = { onExactIdOpen(!exactIdOpen) },
+                if (!exactIdOpen) ClassicScannerButton(
+                    onClick = { onExactIdOpen(true) },
                     enabled = s.held == null,
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (exactIdOpen) "Hide ID" else "Find ID") }
+                ) { Text("Find ID") }
                 Text(
                     "${s.pending} pending · ${if(s.online)"Connected"else"Offline — wait for confirmation"}",
                     style = MaterialTheme.typography.labelMedium,

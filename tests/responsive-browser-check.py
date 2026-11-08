@@ -59,7 +59,7 @@ def run():
       window.fetch=async(url,options)=>{
        const body=options?.body?JSON.parse(options.body):{};const action=body.action||'config';window.fixtureCalls.push(action);
        let value;
-       if(window.fixtureAuthLost&&action!=='config')return new Response(JSON.stringify({ok:false,error:'Synthetic session expired'}),{status:401});
+       if(window.fixtureAuthLost&&action!=='config')return new Response(JSON.stringify({ok:false,error:'Session expired.'}),{status:401});
        if(action==='config')value={eventId:'O9KL3',googleEnabled:true,pollMs:2000};
        else if(action==='me')value=window.fixtureProfile;
        else if(action==='notifications-feed')value={revision:0,serverTime:new Date().toISOString(),items:[],activeIds:[],dashboard:null};
@@ -109,6 +109,12 @@ def run():
     for script in scripts:page.evaluate((assets/script).read_text())
     page.wait_for_function("[...document.querySelectorAll('.combined-brand-mark>img')].every(e=>e.complete&&e.naturalWidth===2400)")
     page.wait_for_timeout(50)
+   def navigate(page,view):
+    if view=='admin' or view=='reports' and page.evaluate("GateClient.profile()?.role==='admin'"):
+     if page.evaluate('document.body.dataset.route')!='account':page.locator('#main-nav [data-view="account"]').click()
+     page.locator('#admin-nav' if view=='admin' else '#admin-account-reports').click()
+    else:page.locator(f'#main-nav [data-view="{view}"]').click()
+    assert page.evaluate('document.body.dataset.route')==view
    def measure(page,role,view,width,height):
     result=page.evaluate(r'''() => {
       const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'&&!e.closest('[hidden]');};
@@ -132,8 +138,9 @@ def run():
       // showModal places the dialog in the top layer: outer DOM overflow cannot clip it.
       // https://drafts.csswg.org/css-position-4/#top-layer-styling
       for(let p=e.parentElement;p;p=p.parentElement){const s=getComputedStyle(p),b=p.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(s.overflowY)){top=Math.max(top,b.top);bottom=Math.min(bottom,b.bottom)}if(/auto|scroll|hidden|clip/.test(s.overflowX)){left=Math.max(left,b.left);right=Math.min(right,b.right)}if(p.matches('dialog:modal'))break}
-      const x=(r.left+r.right)/2;const hitTarget=[r.top+2,(r.top+r.bottom)/2,r.bottom-2].every(y=>e.contains(document.elementFromPoint(x,y)));
-      return {height:r.height,width:r.width,visibleHeight:Math.max(0,bottom-top),visibleWidth:Math.max(0,right-left),hitTarget,viewport:{width:innerWidth,height:innerHeight}};
+      const x=(r.left+r.right)/2,hits=[r.top+2,(r.top+r.bottom)/2,r.bottom-2].map(y=>document.elementFromPoint(x,y));
+      const hitTarget=hits.every(t=>e.contains(t));
+      return {height:r.height,width:r.width,visibleHeight:Math.max(0,bottom-top),visibleWidth:Math.max(0,right-left),hitTarget,coveredByNavigation:hits.some(t=>!e.contains(t)&&t?.closest('#main-nav')),viewport:{width:innerWidth,height:innerHeight}};
     }""")
     reports.append(dict(control=label,**result))
     required_height=result['height']-.5 if minimum==0 else min(minimum,result['height'])
@@ -205,11 +212,12 @@ def run():
     page.locator('#show-admin-login').click();shot(page,'login','administrator')
     page.locator('#auth-back').click();finish(ctx,page)
     ctx,page=fresh('admin')
+    navigate(page,'admin')
     dialog(page,'#registration-rows .table-link','#student-dialog','registration-details','#close-student','#dialog-details dd:last-child')
     page.locator('#registration-rows .table-link').first.click();page.locator('#edit-student').click()
     shot(page,'admin','edit-registration');shot(page,'admin','edit-registration-lower','#ticket-editor button')
     page.locator('#close-editor').click()
-    page.locator('#reports-nav').click();page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
+    navigate(page,'reports');page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
     page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
     shot(page,'admin','reports-evidence-caveat','#report-caveat')
     page.locator('#report-notes-dialog button').click();page.locator('#report-tab-downloads').click()
@@ -248,11 +256,11 @@ def run():
     page.locator('#desk-records .desk-record-info').first.click()
     shot(page,'admin','helpdesk-saved-record');shot(page,'admin','helpdesk-saved-record-lower','#desk-submit')
     page.locator('#desk-close-record').click()
-    page.locator('[data-view="account"]').click()
+    navigate(page,'account');shot(page,'admin','account-tools','#admin-account-tools')
     # Android readiness is deliberately hidden in the browser and is not fabricated.
     if page.locator('#readiness-panel').is_visible():shot(page,'admin','account-readiness','#readiness-panel')
     shot(page,'admin','account-update-settings','#automatic-updates')
-    page.locator('#admin-nav').click();page.locator('[data-admin-tab="checkers"]').click()
+    navigate(page,'admin');page.locator('[data-admin-tab="checkers"]').click()
     dialog(page,'#checker-list .checker-row button','#staff-dialog','staff-access','#close-staff','#staff-access-form button')
     dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
     page.locator('[data-admin-tab="updates"]').click()
@@ -265,16 +273,16 @@ def run():
     page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
     shot(page,'faculty','reports-evidence-caveat','#report-caveat')
     page.locator('#report-notes-dialog button').click()
-    page.locator('[data-view="account"]').click();shot(page,'faculty','account')
+    navigate(page,'account');shot(page,'faculty','account')
     finish(ctx,page)
     # Native-only shared-web controls, with a separately labelled mocked bridge.
     # Android OS permission prompts, file pickers and real camera remain excluded.
     ctx,page=fresh('admin',mocked_native=True)
-    page.locator('[data-view="account"]').click()
+    navigate(page,'account')
     assert page.locator('#readiness-panel').is_visible()
     shot(page,'mock-native-admin','account-readiness','#readiness-panel')
     shot(page,'mock-native-admin','account-update-settings','#automatic-updates')
-    page.locator('#admin-nav').click();page.locator('[data-admin-tab="updates"]').click()
+    navigate(page,'admin');page.locator('[data-admin-tab="updates"]').click()
     assert page.locator('#import-registration').is_visible()
     shot(page,'mock-native-admin','import-controls','#import-registration')
     finish(ctx,page)
@@ -301,10 +309,13 @@ def run():
      if not passed:failures.append(item)
     def ready():
      open_source(page,'admin');page.evaluate("document.getElementById('skip-intro').click()")
-     page.wait_for_function("document.getElementById('intro').hidden&&document.querySelectorAll('#registration-rows tr').length===60")
+     page.wait_for_function("document.getElementById('intro').hidden")
+     if page.evaluate('document.body.dataset.route')!='admin':navigate(page,'admin')
+     page.wait_for_function("document.querySelectorAll('#registration-rows tr').length===60")
     ready()
     last=page.locator('#registration-rows tr:last-child button').first;last.focus();last.scroll_into_view_if_needed()
     before=page.evaluate("window.fixtureFocused=document.activeElement;window.fixturePollCount=fixtureCalls.filter(a=>a==='sync').length;({scroll:scrollY,row:fixtureFocused.closest('tr').dataset.listKey})")
+    page.evaluate("document.getElementById('admin-refresh').click()")
     page.wait_for_function("fixtureCalls.filter(a=>a==='sync').length>fixturePollCount")
     page.wait_for_timeout(100)
     after=page.evaluate("({scroll:scrollY,same:document.activeElement===fixtureFocused,connected:fixtureFocused.isConnected})")
@@ -321,17 +332,22 @@ def run():
     check('admin tabs support End',page.evaluate("document.activeElement.dataset.adminTab==='location-audio'&&!document.getElementById('admin-location-audio').hidden"))
     page.keyboard.press('Home')
     check('admin tabs support Home',page.evaluate("document.activeElement.dataset.adminTab==='registrations'"))
-    page.locator('#reports-nav').click();page.locator('#report-tab-downloads').focus();page.keyboard.press('Home')
+    navigate(page,'reports');page.locator('#report-tab-downloads').focus();page.keyboard.press('Home')
     check('report tabs support Home',page.evaluate("document.activeElement.id==='report-tab-overview'&&!document.getElementById('report-overview').hidden"))
     page.keyboard.press('End')
     check('report tabs support End',page.evaluate("document.activeElement.id==='report-tab-teachers'&&!document.getElementById('report-manage').hidden"))
     page.locator('#report-tab-overview').click();page.locator('#report-notes-open').focus();page.keyboard.press('Enter')
     page.locator('#report-notes-dialog').wait_for(state='visible');page.keyboard.press('Escape')
     check('report dialog restores keyboard focus',page.evaluate("document.activeElement.id==='report-notes-open'"))
+    page.locator('#account-tool-back').focus();page.keyboard.press('Enter')
+    check('keyboard returns from admin Reports to Account tools',page.evaluate("document.body.dataset.route==='account'&&!document.getElementById('admin-account-tools').hidden&&document.querySelector('#main-nav [aria-current=page]')?.dataset.view==='account'"))
+    check('admin bottom navigation omits Admin and Reports',page.locator('#main-nav [data-view="admin"]:visible,#main-nav [data-view="reports"]:visible').count()==0)
+    page.locator('[data-section-info="account"]').focus();page.keyboard.press('Enter')
+    page.locator('#section-info').wait_for(state='visible');page.keyboard.press('Escape')
+    check('Account information restores keyboard focus',page.evaluate("document.activeElement.dataset.sectionInfo==='account'&&!document.getElementById('section-info').open"))
     page.emulate_media(reduced_motion='no-preference')
     motion=page.evaluate("""() => {
-      const routes=['entries','account','admin','reports','account'];
-      for(const route of routes)document.querySelector('[data-view="'+route+'"]').click();
+      for(const selector of ['#entries-nav','#main-nav [data-view="account"]','#admin-nav','#account-tool-back','#admin-account-reports','#account-tool-back'])document.querySelector(selector).click();
       const active=[...document.querySelectorAll('main .view')].filter(e=>!e.hidden).map(e=>e.id);
       const animations=document.getAnimations().filter(a=>a.effect?.target?.closest('main .view'));
       return {route:document.body.dataset.route,active,animations:animations.length,frames:animations.map(a=>a.effect.getKeyframes().map(k=>({opacity:k.opacity,transform:k.transform}))),snapshots:document.querySelectorAll('[data-motion-snapshot]').length};
@@ -340,15 +356,15 @@ def run():
     page.emulate_media(reduced_motion='reduce');page.wait_for_timeout(50)
     check('system reduced motion cancels transitions',page.evaluate("document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
     page.emulate_media(reduced_motion='no-preference')
-    check('native reduced motion cancels transitions',page.evaluate("document.getElementById('admin-nav').click();NavrangMotion.setReducedMotion(true);document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
+    navigate(page,'admin');check('native reduced motion cancels transitions',page.evaluate("NavrangMotion.setReducedMotion(true);document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
     page.evaluate("NavrangMotion.setReducedMotion(false)")
-    page.locator('#reports-nav').click();page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
+    navigate(page,'reports');page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
     page.evaluate("""async p=>{window.fixtureProfile=p;await GateClient.api('me');onGateEvent(JSON.stringify({type:'profile'}));}""",PROFILE['faculty'])
     role=page.evaluate("""() => ({route:document.body.dataset.route,rows:[...document.querySelectorAll('#registration-rows tr,#recent-entries tr,#all-entry-rows tr,#checker-list .checker-row,#report-teachers .report-member')].length,teacherTabHidden:document.getElementById('report-tab-teachers').hidden,dialogOpen:document.getElementById('report-notes-dialog').open})""")
     # Faculty keeps report access, so the report evidence dialog remains authorized.
-    check('admin loss removes private lists and teacher controls',role['rows']==0 and role['teacherTabHidden'],role)
+    check('admin loss removes private lists and teacher controls',role['rows']==0 and role['teacherTabHidden'] and page.locator('#admin-account-tools:visible').count()==0 and page.locator('#reports-nav').is_visible(),role)
     page.evaluate("""async p=>{window.fixtureProfile=p;await GateClient.api('me');onGateEvent(JSON.stringify({type:'profile'}));}""",PROFILE['checker'])
-    lost=page.evaluate("""() => ({route:document.body.dataset.route,dialogs:document.querySelectorAll('dialog[open]').length,metrics:document.getElementById('report-stats').children.length,animations:document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running'&&!(a instanceof CSSAnimation)).length,cssAnimations:document.getAnimations().filter(a=>a instanceof CSSAnimation&&a.playState==='running').map(a=>({name:a.animationName,target:a.effect?.target?.className,private:!!a.effect?.target?.closest('.view[hidden]')}))})""")
+    lost=page.evaluate("""() => ({route:document.body.dataset.route,dialogs:document.querySelectorAll('#report-notes-dialog[open],#report-totals-dialog[open],#report-teacher-dialog[open],#report-download-dialog[open]').length,metrics:document.getElementById('report-stats').children.length,animations:document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running'&&!(a instanceof CSSAnimation)).length,cssAnimations:document.getAnimations().filter(a=>a instanceof CSSAnimation&&a.playState==='running').map(a=>({name:a.animationName,target:a.effect?.target?.className,private:!!a.effect?.target?.closest('.view[hidden]')}))})""")
     check('report access loss closes evidence and clears metrics',lost['route']=='home' and lost['dialogs']==0 and lost['metrics']==0 and lost['animations']==0 and not any(a['private'] for a in lost['cssAnimations']),lost)
     page.screenshot(path=str(out/f'role-loss-{width}x{height}.png'))
     unexpected.extend(page.evaluate('fixtureUnexpected'));ctx.close()
@@ -438,6 +454,7 @@ def run():
        page.emulate_media(reduced_motion='reduce')
      page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
+     if role=='admin':navigate(page,'admin')
      measure(page,role,view,width,height)
      if role=='faculty':
       measure_report_downloads(page)
@@ -454,9 +471,9 @@ def run():
      if role=='admin':
       measure_scroll(page,'students')
       for target in ('reports','desk','account','entries','station'):
-       selector=f'[data-view="{target}"]'
-       if target=='station':page.locator('#switch-station').click() if page.locator('#switch-station').is_visible() else page.evaluate("document.querySelector('[data-view=station]').click()")
-       else:page.locator(selector).click()
+       if target=='station':
+        navigate(page,'account');page.locator('#switch-station').click()
+       else:navigate(page,target)
        page.wait_for_timeout(70);measure(page,role,target,width,height)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
        if target=='reports':
@@ -494,8 +511,9 @@ def run():
        if target=='entries':
         measure_control(page,'#entry-coverage','Entry list footer',minimum=0,scroll=True)
         measure_scroll(page,'entries')
-      for tab in ('registrations','admissions','checkers','updates'):
-       page.locator('#admin-nav').click();page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
+      navigate(page,'admin')
+      for tab in ('registrations','admissions','checkers','updates','location-audio'):
+       page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
        if tab=='checkers':
         measure_control(page,'#checker-list .checker-row button','Manage access')
         measure_control(page,'#staff-count','Staff list footer',minimum=0,scroll=True)
