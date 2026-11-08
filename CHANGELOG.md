@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 — Android code 19 · 8 November 2026
+
+- Updates the original Navrang interface and adds app lock, guarded report operations and opt-in Find Me. Live voice and push remain disabled.
+- Original-key APK passed a physical in-place upgrade and launch check from 0.8.0. Android retained the app ID and original install timestamp.
+- APK: 24,689,847 bytes. SHA-256 `e36e5690af2f1c1d2e07535a8da05e1c124a6b42fac6d5cca166e2f0c9bbb50b`. The public update manifest is signed. [Release evidence](docs/restoration-release-approval.json).
+
 ## 0.8.0 — Android code 18 · 19 October 2026
 
 - Approved combined Navrang/Parul University artwork and maroon styling, staged sign-in, confirmation before sign-out and reduced-motion-aware screen transitions.

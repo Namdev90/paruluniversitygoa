@@ -5,13 +5,13 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.8.0.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.9.0.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
 [Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Accessibility](ACCESSIBILITY.md)
 
 </div>
 
-> **Release status:** **0.8.0 · Android code 18** includes the approved combined branding, staged sign-in, consolidated Reports with reachable downloads, sign-out confirmation and smoother transitions. Signed with the original identity. Communications features are deferred. Physical-device checks remain deferred by the owner; see [the release record](docs/RESTORATION-RELEASE-0.8.0.md).
+> **Release status:** **0.9.0 · Android code 19** updates the original Navrang interface with app lock, guarded report operations and opt-in Find Me. The APK uses the original signer and passed an in-place upgrade and launch check on an X100 Pro. Live voice and push remain disabled. [Release evidence](docs/restoration-release-approval.json).
 
 
 ## Original Navrang interface
@@ -109,4 +109,4 @@ The project code and documentation are provided under the existing [MIT License]
 
 ## Next upgrade
 
-The [current checklist](docs/NEXT-STEPS.md) records the deeper original-style visuals, background-free logo treatments, non-overlapping intro, scroll-and-search lists, in-camera exact-ID search and permission-appropriate receipt details delivered in 0.7.9, alongside remaining acceptance work. Future changes must be demonstrated in their own candidate and pass independent review before a new signed release is advertised here. The download above is the published 0.8.0 release; the checklist retains the implementation and acceptance history through 0.7.9. Any later candidate needs its own verified signed release before replacing that download.
+The [current checklist](docs/NEXT-STEPS.md) records the deeper original-style visuals, background-free logo treatments, non-overlapping intro, scroll-and-search lists, in-camera exact-ID search and permission-appropriate receipt details delivered in 0.7.9, alongside remaining acceptance work. Future changes must be demonstrated in their own candidate and pass independent review before a new signed release is advertised here. The checklist retains implementation and acceptance history through 0.7.9. See the release status above for the current APK.
