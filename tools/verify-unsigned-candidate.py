@@ -54,6 +54,9 @@ def main():
         deferred = {'assets/notifications.js', 'assets/notifications.css', 'assets/voice.js',
                     'assets/locator.js', 'assets/locator.css'}
         require(names.isdisjoint(deferred), 'Deferred communications assets entered the release APK.')
+        unused = {'assets/app.js', 'assets/art/event-poster.jpg', 'assets/art/ASSET-NOTES.md'}
+        require(names.isdisjoint(unused) and not any(name.startswith('assets/vendor/') for name in names),
+                'Unused legacy interface assets entered the release APK.')
         markup = archive.read('assets/index.html').decode('utf-8')
         for asset in re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"', markup):
             require('assets/' + asset in names, 'A referenced client asset is missing: ' + asset)
