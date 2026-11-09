@@ -224,3 +224,49 @@ test('Help Desk rejects a stale admin page if the same account loses its admin r
 test('Help Desk enables bounded list mode only while showing saved records',async()=>{
  const t=desk(),{w,dom}=t;try{w.document.getElementById('desk-saved').click();await pause();assert.equal(w.document.getElementById('view-desk').classList.contains('desk-list-mode'),true);w.document.getElementById('desk-new').click();assert.equal(w.document.getElementById('view-desk').classList.contains('desk-list-mode'),false);w.document.getElementById('desk-saved').click();await pause();w.NavrangDesk.clear();assert.equal(w.document.getElementById('view-desk').classList.contains('desk-list-mode'),false)}finally{await pause();dom.window.close()}
 });
+
+for(const jitter of [0,0.25])test('Help Desk keeps its poll chain when jitter wakes early: '+jitter,async()=>{
+ const t=desk(undefined,{fakeClock:true}),{w,dom,calls,timers}=t;
+ w.Math.random=()=>jitter;w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;
+ try{
+  await w.NavrangDesk.refresh(true);
+  for(let cycle=0;cycle<3;cycle++){
+   const before=calls.filter(c=>c.a==='helpdesk-list').length;
+   const early=timers.filter(x=>x.active).at(-1);assert.ok(early.delay<60000);
+   t.advance(early.delay);t.fireTimer(early);await pause();
+   assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,before,'early poll must retain the minimum request interval');
+   const waiting=timers.filter(x=>x.active);assert.equal(waiting.length,1,'a throttled poll must schedule its remaining wait');
+   assert.ok(Math.abs(waiting[0].delay-(60000-early.delay))<0.001,'remaining delay must reach the original freshness deadline');
+   t.advance(waiting[0].delay);t.fireTimer(waiting[0]);await pause();
+   assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,before+1);
+   assert.equal(timers.filter(x=>x.active).length,1);
+  }
+ }finally{dom.window.close()}
+});
+test('repeated Help Desk profile refreshes preserve one poll at the freshness deadline',async()=>{
+ const t=desk(undefined,{fakeClock:true}),{w,dom,calls,timers}=t;
+ w.Math.random=()=>0;w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;
+ try{
+  await w.NavrangDesk.refresh(true);
+  for(let step=1;step<=5;step++){
+   t.advance(10000);t.event({type:'profile'});await pause();
+   assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,1);
+   const active=timers.filter(x=>x.active);assert.equal(active.length,1);assert.equal(active[0].delay,60000-step*10000);
+  }
+  const due=timers.filter(x=>x.active)[0];t.advance(due.delay);t.fireTimer(due);await pause();
+  assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,2);
+ }finally{dom.window.close()}
+});
+for(const change of ['hidden','revoked'])test('rearmed Help Desk polling stops when '+change,async()=>{
+ const t=desk(undefined,{fakeClock:true}),{w,dom,calls,timers}=t;
+ w.Math.random=()=>0;w.document.getElementById('view-desk').hidden=false;w.document.getElementById('desk-list-panel').hidden=false;
+ try{
+  await w.NavrangDesk.refresh(true);const early=timers.filter(x=>x.active)[0];t.advance(early.delay);t.fireTimer(early);await pause();
+  const due=timers.filter(x=>x.active)[0];assert.ok(due,'early poll must rearm');
+  if(change==='hidden')w.document.getElementById('desk-list-panel').hidden=true;
+  else t.setProfile({role:'checker',checkerId:'desk-1',active:true,helpdesk:false});
+  t.advance(due.delay);t.fireTimer(due);await pause();
+  assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,1);assert.equal(timers.filter(x=>x.active).length,0);
+  if(change==='revoked')assert.equal(w.document.getElementById('desk-workspace').hidden,true);
+ }finally{dom.window.close()}
+});
