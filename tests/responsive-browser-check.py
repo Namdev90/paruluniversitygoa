@@ -462,6 +462,15 @@ def run():
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
      if role=='admin':navigate(page,'admin')
      measure(page,role,view,width,height)
+     if role=='checker':
+      scanner=page.locator('#pull-to-scan').bounding_box()
+      manual=page.locator('.manual-panel').bounding_box()
+      action=page.locator('#scan').bounding_box()
+      assert 44<=action['height']<=110, action
+      if width<760:assert abs(scanner['width']-manual['width'])<1, (scanner,manual)
+     if role=='login':
+      if height>570:assert page.locator('.login-foot').is_visible()
+      assert page.locator('.app-footer').is_hidden()
      if role=='faculty':
       measure_report_downloads(page)
       if args.report_stress:
@@ -503,6 +512,8 @@ def run():
          page.evaluate("for(const [e,old]of fixtureTextStyles)e.style.fontSize=old;document.getElementById('notice').hidden=true;NavrangReportLayout.fit()")
          page.locator('#report-tab-downloads').click()
        if target=='desk':
+        for selector in ('#desk-quantity-down','#desk-quantity-up','#desk-submit'):
+         measure_control(page,selector,selector)
         page.evaluate('window.fixtureDeskPopulated=true')
         page.locator('#desk-saved').click()
         page.wait_for_function("document.querySelectorAll('#desk-records .desk-record').length===2")

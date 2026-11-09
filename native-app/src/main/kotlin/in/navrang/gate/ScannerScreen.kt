@@ -79,8 +79,8 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
         }
     if (!permission) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text("Allow camera access to scan QR codes, or use a ticket ID.")
             ClassicScannerButton(onClick = { request.launch(Manifest.permission.CAMERA) }, primary = true) {
@@ -333,7 +333,7 @@ internal fun ClassicScannerCameraLayout(
                         contentColor = Color.White,
                         modifier = Modifier.fillMaxWidth().testTagCompat("scanner-status"),
                     ) {
-                        Text(status, Modifier.padding(12.dp))
+                        Text(status, Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                     }
                     BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                         // Size against space remaining below the status, never the whole screen.
@@ -352,7 +352,7 @@ internal fun ClassicScannerCameraLayout(
                 Modifier.fillMaxWidth()
                     .heightIn(max = controlsHeight)
                     .verticalScroll(rememberScrollState())
-                    .padding(12.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 s.result?.let { result ->
