@@ -1,7 +1,7 @@
 package `in`.navrang.gate
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -16,12 +16,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /** The retained CameraX engine presented in the original burgundy/gold palette. */
-class ClassicScannerActivity : ComponentActivity() {
+class ClassicScannerActivity : FragmentActivity() {
     private val model: GateViewModel by viewModels()
+    private var lockUi: NativeLockUi? = null
+    private var privateLocked by mutableStateOf(true)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        NativeAppLock.install(this)
         super.onCreate(savedInstanceState)
+        privateLocked = NativeAppLock.locked()
         setContent {
+            if (privateLocked) return@setContent
             val state by model.state.collectAsStateWithLifecycle()
             LaunchedEffect(state.ready, state.profile?.canScan) {
                 if (state.ready && state.profile?.canScan == true) model.navigate(Destination.Scanner)
@@ -33,14 +38,15 @@ class ClassicScannerActivity : ComponentActivity() {
                 }
             }
             ClassicScannerTheme {
-                Surface(Modifier.fillMaxSize()) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     BackHandler { close() }
                     Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
-                        Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Image(painterResource(R.drawable.app_icon), "Navrang", Modifier.size(44.dp))
-                            Text("Navrang · live scanner", Modifier.weight(1f).padding(horizontal = 12.dp), style = MaterialTheme.typography.titleMedium)
-                            TextButton(onClick = close, enabled = state.held == null) { Text("Close") }
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Image(painterResource(R.drawable.app_icon), "Navrang", Modifier.size(36.dp))
+                            Text("Scan ticket", Modifier.weight(1f).padding(horizontal = 10.dp), style = MaterialTheme.typography.titleMedium)
+                            TextButton(onClick = close, enabled = state.held == null, modifier = Modifier.heightIn(min = 48.dp)) { Text("Close") }
                         }
+                        HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = ScannerGold.copy(alpha = .3f))
                         if (state.ready && state.profile?.canScan == true) {
                             Box(Modifier.weight(1f)) { ScannerScreen(state, model, close) }
                         } else if (state.ready) {
@@ -69,12 +75,18 @@ class ClassicScannerActivity : ComponentActivity() {
                 }
             }
         }
+        lockUi = NativeLockUi(this, { covered ->
+            privateLocked = covered
+            model.foreground(!covered)
+        }, { finish() })
     }
 
     override fun onResume() {
         super.onResume()
+        lockUi?.resume()
         if (model.state.value.profile?.canScan == true) model.navigate(Destination.Scanner)
-        model.foreground(true)
+        model.foreground(!NativeAppLock.locked())
     }
-    override fun onPause() { model.foreground(false); super.onPause() }
+    override fun onPause() { lockUi?.pause(); model.foreground(false); super.onPause() }
+    override fun onDestroy() { lockUi?.close(); lockUi = null; super.onDestroy() }
 }

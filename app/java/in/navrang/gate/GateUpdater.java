@@ -35,20 +35,80 @@ public final class GateUpdater {
  public static void init(Context c){prefs(c).edit().putBoolean("automatic",automatic(c)).apply();schedule(c);if(automatic(c))check(c,false,false);}
  // Retain compatibility with older hosts without letting a stale toggle disable release checks.
  public static void setAutomatic(Context c,boolean ignored){init(c);publish(c);}
- private static void schedule(Context c){try{JobScheduler jobs=(JobScheduler)c.getSystemService(Context.JOB_SCHEDULER_SERVICE);if(!automatic(c)){jobs.cancel(JOB);return;}JobInfo job=new JobInfo.Builder(JOB,new ComponentName(c,UpdateJob.class)).setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).setPeriodic(15*60*1000L,5*60*1000L).setPersisted(true).build();jobs.schedule(job);}catch(Exception ignored){}}
- public static void check(Context context,boolean force,boolean download){final Context c=context.getApplicationContext();if(!automatic(c)){publish(c);return;}if(scanActive){message="Updates wait while the live scanner is active.";publish(c);return;}if(!force&&System.currentTimeMillis()-prefs(c).getLong("checked",0)<300000){publish(c);return;}if(!running.compareAndSet(false,true))return;work.execute(()->{try{perform(c,download); }catch(Exception e){message="Update check interrupted. Your current app keeps working.";}finally{running.set(false);downloading=false;publish(c);}});}
- public static void background(Context c){if(!automatic(c)||scanActive||!running.compareAndSet(false,true))return;try{perform(c,true);}catch(Exception e){message="Update check will retry when connected.";}finally{running.set(false);downloading=false;publish(c);}}
- private static HttpURLConnection connect(String url)throws Exception{HttpURLConnection h=(HttpURLConnection)new URL(url).openConnection();h.setInstanceFollowRedirects(false);h.setConnectTimeout(7000);h.setReadTimeout(20000);h.setRequestProperty("Cache-Control","no-cache");h.setRequestProperty("Accept","application/octet-stream, application/json");if(h.getResponseCode()!=200){h.disconnect();throw new IOException("Update unavailable.");}return h;}
+ // Android may defer this persisted job for Doze, network and system health.
+ // Five-minute admin checks run only through the existing foreground runtime.
+ private static void schedule(Context c){try{JobScheduler jobs=(JobScheduler)c.getSystemService(Context.JOB_SCHEDULER_SERVICE);if(!automatic(c)){jobs.cancel(JOB);return;}JobInfo job=new JobInfo.Builder(JOB,new ComponentName(c,UpdateJob.class)).setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).setPeriodic(UpdateCheckPolicy.ORDINARY_MS,5*60*1000L).setPersisted(true).build();jobs.schedule(job);}catch(Exception ignored){}}
+ private static boolean activeAdmin(Context c){try{return GateRuntime.get(c).foregroundAdministrator();}catch(Exception unavailable){return false;}}
+ /** Shared persisted throttle for Activity, job, manual and push entry points. */
+ private static synchronized int claim(Context c,boolean manual,boolean download){
+  if(!automatic(c)||scanActive||running.get())return 0;
+  SharedPreferences p=prefs(c);long now=System.currentTimeMillis(),attempt=p.getLong("attempt",p.getLong("checked",0));
+  long checked=p.getLong("checked",0),retry=p.getLong("retry",0);
+  SharedPreferences.Editor state=p.edit();
+  // A changed wall clock must neither loop nor retain a far-future throttle.
+  if(attempt>now){attempt=now;state.putLong("attempt",now);}
+  if(checked>now){checked=now;state.putLong("checked",now);}
+  if(retry>now+UpdateCheckPolicy.ORDINARY_MS){retry=now+UpdateCheckPolicy.ORDINARY_MS;state.putLong("retry",retry);}
+  JSONObject cached=release(c);boolean admin=activeAdmin(c),fresh=false;
+  if(download)try{validateMetadata(c,cached);fresh=checked>0&&now-checked<UpdateCheckPolicy.interval(admin,admin);}catch(Exception invalid){}
+  boolean metadata=!(download&&fresh);
+  boolean hint=p.getInt("hintCode",0)>cached.optInt("versionCode");
+  if(metadata&&!UpdateCheckPolicy.due(now,attempt,retry,admin,admin,manual,hint)){state.apply();return 0;}
+  long lastDownload=p.getLong("downloadAttempt",0);
+  if(download&&(now<retry||lastDownload>0&&now-lastDownload<UpdateCheckPolicy.MINIMUM_MS)){state.apply();return 0;}
+  if(!running.compareAndSet(false,true))return 0;
+  if(metadata)state.putLong("attempt",now);
+  if(download)state.putLong("downloadAttempt",now);
+  if(!state.commit()){running.set(false);message="Could not save the update check. Retry later.";return 0;}
+  return metadata?1:2;
+ }
+ private static void failed(Context c){SharedPreferences p=prefs(c);int failures=Math.min(12,p.getInt("failures",0)+1);p.edit().putInt("failures",failures).putLong("retry",System.currentTimeMillis()+UpdateCheckPolicy.backoff(failures,java.util.concurrent.ThreadLocalRandom.current().nextLong())).apply();}
+ public static void check(Context context,boolean force,boolean download){final Context c=context.getApplicationContext();int plan=claim(c,force,download);if(plan==0){if(force)publish(c);return;}work.execute(()->{try{perform(c,download,plan==1);}catch(Exception e){failed(c);message="Update check interrupted. Your current app keeps working.";}finally{running.set(false);downloading=false;publish(c);}});}
+ public static void background(Context c){int plan=claim(c,false,false);if(plan==0)return;try{perform(c,false,true);}catch(Exception e){failed(c);message="Update check will retry when connected.";}finally{running.set(false);downloading=false;publish(c);}}
+ /** A hint is not release authority and never starts an APK download. */
+ public static void invalidate(Context c,int versionCode){if(versionCode<=current(c)||versionCode<=release(c).optInt("versionCode"))return;synchronized(GateUpdater.class){SharedPreferences p=prefs(c);if(versionCode>p.getInt("hintCode",0))p.edit().putInt("hintCode",versionCode).apply();}check(c,false,false);}
+ private static HttpURLConnection connection(String url)throws Exception{HttpURLConnection h=(HttpURLConnection)new URL(url).openConnection();h.setInstanceFollowRedirects(false);h.setConnectTimeout(7000);h.setReadTimeout(20000);h.setRequestProperty("Cache-Control","no-cache");h.setRequestProperty("Accept","application/octet-stream, application/json");return h;}
+ private static HttpURLConnection connect(String url)throws Exception{HttpURLConnection h=connection(url);if(h.getResponseCode()!=200){h.disconnect();throw new IOException("Update unavailable.");}return h;}
  private static void validate(JSONObject r)throws Exception{if(!UpdatePolicy.APP_ID.equals(r.optString("packageName")))throw new IOException("Wrong app.");UpdatePolicy.validate(r.getInt("versionCode"),r.getString("versionName"),r.getString("apkUrl"),r.getLong("size"),r.getString("sha256"));}
- private static void perform(Context c,boolean requestedDownload)throws Exception{
-  HttpURLConnection h=connect(UpdatePolicy.MANIFEST);JSONObject r;try(InputStream in=h.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1){if(out.size()+n>32768)throw new IOException("Update metadata too large.");out.write(b,0,n);}r=new JSONObject(out.toString("UTF-8"));}finally{h.disconnect();}
-  validate(r);prefs(c).edit().putString("release",r.toString()).putLong("checked",System.currentTimeMillis()).apply();message="";if(r.getInt("versionCode")<=current(c))return;
-  if(status(c).optBoolean("ready")){notifyReady(c);return;}publish(c);if(!(requestedDownload||automatic(c))||scanActive)return;
+ private static void validateMetadata(Context c,JSONObject r)throws Exception{
+  validate(r);String proof=r.optString("signature");if(!proof.matches("[A-Za-z0-9+/]{40,3000}={0,2}"))throw new IOException("Release metadata signature missing.");
+  int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;
+  android.content.pm.Signature[] installed=signatures(c.getPackageManager().getPackageInfo(c.getPackageName(),flags));
+  if(installed==null||installed.length!=1||!UpdatePolicy.authentic(installed[0].toByteArray(),r.getInt("versionCode"),r.getString("versionName"),r.getString("apkUrl"),r.getLong("size"),r.getString("sha256"),android.util.Base64.decode(proof,android.util.Base64.DEFAULT)))throw new IOException("Release metadata signature differs from the installed app.");
+ }
+ /** Each self-contained APK has its own original-key proof. Never trust routing labels alone. */
+ private static JSONObject selectArtifact(Context c,JSONObject channel)throws Exception{
+  validateMetadata(c,channel);
+  UpdatePolicy.validateArtifact(channel.getInt("versionCode"),channel.getString("versionName"),channel.getString("apkUrl"),channel.getLong("size"),channel.getString("sha256"),null);
+  JSONObject artifacts=channel.optJSONObject("artifacts");if(artifacts==null)return channel;
+  java.util.Set<String> available=new java.util.HashSet<>();for(String abi:UpdatePolicy.ABIS)if(artifacts.optJSONObject(abi)!=null)available.add(abi);
+  String abi=UpdatePolicy.preferredAbi(Build.SUPPORTED_ABIS,available);if(abi==null)return channel;
+  JSONObject selected=artifacts.getJSONObject(abi);validateMetadata(c,selected);
+  if(selected.getInt("versionCode")!=channel.getInt("versionCode")||!selected.getString("versionName").equals(channel.getString("versionName")))throw new IOException("APK release differs from its channel.");
+  UpdatePolicy.validateArtifact(selected.getInt("versionCode"),selected.getString("versionName"),selected.getString("apkUrl"),selected.getLong("size"),selected.getString("sha256"),abi);
+  return selected;
+ }
+ private static void perform(Context c,boolean requestedDownload,boolean fetchMetadata)throws Exception{
+  JSONObject r=release(c);HttpURLConnection h;
+  if(fetchMetadata){
+   h=connection(UpdatePolicy.MANIFEST);String etag=prefs(c).getString("etag","");if(etag.matches("[\\x21-\\x7E]{1,200}"))h.setRequestProperty("If-None-Match",etag);
+   try{int response=h.getResponseCode();if(response==200){try(InputStream in=h.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1){if(out.size()+n>32768)throw new IOException("Update metadata too large.");out.write(b,0,n);}r=selectArtifact(c,new JSONObject(out.toString("UTF-8")));}}else if(response!=304)throw new IOException("Update unavailable.");
+    validateMetadata(c,r);JSONObject previous=release(c);if(previous.optInt("versionCode")>r.getInt("versionCode")){boolean trusted=false;try{validateMetadata(c,previous);trusted=true;}catch(Exception invalid){}if(trusted)throw new IOException("Older release metadata rejected.");}
+    String received=h.getHeaderField("ETag");SharedPreferences p=prefs(c);SharedPreferences.Editor state=p.edit().putString("release",r.toString()).putLong("checked",System.currentTimeMillis());
+    if(!previous.optString("sha256").equals(r.getString("sha256")))state.putInt("readyCode",0);
+    if(response==200)state.putString("etag",received!=null&&received.matches("[\\x21-\\x7E]{1,200}")?received:"");
+    if(p.getInt("hintCode",0)>r.getInt("versionCode")){int count=Math.min(12,p.getInt("failures",0)+1);state.putInt("failures",count).putLong("retry",System.currentTimeMillis()+UpdateCheckPolicy.backoff(count,System.nanoTime()));}
+    else state.putInt("hintCode",0).putInt("failures",0).putLong("retry",0);
+    state.apply();
+   }finally{h.disconnect();}
+  }
+  validateMetadata(c,r);message="";if(r.getInt("versionCode")<=current(c))return;
+  if(status(c).optBoolean("ready")){notifyReady(c);return;}publish(c);if(!requestedDownload||scanActive)return;
   downloading=true;progress=0;message="Downloading app update…";publish(c);File part=new File(c.getFilesDir(),"navrang-update.part.apk");h=connect(r.getString("apkUrl"));
   try{long total=0,next=0;try(InputStream in=h.getInputStream();FileOutputStream out=new FileOutputStream(part)){byte[] b=new byte[32768];int n;while((n=in.read(b))!=-1){if(scanActive)throw new IOException("Scanner has priority.");total+=n;if(total>r.getLong("size")||total>UpdatePolicy.MAX_APK)throw new IOException("Wrong update size.");out.write(b,0,n);progress=(int)(100*total/r.getLong("size"));if(System.currentTimeMillis()>next){publish(c);next=System.currentTimeMillis()+750;}}out.getFD().sync();}if(total!=r.getLong("size"))throw new IOException("Incomplete update.");verify(c,part,r);if(!part.renameTo(file(c)))throw new IOException("Could not save verified update.");prefs(c).edit().putInt("readyCode",r.getInt("versionCode")).apply();message="Update ready. Install when your station is idle.";notifyReady(c);}finally{h.disconnect();if(part.exists())part.delete();}
  }
  private static android.content.pm.Signature[] signatures(PackageInfo p){return Build.VERSION.SDK_INT>=28&&p.signingInfo!=null?p.signingInfo.getApkContentsSigners():p.signatures;}
- private static void verify(Context c,File apk,JSONObject r)throws Exception{validate(r);if(!UpdatePolicy.hash(apk).equals(r.getString("sha256")))throw new IOException("Update checksum mismatch.");int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;PackageManager pm=c.getPackageManager();PackageInfo remote=pm.getPackageArchiveInfo(apk.getPath(),flags),installed=pm.getPackageInfo(c.getPackageName(),flags);if(remote==null||!c.getPackageName().equals(remote.packageName)||remote.versionCode!=r.getInt("versionCode")||remote.versionCode<=installed.versionCode)throw new IOException("Unexpected app update.");android.content.pm.Signature[] a=signatures(remote),b=signatures(installed);if(a==null||b==null||a.length!=1||b.length!=1||!Arrays.equals(a[0].toByteArray(),b[0].toByteArray()))throw new IOException("Update signing certificate differs.");}
+ private static void verify(Context c,File apk,JSONObject r)throws Exception{validateMetadata(c,r);if(!UpdatePolicy.hash(apk).equals(r.getString("sha256")))throw new IOException("Update checksum mismatch.");int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;PackageManager pm=c.getPackageManager();PackageInfo remote=pm.getPackageArchiveInfo(apk.getPath(),flags),installed=pm.getPackageInfo(c.getPackageName(),flags);if(remote==null||!c.getPackageName().equals(remote.packageName)||remote.versionCode!=r.getInt("versionCode")||remote.versionCode<=installed.versionCode)throw new IOException("Unexpected app update.");android.content.pm.Signature[] a=signatures(remote),b=signatures(installed);if(a==null||b==null||a.length!=1||b.length!=1||!Arrays.equals(a[0].toByteArray(),b[0].toByteArray()))throw new IOException("Update signing certificate differs.");}
  // Recheck at each install boundary; the pending outbox exists only for this process.
  private static boolean installationBlocked(Context c){
   if(scanActive){message="Close the scanner before installing.";return true;}

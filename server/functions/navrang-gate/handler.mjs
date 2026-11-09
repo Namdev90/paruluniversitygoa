@@ -9,7 +9,7 @@ function canonical(p){
  const b=C.normalizeRows(p.records.map(r=>({TransactionID:r.id,Customer:r.name,LinkID:p.eventId,Amount:r.amount,Quantity:r.quantity,RefundAmount:r.refund,Description:r.description})));
  return Object.values(b.records);
 }
-export function createHandler({rpc,googleUser,googleEnabled}){
+export function createHandler({rpc,googleUser,googleEnabled,voiceService,renewalEnabled=false}){
  return async req=>{
   if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
   try{
@@ -18,7 +18,7 @@ export function createHandler({rpc,googleUser,googleEnabled}){
    let body;
    if(req.method==='GET')body={action:'config',payload:{}};
    else {const reader=req.body?.getReader(),chunks=[];let size=0;if(reader){try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>8*1024*1024){await reader.cancel();return json({ok:false,error:'Request too large.'},413)}chunks.push(part.value)}}finally{reader.releaseLock()}}const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}try{body=JSON.parse(new TextDecoder().decode(bytes))}catch{return json({ok:false,error:'Invalid JSON.'},400)}}
-   try{validateRequest(body)}catch(e){return json({ok:false,error:e.message},400)}
+   try{body=validateRequest(body)}catch(e){return json({ok:false,error:e.message},400)}
    const {action}=body;let p={...body.payload};
    const bearer=(req.headers.get('authorization')||'').replace(/^Bearer /,'');
    const hash=/^[a-f0-9]{64}$/.test(bearer)?await sha256(bearer):'';
@@ -33,8 +33,20 @@ export function createHandler({rpc,googleUser,googleEnabled}){
     try{const access=await rpc('reports-access',{},sessionHash);return {reports:access.allowed===true,reportsRequested:access.requested===true};}
     catch{return {reports:false,reportsRequested:false};}
    }
-   async function session(role,checkerId){const value=token(),sessionHash=await sha256(value);const profile=await rpc('session-create',{hash:sessionHash,role,checkerId},'');if(profile.error)return json({ok:false,error:profile.error},profile.status||403);return json({ok:true,token:value,profile:{...profile,...await reportFlags(sessionHash)}});}
-   if(action==='config')return json({ok:true,...await rpc('config',{},''),googleEnabled:await googleEnabled()});
+   function renewalMeta(created){return {refreshFamilyId:created.refreshFamilyId,refreshExpiresAt:created.refreshExpiresAt,absoluteExpiresAt:created.absoluteExpiresAt};}
+   async function session(role,checkerId){
+    const value=token(),sessionHash=await sha256(value),refresh=renewalEnabled===true&&p.authProtocol===1?token():'';
+    const params={hash:sessionHash,role,checkerId};
+    if(refresh){params.refreshHash=await sha256(refresh);params.installationId=p.installationId;}
+    const created=await rpc('session-create',params,'');
+    if(created.error)return json({ok:false,error:created.error},created.status||403);
+    const profile=created.profile||created,result={ok:true,token:value,profile:{...profile,...await reportFlags(sessionHash)}};
+    // Older service deployments ignore the additive protocol fields. Never
+    // advertise a refresh secret unless a real family was created.
+    if(refresh&&created.refreshFamilyId)Object.assign(result,{refreshToken:refresh,...renewalMeta(created)});
+    return json(result);
+   }
+   if(action==='config')return json({ok:true,...await rpc('config',{},''),googleEnabled:await googleEnabled(),sessionRenewalEnabled:renewalEnabled===true});
    if(action==='login'){
     if(!await budget('admin'))return json({ok:false,error:'Too many sign-in attempts. Try again in five minutes.'},429);
     const username=(p.username||'').trim().toLowerCase();
@@ -57,7 +69,28 @@ export function createHandler({rpc,googleUser,googleEnabled}){
     if(!ck.id)return json({ok:false,error:ck.error||'Checker account could not be created.'},ck.status||400);
     return session('checker',ck.id);
    }
+   if(action==='notifications-unregister'){
+    if(!await budget('communications-unlink'))return json({ok:false,error:'Too many unlink attempts.'},429);
+    const result=await rpc(action,p,'');return result.error?json({ok:false,error:result.error},result.status||400):json({ok:true,...result});
+   }
+   if(action==='session-refresh'){
+    if(!await budget('session-refresh'))return json({ok:false,error:'Too many renewal attempts. Retry later.'},429);
+    const value=token(),sessionHash=await sha256(value);
+    const created=await rpc('session-refresh',{hash:sessionHash,refreshHash:await sha256(p.refreshToken),nextRefreshHash:p.nextRefreshHash,requestId:p.requestId,installationId:p.installationId},'');
+    if(created.error)return json({ok:false,error:created.error},created.status||503);
+    if(!created.profile||!created.refreshFamilyId)return json({ok:false,error:'Session renewal is not configured.'},503);
+    return json({ok:true,token:value,profile:{...created.profile,...await reportFlags(sessionHash)},...renewalMeta(created)});
+   }
+   if(action==='logout'&&p.refreshToken){
+    const revoked=await rpc('session-revoke',{refreshHash:await sha256(p.refreshToken),installationId:p.installationId},'');
+    if(revoked.error)return json({ok:false,error:revoked.error},revoked.status||503);
+    return json({ok:true,signedOut:true});
+   }
    if(!hash)return json({ok:false,error:'Sign in first.'},401);
+   if(voiceService?.supports?.(action)){
+    const result=await voiceService.handle(action,p,hash,{signal:req.signal});
+    return result.error?json({ok:false,error:result.error},result.status||400):json({ok:true,...result});
+   }
    if(action==='helpdesk-save'||action==='helpdesk-edit'){
     try{p={...p,details:D.normalize(p.details)}}catch(e){return json({ok:false,error:e.message},400)}
    }

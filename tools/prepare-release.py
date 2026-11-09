@@ -4,6 +4,7 @@ from pathlib import Path
 import json,shutil,os
 from datetime import datetime,timezone
 from release_policy import verify_apk,check_publication
+from private_signing import OriginalSigner
 ROOT=Path(__file__).resolve().parents[1]
 def prepare():
  release=json.loads((ROOT/'release.json').read_text())
@@ -16,8 +17,11 @@ def prepare():
  manifest=ROOT/'updates/latest.json'
  latest=json.loads(manifest.read_text()) if manifest.exists() else None
  check_publication(release,source,destination,latest)
+ meta={'packageName':'in.navrang.gate','versionCode':code,'versionName':name,'apkUrl':f'https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/{source.name}','size':source.stat().st_size,'sha256':digest,'notes':release['notes'],'publishedAt':datetime.now(timezone.utc).isoformat()}
+ # Authenticate public core metadata before making any publication-file change.
+ key=Path(os.environ.get('NAVRANG_SIGNING_KEY',ROOT/'signing/prototype-debug.p12'))
+ with OriginalSigner(key) as signer:meta=signer.sign_metadata(meta)
  destination.parent.mkdir(exist_ok=True);shutil.copy2(source,destination)
- meta={'packageName':'in.navrang.gate','versionCode':code,'versionName':name,'apkUrl':f'https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/{source.name}','size':destination.stat().st_size,'sha256':digest,'notes':release['notes'],'publishedAt':datetime.now(timezone.utc).isoformat()}
  (ROOT/'updates').mkdir(exist_ok=True);(ROOT/'updates/latest.json').write_text(json.dumps(meta,indent=2)+'\n')
  sums=ROOT/'SHA256SUMS.txt';prior=sums.read_text().splitlines() if sums.exists() else []
  sums.write_text(f'{digest}  downloads/{source.name}\n'+'\n'.join(line for line in prior if f'downloads/{source.name}' not in line)+'\n')

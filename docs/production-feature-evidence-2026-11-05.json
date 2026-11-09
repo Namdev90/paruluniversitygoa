@@ -1,0 +1,75 @@
+{
+  "checkedAtUTC": "2026-11-05T15:42:00Z",
+  "project": "mzesveurjzxjybkejqmx",
+  "sourceCommit": "87d7a57f8294424571f8fa681a6f359a86faa41f",
+  "scope": "Three named feature migrations and reviewed same-address Edge deployment explicitly approved. No renewal issuance, voice activation, Worker bindings or additional credentials approved by that action.",
+  "migrations": [
+    {
+      "name": "navrang_report_operations_v080",
+      "version": "20261105151406",
+      "sourceFile": "server/report-operations-v080.sql",
+      "sourceSha256": "13d466cb4340b782c0940b3d5fece0ab67f1d3d3782f6a8f26767e2288415b71",
+      "status": "APPLIED_AND_INDEPENDENTLY_VERIFIED",
+      "guardedQuerySha256": "2ea4b4e9c3c8628750104865beaacda10f2675a30d14af6399ac565a7a82cf59"
+    },
+    {
+      "name": "navrang_session_renewal_v090",
+      "version": "20261105152620",
+      "sourceFile": "server/session-renewal-v090.sql",
+      "sourceSha256": "52bd7ed436ad0422db8d765e776a303b962e6c508bacdd26fa37dac2f473fb6f",
+      "status": "APPLIED_AND_INDEPENDENTLY_VERIFIED",
+      "guardedQuerySha256": "e8f637ad71d5a081164f74e770601ca88e8852303605b239ce2b0ab4814737d0"
+    },
+    {
+      "name": "navrang_locator_v090",
+      "sourceFile": "server/locator-v090.sql",
+      "sourceSha256": "6a792dfd889ad4149f14ab344f6a1499416e20840a25de64d286b9a00514d475",
+      "status": "APPROVED_PLATFORM_CONFIRMATION_EXPIRED_NOT_EXECUTED",
+      "nonExecutionVerified": true,
+      "retryCount": 1,
+      "guardedQuerySha256": "ce8206631f6a12fec43fba52b579b0054cb24d2f0e03545b990eed68db2f1776"
+    }
+  ],
+  "verified": {
+    "newInstalledTablesRls": true,
+    "installedFunctionBodiesMatch": true,
+    "installedFunctionsServiceOnly": true,
+    "legacyGatePreserved": true,
+    "existingNotificationHookPreserved": true,
+    "reportReceiptsEmpty": true,
+    "renewableFamiliesEmpty": true,
+    "renewalTokensEmpty": true,
+    "existingSessionsFamilyIdsNull": true,
+    "locatorTablesPresent": false,
+    "locatorRpcPresent": false,
+    "notificationCenterEnabled": false,
+    "notificationDeliveryEnabled": false
+  },
+  "edge": {
+    "status": "APPROVED_STAGED_NOT_DEPLOYED",
+    "currentVersion": 7,
+    "stagedArtifactSha256": "17d719b7db37310cfe93e24d5eaa4c0400569f522acf8ce8478900e9d16b868b",
+    "stagedManifestSha256": "a7456cee6900888601f791ca52d8a2efa83c24782d5d846804698aa3b741203b",
+    "stagedEntrypointSha256": "9c969f70179fbf4c769b991cc9c409c6d43631a5b2d488fc3979c58a4ec29dd1",
+    "newRenewalIssuance": false,
+    "voiceForwarding": false,
+    "refreshRevokeCompatibility": "PRESERVED",
+    "syntheticIntegrationTests": 8,
+    "parentRerunPassed": 8
+  },
+  "securityAdvisories": {
+    "expectedServiceOnlyRlsNoPolicyInfo": 32,
+    "unchangedLeakedPasswordProtectionWarning": 1
+  },
+  "devicePreflight": {
+    "originalSigningFilePresent": true,
+    "privateKeyRead": false,
+    "privateKeyUnlockOrSignability": "NOT_TESTED",
+    "separatePublicCertificateMatches": true,
+    "adbVersion": "37.0.1",
+    "connectedDevices": 0,
+    "physicalAcceptance": "BLOCKED_NO_DEVICE"
+  },
+  "signing": "NOT_PERFORMED",
+  "publication": "NOT_PERFORMED"
+}

@@ -31,6 +31,7 @@ def main():
     git = lambda *items: subprocess.check_output(['git', *items], cwd=ROOT, text=True).strip()
     source_tree = git('rev-parse', args.expected_source + '^{tree}')
     require(git('rev-parse', 'HEAD^{tree}') == source_tree, 'CI source tree differs from the frozen candidate.')
+    require(not git('status', '--porcelain'), 'Commit and re-verify the source before issuing an immutable candidate receipt.')
     release = json.loads((ROOT / 'release.json').read_text())
     latest = json.loads((ROOT / 'updates/latest.json').read_text())
     require(release['versionCode'] > latest['versionCode'], 'Candidate must have a new Android version code.')
@@ -50,7 +51,7 @@ def main():
         with args.apk.open('rb') as apk_stream:
             apk_stream.seek(max(0, archive.start_dir - 16))
             require(apk_stream.read(16) != b'APK Sig Block 42', 'Unexpected APK signing block in the unsigned artifact.')
-        require(not {'assets/notifications.js', 'assets/notifications.css'} & names, 'Deferred communications assets are packaged.')
+        require({'assets/notifications.js', 'assets/notifications.css'} <= names, 'Implemented communications assets are missing.')
         markup = archive.read('assets/index.html').decode('utf-8')
         for asset in re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"', markup):
             require('assets/' + asset in names, 'A referenced client asset is missing: ' + asset)
@@ -71,8 +72,8 @@ def main():
         'minSdk': 24, 'targetSdk': 37, 'size': args.apk.stat().st_size,
         'sha256': hashlib.sha256(args.apk.read_bytes()).hexdigest(),
         'signed': False, 'publishable': False, 'requiredSignerSha256': SIGNER_SHA256,
-        'pendingGate': 'ORIGINAL_KEY_SIGNING_AND_PUBLIC_DOWNLOAD_VERIFICATION',
-        'communications': 'DEFERRED_BY_OWNER', 'physicalDeviceChecks': 'SKIPPED_BY_OWNER',
+        'pendingGate': 'COMMUNICATIONS_ACCEPTANCE_ORIGINAL_KEY_SIGNING_AND_PUBLIC_DOWNLOAD_VERIFICATION',
+        'communications': 'PACKAGED_TRANSPORT_NOT_VERIFIED', 'physicalDeviceChecks': 'NOT_RUN',
         'assetIntegrity': 'PASS',
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

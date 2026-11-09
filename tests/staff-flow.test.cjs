@@ -36,6 +36,56 @@ test('Help Desk-only staff open their saved station directly and cannot scan or 
  t.click('station-helpdesk');await tick();assert.equal($('view-desk').hidden,false);
  }finally{dom.window.close()}
 });
+
+test('browser ticket action focuses manual entry while Android retains camera tap and downward swipe',async()=>{
+ const checker={role:'checker',checkerId:'synthetic',name:'Synthetic Checker',active:true,scanner:true,station:'checker'};
+ for(const native of [false,true]){
+  const t=setup(checker,{native}),{w,dom,calls,$}=t;try{
+   await tick();
+   const cameraCalls=()=>calls.filter(call=>call.action==='camera').length;
+   const swipe=()=>{
+    for(const [type,touches,changedTouches]of [['touchstart',[{identifier:1,clientX:150,clientY:100}],[]],['touchend',[],[{identifier:1,clientX:150,clientY:190}]]]){
+     const event=new w.Event(type,{bubbles:true});Object.assign(event,{touches,changedTouches});$('pull-to-scan').dispatchEvent(event);
+    }
+   };
+   assert.equal($('scan-action-title').textContent,native?'Start scanning':'Enter ticket ID');
+   assert.equal($('scan-action-badge').hidden,!native);
+   assert.equal($('scan').getAttribute('aria-label'),native?'Open continuous QR scanner':'Enter ticket ID manually');
+   t.click('scan');
+   assert.equal(cameraCalls(),native?1:0);
+   assert.equal(w.document.activeElement===$('ticket-id'),!native);
+   assert.equal(calls.some(call=>call.action==='checkin'),false);
+   $('ticket-id').blur();swipe();assert.equal(cameraCalls(),native?2:0);
+   t.event({type:'result',data:{code:'blocked',id:'DEMO0001',message:'Synthetic issue'}});
+   assert.equal($('scan').disabled,true);t.click('scan');swipe();assert.equal(cameraCalls(),native?2:0);
+   assert.notEqual(w.document.activeElement,$('ticket-id'));
+  }finally{await tick();dom.window.close()}
+ }
+});
+
+test('Account Settings offers manual update checks only in the Android host',async()=>{
+ for(const native of [false,true]){
+  const t=setup({role:'admin',name:'Synthetic Admin',active:true},{native}),{w,dom,$}=t;try{
+   await tick();const actions=[],state=native?{currentVersion:'0.9.0',automatic:true}:{message:'App updates are managed in the Android app.'};
+   w.GateClient.update=action=>{actions.push(action);return state};
+   w.document.querySelector('#main-nav [data-view="account"]').click();t.click('account-settings');
+   assert.equal($('view-settings').hidden,false);
+   assert.ok($('view-settings').contains($('check-update')));
+   t.event({type:'update',data:state});
+   assert.equal($('app-updates').hidden,false);
+   assert.equal($('check-update').hidden,!native);
+   assert.equal($('update-message').textContent,native?'Your app is up to date.':state.message);
+   t.click('check-update');
+   assert.deepEqual(actions,native?['check']:[]);
+   if(native){
+    t.click('account-tool-back');t.event({type:'update',data:{...state,available:true,versionName:'0.9.1'}});
+    assert.equal($('update-banner').hidden,false);t.click('open-update');
+    assert.equal($('view-settings').hidden,false);
+   }
+  }finally{await tick();dom.window.close()}
+ }
+});
+
 test('a station request never self-authorizes; approved access appears on the existing session',async()=>{
  const pending={role:'checker',checkerId:'pending',name:'Raju',method:'google',nameConfirmed:true,active:false,scanner:false,helpdesk:false};const t=setup(pending),{dom,calls,$}=t;
  try{await tick();t.click('station-helpdesk');await tick();assert.equal(calls.find(c=>c.action==='staff-request').payload.station,'helpdesk');assert.equal($('station-helpdesk').disabled,true);assert.equal($('view-desk').hidden,true);assert.ok(!calls.some(c=>c.action==='sync'));
@@ -82,25 +132,25 @@ test('manual registration rejects invalid numeric values before saving and accep
  }finally{dom.window.close()}
 });
 
-test('restored screens clear private rows when account or session access expires without a server reply',async()=>{
+test('restored screens hide private rows while retaining credentials until server expiry is confirmed',async()=>{
  for(const field of ['accessExpiresAt','expiresAt']){
   const profile={role:'admin',name:'Synthetic Administrator',active:true,[field]:new Date(Date.now()+60000).toISOString()};
   const t=setup(profile),{w,dom,calls,$}=t;
   try{await tick();$('registration-rows').textContent='Synthetic private registration';t.setProfile({...profile,[field]:new Date(Date.now()-1000).toISOString()});
-   for(let i=0;i<20&&!calls.some(c=>c.action==='logout');i++)await new Promise(r=>setTimeout(r,20));
-   assert.ok(calls.some(c=>c.action==='logout'));assert.equal($('registration-rows').textContent,'');assert.equal($('view-login').hidden,false);assert.equal(w.GateClient.profile(),null);
+   for(let i=0;i<20&&$('registration-rows').textContent;i++)await new Promise(r=>setTimeout(r,20));
+   assert.ok(!calls.some(c=>c.action==='logout'));assert.equal($('registration-rows').textContent,'');assert.equal($('view-account').hidden,false);assert.ok(w.GateClient.profile());
   }finally{dom.window.close()}
  }
 });
 
-test('an import completed during an active poll queues one immediate forced registration refresh',async()=>{
+test('an import completed during an active poll coalesces one immediate incremental registration refresh',async()=>{
  const t=setup({role:'admin',name:'Synthetic Administrator',active:true},{native:true}),{w,dom,$}=t;
  try{await tick();let finish,requests=[];
   w.GateClient.sync=async options=>{requests.push(options);if(requests.length===1)return await new Promise(resolve=>finish=resolve);return{dataRevision:2,cursor:0,records:[{id:'DEMO0002',name:'Imported Synthetic Student',amount:100,quantity:1,refund:0,description:'Transaction completed successfully',eligible:true}],entries:[],stats:{},checkers:[]}};
   t.click('admin-refresh');await tick();t.event({type:'registrations-imported',data:{}});t.event({type:'registrations-imported',data:{}});await tick();assert.equal(requests.length,1);
   finish({dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:[]});
   for(let i=0;i<25&&!$('registration-rows').textContent.includes('Imported Synthetic Student');i++)await tick();
-  assert.equal(requests.length,2);assert.equal(requests[1].dataRevision,-1);assert.match($('registration-rows').textContent,/Imported Synthetic Student/);
+  assert.equal(requests.length,2);assert.equal(requests[1].dataRevision,1,'reuse the known revision instead of redownloading an unchanged master');assert.match($('registration-rows').textContent,/Imported Synthetic Student/);
  }finally{dom.window.close()}
 });
 

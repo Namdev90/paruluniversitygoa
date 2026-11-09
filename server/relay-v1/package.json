@@ -1,0 +1,8 @@
+{
+  "name": "navrang-local-relay-feasibility",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": { "test": "node --test test/*.test.mjs", "check": "node --check src/core.mjs && node --check src/auth.mjs && node --check src/worker.mjs" },
+  "engines": { "node": ">=24" }
+}

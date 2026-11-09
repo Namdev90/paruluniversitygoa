@@ -1,6 +1,6 @@
 {
-  "versionCode": 18,
-  "versionName": "0.8.0",
-  "notes": "Approved combined Navrang and Parul University branding on maroon, staged sign-in, consolidated Reports with reachable downloads and accessible pagination, smoother transitions, sign-out confirmation and guarded local report saves. Preserves attendance, authorization, original signing identity and existing update notifications. New messaging, audio messages and live broadcasts are deferred.",
+  "versionCode": 19,
+  "versionName": "0.9.0",
+  "notes": "Refines Account, Admin, Reports, and ticket scanning. Adds swipe navigation, app lock, and a collapsible website menu.",
   "interface": "original"
 }

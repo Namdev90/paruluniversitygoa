@@ -1,16 +1,27 @@
+import {configuredVoiceControlOrigin,createEdgeVoiceForwarder} from '../../cloudflare-platform/edge-forwarder.mjs';
+import {isCommunicationAction} from './communications-contract.mjs';
+import {isLocatorAction} from './locator-contract.mjs';
 import {createHandler} from './handler.mjs';
+import {createVoiceServiceBoundary} from './voice-service.mjs';
 const base=Deno.env.get('SUPABASE_URL')!;
 const service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const publicKey=Deno.env.get('SUPABASE_ANON_KEY')!;
 let google=false,checked=0;
-const handler=createHandler({
- async rpc(action:string,payload:unknown,hash:string){
+async function rpc(action:string,payload:unknown,hash:string,{signal}:{signal?:AbortSignal}={}){
   const report=action.startsWith('reports-');
-  const rpcName=report?'navrang_reports':'navrang_gate';
-  const dbAction=report?action.slice('reports-'.length):action;
-  const r=await fetch(base+'/rest/v1/rpc/'+rpcName,{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:dbAction,p:payload,p_token:hash}),signal:AbortSignal.timeout(15000)});
+  const operation=action==='reports-summary-prepare'||action==='reports-save-outcome'||action==='reports-export'&&(payload as Record<string,unknown>)?.format!=null;
+  const rpcName=operation?'navrang_report_operations':report?'navrang_reports':isLocatorAction(action)?'navrang_locator':isCommunicationAction(action)?'navrang_communications':'navrang_gate';
+  const dbAction=operation?(action==='reports-export'?'prepare-export':action==='reports-summary-prepare'?'prepare-summary':'outcome'):report?action.slice('reports-'.length):action;
+  const deadline=AbortSignal.timeout(15000);
+  const r=await fetch(base+'/rest/v1/rpc/'+rpcName,{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:dbAction,p:payload,p_token:hash}),signal:signal?AbortSignal.any([signal,deadline]):deadline});
   if(!r.ok)throw Error('Database request failed');return r.json();
- },
+}
+const handler=createHandler({
+ renewalEnabled:false,
+ rpc,
+ // No acceptance/configuration boolean can activate provider operations here.
+ // An accepted private service transport remains a separate integration gate.
+ voiceService:createVoiceServiceBoundary({rpc}),
  async googleUser(accessToken:string){
   if(!accessToken)return null;
   const r=await fetch(base+'/auth/v1/user',{headers:{apikey:publicKey,Authorization:'Bearer '+accessToken},signal:AbortSignal.timeout(8000)});
@@ -22,4 +33,5 @@ const handler=createHandler({
   return google;
  }
 });
-Deno.serve(handler);
+const forwardVoice=createEdgeVoiceForwarder({origin:configuredVoiceControlOrigin(Deno.env.get('NAVRANG_VOICE_CONTROL_ORIGIN'))});
+Deno.serve(request=>forwardVoice(request,handler));

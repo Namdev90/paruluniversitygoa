@@ -1,0 +1,7 @@
+{
+ global:
+  Java_in_navrang_gate_BundledRelayEncoder_nativeCreate;
+  Java_in_navrang_gate_BundledRelayEncoder_nativeEncode;
+  Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy;
+ local: *;
+};

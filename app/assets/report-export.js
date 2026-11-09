@@ -63,7 +63,7 @@
    'Admitted - registration data missing: organizer-confirmed cases.',
    'Exact admission time is unknown for those corrections.',
    'No verified entry does NOT prove non-attendance.',
-   'Offline/unsubmitted attempts cannot be counted as gate issues.',
+   'Offline/unsubmitted attempts cannot be counted as entry issues.',
    'Use the CSV/XLSX dataset export for participant-level details.');
   const stream='BT /F1 13 Tf 45 785 Td 17 TL '+lines.map((line,i)=>(i?'T* ':'')+'('+esc(line)+') Tj').join('\n')+' ET\n';
   const objects=[

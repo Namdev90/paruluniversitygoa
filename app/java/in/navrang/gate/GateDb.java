@@ -96,6 +96,19 @@ public final class GateDb extends SQLiteOpenHelper {
  }
  /** Complete authorized in-memory view; never the truncated recent-receipt snapshot. */
  public synchronized JSONObject adminView()throws JSONException{return snapshot().put("records",list("tickets","id","")).put("allEntries",list("entries","seq DESC","")).put("checkers",new JSONArray(meta("checkers","[]")));}
+ /** Bounded renderer delta from the single native network owner's RAM database. */
+ public synchronized JSONObject adminSnapshot(long knownRevision,long afterSeq)throws JSONException{
+  if(afterSeq<0)throw new IllegalArgumentException("Invalid entry cursor.");
+  JSONObject out=snapshot();long cachedCursor=out.getLong("cursor");
+  if(afterSeq>cachedCursor)throw new IllegalArgumentException("Entry view needs a fresh identity snapshot.");
+  if(knownRevision!=out.getLong("dataRevision"))out.put("records",list("tickets","id",""));
+  JSONArray page=new JSONArray();long cursor=afterSeq;
+  try(Cursor rows=getReadableDatabase().rawQuery("SELECT json,seq FROM entries WHERE seq>? ORDER BY seq LIMIT 500",new String[]{String.valueOf(afterSeq)})){
+   while(rows.moveToNext()){page.put(new JSONObject(rows.getString(0)));cursor=rows.getLong(1);}
+  }
+  boolean more=page.length()==500&&cursor<cachedCursor;
+  return out.put("entries",page).put("cursor",more?cursor:cachedCursor).put("hasMore",more).put("checkers",new JSONArray(meta("checkers","[]")));
+ }
  public synchronized JSONObject lookup(String id)throws JSONException{return new JSONObject().put("record",item("tickets",id)).put("entry",item("entries",id)).put("legacyEntry",item("legacy_entries",id));}
  public synchronized JSONObject queue(String ticket,String actor)throws JSONException{
   if(updateSession()!=-1)throw new UpdateInProgressException();

@@ -29,12 +29,12 @@ import org.robolectric.annotation.GraphicsMode
 class ClassicScannerUiTest {
     @get:Rule val compose = createComposeRule()
 
-    private fun screenshot(name: String) {
+    private fun screenshot(name: String, node: SemanticsNodeInteraction = compose.onRoot()) {
         compose.mainClock.advanceTimeBy(250)
         val dir = java.io.File(requireNotNull(System.getProperty("navrang.screenshot.dir")))
         dir.mkdirs()
         java.io.File(dir, "$name.png").outputStream().use {
-            compose.onRoot().captureToImage().asAndroidBitmap()
+            node.captureToImage().asAndroidBitmap()
                 .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
         }
     }
@@ -52,6 +52,12 @@ class ClassicScannerUiTest {
             }
         }
         compose.onNodeWithText("Verify entry").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("About ticket verification").performClick()
+        compose.onNodeWithText("QR reading pauses while you type. Resume camera to scan again.").assertIsDisplayed()
+        screenshot("classic-scanner-ticket-info", compose.onNode(isDialog()))
+        compose.onNodeWithText("Done").performClick()
+        assertTrue(submitted.isEmpty())
+        assertEquals(0, closed)
         compose.onNodeWithTag("scanner-exact-id").performTextInput("TEST00010")
         compose.onNodeWithText("Verify entry").assertIsNotEnabled()
         compose.onNodeWithTag("scanner-exact-id").performTextReplacement("test0001")
@@ -101,18 +107,19 @@ class ClassicScannerUiTest {
     }
 
     @Composable
-    private fun CameraFixture(onVerify: (String) -> Unit, initialResult: ScanResult? = null) {
+    private fun CameraFixture(onVerify: (String) -> Unit, initialResult: ScanResult? = null, reducedMotion: Boolean = false) {
         var idOpen by remember { mutableStateOf(false) }
         ClassicScannerTheme {
             Surface(Modifier.fillMaxSize()) {
                 ClassicScannerCameraLayout(
                     s = GateState(ready = true, online = true, result = initialResult,
+                        appearance = Appearance(reducedMotion = reducedMotion),
                         profile = Profile.from(json("role" to "admin", "active" to true))),
                     exactIdOpen = idOpen,
                     onExactIdOpen = { idOpen = it },
                     onVerify = onVerify,
                     onDetails = {},
-                    status = if (idOpen) "Camera open · QR reading paused for exact ID" else "Synthetic camera preview · no live camera",
+                    status = if (idOpen) "QR reading paused · ticket ID" else "Synthetic camera preview · no live camera",
                     onFocus = {},
                     previewContent = {
                         Box(Modifier.fillMaxSize().background(Color(0xff1b171a)).testTagCompat("synthetic-camera-preview"), contentAlignment = Alignment.Center) {
@@ -128,6 +135,7 @@ class ClassicScannerUiTest {
         val verified = mutableListOf<String>()
         compose.setContent { CameraFixture({ verified += it }) }
         compose.onNodeWithTag("scanner-frame").assertIsDisplayed()
+        compose.onNodeWithTag("scanner-sweep").assertIsDisplayed()
         compose.onNodeWithContentDescription("Camera zoom").assertDoesNotExist()
         compose.onNodeWithText("Light: auto").assertDoesNotExist()
         screenshot("classic-scanner-automatic-layout")
@@ -135,6 +143,9 @@ class ClassicScannerUiTest {
         compose.onNodeWithText("Reset zoom").assertDoesNotExist()
         screenshot("classic-scanner-camera-layout")
         compose.onNodeWithText("Find ID").performClick()
+        compose.onNodeWithTag("scanner-sweep").assertDoesNotExist()
+        compose.onNodeWithText("Find ID").assertDoesNotExist()
+        compose.onNodeWithText("Hide ID").assertDoesNotExist()
         compose.onNodeWithContentDescription("Camera zoom").assertDoesNotExist()
         compose.onNodeWithTag("scanner-exact-id").performScrollTo().performTextInput("TEST0001")
         compose.onNodeWithTag("synthetic-camera-preview").assertIsDisplayed()
@@ -165,6 +176,12 @@ class ClassicScannerUiTest {
         screenshot("classic-scanner-compact-id-controls")
         compose.onNodeWithText("Entry confirmed").performScrollTo().assertIsDisplayed()
         screenshot("classic-scanner-compact-confirmed-result")
+    }
+
+    @Test fun reducedMotionKeepsTheCameraFrameWithoutTheSweep() {
+        compose.setContent { CameraFixture({}, reducedMotion = true) }
+        compose.onNodeWithTag("scanner-frame").assertIsDisplayed()
+        compose.onNodeWithTag("scanner-sweep").assertDoesNotExist()
     }
 
     @Test fun partialResultOmitsMissingFieldsButKeepsZeroAndFalse() {

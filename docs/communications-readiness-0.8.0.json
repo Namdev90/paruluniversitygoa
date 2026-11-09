@@ -1,0 +1,117 @@
+{
+  "baseline": "b8605c5e5e694bc741a3d36b26bf76c8ab7f4ac1",
+  "reviewedPlanCommit": "001930147d75f67562c2d98a217560ff7335dee7",
+  "checkedAt": "2026-10-25",
+  "push": {
+    "configured": false,
+    "artifactResolved": true,
+    "deliveryVerified": false,
+    "sdkVersion": "26.0.1",
+    "bomVersion": "35.1.0",
+    "googleServicesPluginVersion": "4.5.0",
+    "apiVersion": "HTTP v1 legacy registration-token transport; FID unsupported",
+    "evidence": "Current pinned dependencies resolved locally. Native integration and sender/store source implemented; isolated tests pass. Configuration and real provider/device delivery remain unavailable."
+  },
+  "voice": {
+    "configured": false,
+    "artifactResolved": false,
+    "deliveryVerified": false,
+    "sdkVersion": "No operational native transport bound; optional Daily0.41.0 candidate under review",
+    "revocationVerified": false,
+    "workerHealthy": false,
+    "revocationMode": "disabled",
+    "tokenTtlSeconds": 60,
+    "leaseEnforced": false,
+    "workerDeathVerified": false,
+    "lateGrantRejected": false,
+    "controllerStoreImplemented": true,
+    "evidence": "Daily native transport and optional service factory are now connected in source. Fake-driver tests pass73 session and24 transport checks; pinned SDK0.41.0 compiles in a disabled-live build. A full242-test Android suite and release lint passed; later renewal-family preservation passes the70-test focused voice/auth group. Relay-enforced controller-death expiry and physical media/JNI acceptance remain NOT_RUN. No provider call, credential creation, room or test audio occurred."
+  },
+  "checks": {
+    "providerToDevicePush": "NOT_RUN: no configured project and isolated endpoint",
+    "twoIdentityVoice": "NOT_RUN: no configured relay",
+    "revokedCredentialReplay": "NOT_RUN: no revocation-capable relay",
+    "controllerDeathMediaExpiry": "NOT_RUN: no independently enforced relay deadline",
+    "lateGrantAfterExpiry": "NOT_RUN: no relay-owned generation fence",
+    "physicalDeviceChecks": "NOT_RUN: no authorized isolated physical test device",
+    "postgresqlFixtures": "PASS: PostgreSQL17.11, seven rollback fixtures including existing-permission controller tests, real two-connection retention and actual Node notification/controller adapters; no provider calls",
+    "sourceSuite": "PASS600total/597pass/3skip/0fail after isolated patches",
+    "responsiveBrowser": "PASS:384 measurements and32 interaction checks, synthetic Chrome fixtures",
+    "nativeSourceChecks": "PASS current full JVM aggregate including native push51 and runtime44",
+    "androidUnitTests": "PASS 2026-10-26:250 tests,0 failures/errors/skips; pinned optional Daily SDK, all live flags disabled. Includes4 native reconciliation projection/role/lock checks. Later server/UI worker changes still need final aggregate qualification.",
+    "androidLint": "PASS 2026-10-26:0 Error/Fatal;44 warnings. See native-reconciliation-resumed.log; not signed-release/device acceptance.",
+    "unsignedBuild": "Previous arm64 R8 audit20,058,105 bytes/19.13MiB, unsigned/old version/disabled live voice. No new signed or installable candidate.",
+    "nativePushPolicy": "PASS:37 production Java policy checks including revision-aware alert pruning",
+    "voiceResponsive": "PASS:162 focused browser checks and53 voice/notification source tests; synthetic native responses only",
+    "voiceNativePolicy": "PASS:104 pure Java policy checks; no real microphone/provider",
+    "dailyCandidate": "PASS:13 adapter groups and14 service groups with mocks; subsequent idempotence/room-cleanup fixes under verification",
+    "locatorContract": "PASS:8 strict request/routing cases; spoofed actors and malformed/bulk location rejected.",
+    "locatorDatabase": "PASS:rollback-only assignment/consent/duty/fix/Stop/revocation/retention plus private outbox, sent-vs-acknowledged status, scoped owner invalidation and cancellation; two real connections enforce cooldown and one target. Local fixture only.",
+    "locatorUI": "PASS:26 combined client/UI checks, including scoped hints, hidden-tab coalescing, assignment/permission-loss cleanup and response immutability; packaging test passes.",
+    "postLocatorSQLRegression": "PASS:8 existing rollback fixtures and2 real concurrent refresh cases after new cleanup triggers.",
+    "locatorNative": "PASS:foreground one-shot and host bridge22/22; native sound/identification and real-dialog cleanup included in full240/240. Latest canonical-role-loss fencing passes focused60/60. Physical GPS/audio/brightness/DND acceptance NOT_RUN.",
+    "updateMetadata": "PASS:155 actual-updater fake HTTP/Android checks,31 scheduling,13 public-hint and10 signature checks. Public release topic sender3/3 passes and native subscription/receive code compiles; no live push.30-minute fallback,5 minutes only for active authenticated admins, persisted deduplication/ETag/backoff and no automatic APK download. Critical metadata is signed by the installed certificate and rechecked at install.",
+    "browserRenewal": "PASS:11 gateway and12 browser/client integration tests. Strict same-origin HttpOnly cookies, two-phase idempotent refresh, cross-tab lock, stale-role/data fencing and offline logout/revocation retry. Hosted HTTPS gateway/production backend activation remain unconfigured; default static browser companion remains legacy until reviewed deployment.",
+    "nativeReconciliation": "PASS:44 pure policy and44 actual-runtime checks; authorized bounded RAM projection passes4 Android host checks. Native runtime owns data reads; renderer no longer duplicates HTTP sync. Thirty-second fallback and failure backoff preserve pending scans.",
+    "dataInvalidation": "PASS local private dataset/domain/authorization/revocation/ACL rollback fixture; broader SQL regression still due",
+    "uiQuota": "PASS54/54 scoped UI quota checks; combined hint client/server33/33 passes",
+    "temporaryCleanup": "VERIFIED at stopping checkpoint:disposable loopback PostgreSQL stopped; sleep helper exited0, awake marker Released, active-work.flag removed. No persistent power/security change.",
+    "androidCurrent": "PASS optimized isolated build250tests/0fail;lint0errors33warnings;unsigned/livefalse",
+    "packaging": "PARTIAL ABI variants measured;universal38.55MiB exceeds legacy25MiB; x86 lacks Daily SDK",
+    "publicApkVerifier": "PASS4fixtures and actual preserved publicv0.8 signer/package/version",
+    "responsive": "PASS183cases/0failures/errors/unexpected;synthetic source screenshots only",
+    "cleanup": "VERIFIED PG stopped/helper Released/no active build",
+    "releasePreparation": "PASS18focused public-only staging/metadata tests;3nonpublishable templates rejected; production channel unchanged",
+    "relayCandidate": "REVIEW ONLY latest42reported tests; frame/ACKSQLwrites0; modeled request budget58roomminutes/day at8listeners with assumptions; not production accepted"
+  },
+  "blockers": [
+    "Zero-cost Cloudflare relay/native adapter prototypes owned by parent are not yet integrated or accepted; live voice remains disabled.",
+    "No Firebase project/accounts/credentials/deployment authorized; live push and server configuration remain unavailable.",
+    "Current all-Daily universal38.55MiB exceeds legacy25MiB; x86 lacks native Daily library. Final transport/package and compatible update delivery require verification.",
+    "Final version/source evidence, original-certificate signed APK/metadata, installed-data upgrade and physical feature acceptance remain required. No signing/release occurred."
+  ],
+  "approvalHistory": "Automatic review denied the earlier public controller RPC plus REVOKE/GRANT source patch; verified not applied or retried. The implemented private-function/direct-PostgreSQL controller uses existing service-role permissions with all ten existing privilege statements unchanged. This alternative passed local fixtures. The denial is not a current missing-controller-store blocker; its manager notice ID remains unconfirmed.",
+  "discoveryScope": "Repository configuration, current deployed function metadata and private table/secret-name metadata only. No secret values were read or exported. Separate external accounts may exist.",
+  "currentProductionMetadata": {
+    "checkedAt": "2026-10-25",
+    "region": "ap-south-1",
+    "postgresVersion": "17.11.0.003",
+    "navrangGateEdgeVersion": 7,
+    "privateVoiceAndNotificationTableNames": [],
+    "method": "Read-only Supabase project/function metadata and information_schema table-name query; no application rows or secrets"
+  },
+  "historicalDiscovery": {
+    "checkedAt": "2026-10-19",
+    "baseline": "6f450eb5b03183d5cd2a15de48a33ab820e94f93",
+    "reportBodyHashes": {
+      "navrang_gate": "f812772597e14fbea6ce7c228f9bb950a3a2dfc1d1c02fa371dc0e58e3040c43",
+      "navrang_reports": "b6d280339ca2fc5f3073e54664ce4e4ddc7c4d688407c9327112e92672bf4e04"
+    },
+    "reportBaselineVerified": {
+      "reviewedBtrimHashesMatch": true,
+      "securityInvoker": true,
+      "functionExecuteRoles": [
+        "postgres",
+        "service_role"
+      ],
+      "productionEdgeVersion": 7
+    }
+  },
+  "checkedAtUTC": "2026-10-26T03:35:54+00:00",
+  "signing": {
+    "originalKeyRecovered": true,
+    "localHandoffVerifiedByRecoveryTask": true,
+    "certificateSHA256": "0b3c42f8b3aa0b49541be98278c8b4da96bad90616aa78a2a6b5e110fb2117ce",
+    "implementationTaskOpenedPassword": true,
+    "passwordOnlyInProcessMemory": true,
+    "independentlyVerifiedUsableByImplementationTask": true,
+    "originalBytesUnchanged": true,
+    "signedCandidate": false
+  },
+  "budget": {
+    "maximumINR": 0,
+    "existingFirebaseProject": false,
+    "newAccountsCredentialsDeploymentAuthorized": false,
+    "liveVoiceVerified": false
+  }
+}

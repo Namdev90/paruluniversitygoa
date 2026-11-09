@@ -18,6 +18,7 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
@@ -55,8 +56,8 @@ fun NavrangTheme(appearance: Appearance, content: @Composable () -> Unit) {
             lightColorScheme(
                 primary = Wine,
                 secondary = Gold,
-                background = Color(0xfffff8f8),
-                surface = Color(0xfffff8f8),
+                background = Color(0xfffcfcfc),
+                surface = Color(0xfffcfcfc),
             )
     MaterialTheme(
         colorScheme = colors,
@@ -364,14 +365,31 @@ private fun LoginScreen(
 ) {
     var mode by remember { mutableStateOf("Google") }
     var secret by remember { mutableStateOf("") }
+    val fieldContainer =
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)
+            .compositeOver(MaterialTheme.colorScheme.surface)
     LazyColumn(
-        Modifier.fillMaxSize(),
+        Modifier.fillMaxSize()
+            .wrapContentWidth(Alignment.CenterHorizontally)
+            .widthIn(max = 560.dp),
         contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item { BrandMarks() }
-        item { Text("Your station starts here", style = MaterialTheme.typography.headlineMedium) }
-        item { Text("Checker · Help Desk · Faculty", style = MaterialTheme.typography.titleMedium) }
+        item {
+            Text(
+                "Your station starts here",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        item {
+            Text(
+                "Checker · Help Desk · Faculty",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         item {
             OutlinedButton(
                 onClick = google,
@@ -389,10 +407,14 @@ private fun LoginScreen(
             }
         }
         item {
-            TextButton(onClick = browser, enabled = !busy) { Text("Use Google sign-in in browser") }
+            TextButton(
+                onClick = browser,
+                enabled = !busy,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) { Text("Use Google sign-in in browser") }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     mode == "Code",
                     {
@@ -400,6 +422,7 @@ private fun LoginScreen(
                         secret = ""
                     },
                     label = { Text("Assigned staff code") },
+                    modifier = Modifier.heightIn(min = 48.dp),
                 )
                 FilterChip(
                     mode == "Admin",
@@ -408,6 +431,7 @@ private fun LoginScreen(
                         secret = ""
                     },
                     label = { Text("Administrator") },
+                    modifier = Modifier.heightIn(min = 48.dp),
                 )
             }
         }
@@ -417,6 +441,7 @@ private fun LoginScreen(
                     if (mode == "Admin") "Administrator access" else "Staff code sign-in",
                     style = MaterialTheme.typography.titleLarge,
                 )
+                Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     secret,
                     { secret = it },
@@ -426,9 +451,19 @@ private fun LoginScreen(
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = fieldContainer,
+                            unfocusedContainerColor = fieldContainer,
+                            focusedBorderColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = MaterialTheme.colorScheme.onSurface,
+                        ),
                 )
+                Spacer(Modifier.height(12.dp))
                 Button(
                     enabled = !busy && secret.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                     onClick = {
                         login(
                             if (mode == "Admin") "login" else "checker-login",

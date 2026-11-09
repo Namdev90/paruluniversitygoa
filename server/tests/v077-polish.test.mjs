@@ -51,11 +51,15 @@ test('faculty entry requests permission without granting access',async()=>{
  assert.equal(b.textContent.includes('requested'),true);
  dom.window.close();
 });
-test('admin always retains the report route and is not asked to self-approve',()=>{
- const {dom,w}=fixture({role:'admin',active:true});
- assert.equal(w.document.getElementById('reports-nav').hidden,false);
- assert.equal(w.document.getElementById('station-faculty').textContent.includes('Open reports'),true);
- dom.window.close();
+test('admin Reports are in Account without a station self-approval shortcut',()=>{
+ const {dom,w,calls}=fixture({role:'admin',active:true});
+ try{
+  assert.equal(w.document.getElementById('reports-nav').hidden,true);
+  assert.equal(w.document.getElementById('station-faculty').hidden,true);
+  const accountReports=w.document.querySelector('#admin-account-tools #admin-account-reports');
+  assert.equal(accountReports?.dataset.view,'reports');
+  assert.deepEqual(calls,[]);
+ }finally{dom.window.close()}
 });
 test('motion has a reduced-motion override and no continuous filter animation',()=>{
  const p=new URL('../../app/assets/art/brand-shell.css',import.meta.url);

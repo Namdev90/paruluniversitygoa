@@ -1,0 +1,342 @@
+{
+  "purpose": "DIAGNOSTIC_ONLY_NOT_A_RELEASE_CANDIDATE",
+  "sourceCommit": "87d7a57f8294424571f8fa681a6f359a86faa41f",
+  "sourceTree": "33cb07931234b1d122e9e5887cca7c1339795e23",
+  "worktreeClean": true,
+  "toolchain": {
+    "jdk": "Temurin21.0.13+9",
+    "jdkArchiveSha256": "d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c",
+    "gradle": "9.6.0",
+    "gradleDistributionSha256": "bbaeb2fef8710818cf0e261201dab964c572f92b942812df0c3620d62a529a01",
+    "agp": "9.4.1",
+    "kotlin": "2.4.21",
+    "sdkPlatform": "android-37.0 revision2",
+    "buildTools": "36.0.0",
+    "platformTools": "37.0.1",
+    "sdkCommandLineToolsUsed": "19.0",
+    "ndk": "30.0.16248370"
+  },
+  "properties": {
+    "navrangBundledOpusIncluded": true,
+    "navrangOptimizedRelease": true,
+    "navrangVoiceEnabled": false,
+    "navrangPushEnabled": false,
+    "navrangDailySdkIncluded": false,
+    "navrangAbiSplits": false
+  },
+  "nativeCompilation": "DEBUG_AND_RELEASE_PASS",
+  "unitTests": {
+    "tests": 317,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "unitTestSuites": [
+    {
+      "name": "in.navrang.gate.NativeDomainTest",
+      "tests": "36",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.ClassicScannerDetailsTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.NativeFindMeActionsTest",
+      "tests": "16",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.GateVoiceAuthorityTest",
+      "tests": "20",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.NativeRelayRuntimeTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.NativeLocatorTest",
+      "tests": "18",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.GateRelayAuthorityTest",
+      "tests": "38",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.ReportSaveCoordinatorTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.ReadinessPolicyTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.PermissionsReadinessTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.ClassicHostTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.NativeReconciliationTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.LoginPresentationUiTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.AuthorizedDocumentWriterTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.AuthResponsePolicyTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.ClassicScannerUiTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.VoiceSessionServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.VoiceCoordinatorTest",
+      "tests": "56",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.NativeWorkflowUiTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.NativeLocatorBridgeTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.StableListsTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.NativeLocatorRoleLossTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "in.navrang.gate.AppLockHostTest",
+      "tests": "20",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "lint": {
+    "debug": {
+      "Warning": 32
+    },
+    "release": {
+      "Warning": 32
+    }
+  },
+  "finalGradleRun": "PASS_97_ACTIONABLE_TASKS_15M31S",
+  "execution": "one worker, no parallel,2GiB heap; fresh dependency and four-ABI build; final run passed",
+  "apk": {
+    "path": "native-app/build/outputs/apk/release/native-app-release-unsigned.apk",
+    "bytes": 10002238,
+    "sha256": "d2b45aef37bc3d54e07f4a968f598f2b46f9c1a4e8c45e22b1f521a5c574b611",
+    "unsigned": true,
+    "package": "in.navrang.gate",
+    "versionCode": 18,
+    "versionName": "0.8.0",
+    "minSdk": 24,
+    "targetSdk": 37,
+    "universal": true,
+    "sizeLimitBytes": 26214400,
+    "nativeLibraries": [
+      {
+        "abi": "arm64-v8a",
+        "bytes": 225264,
+        "sha256": "5d370a7dbf4cbb0a083ccae58aedcb20ee83325801cd1b76f673c8a05fccb085",
+        "elfBits": 64,
+        "elfMachine": 183,
+        "minimumLoadAlignment": 16384,
+        "jniExports": [
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeCreate",
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy",
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeEncode"
+        ],
+        "neededLibraries": [
+          "libc.so",
+          "libdl.so",
+          "libm.so"
+        ]
+      },
+      {
+        "abi": "armeabi-v7a",
+        "bytes": 221456,
+        "sha256": "5cc29954f9d6978b6295818d5c035e0539d769b494c2e405a86e0f807955ad39",
+        "elfBits": 32,
+        "elfMachine": 40,
+        "minimumLoadAlignment": 16384,
+        "jniExports": [
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeCreate",
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy",
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeEncode"
+        ],
+        "neededLibraries": [
+          "libc.so",
+          "libdl.so",
+          "libm.so"
+        ]
+      },
+      {
+        "abi": "x86_64",
+        "bytes": 241304,
+        "sha256": "d6a26e87dad76fde7cf30460d78c66e633ae5a38d7174e8f98cc760c357b4ddc",
+        "elfBits": 64,
+        "elfMachine": 62,
+        "minimumLoadAlignment": 16384,
+        "jniExports": [
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeCreate",
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy",
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeEncode"
+        ],
+        "neededLibraries": [
+          "libc.so",
+          "libdl.so",
+          "libm.so"
+        ]
+      },
+      {
+        "abi": "x86",
+        "bytes": 238368,
+        "sha256": "fc975f14f61619e5a62f881e857263f8d7934b0c8fb638967aa1d9dd27a45cfb",
+        "elfBits": 32,
+        "elfMachine": 3,
+        "minimumLoadAlignment": 16384,
+        "jniExports": [
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeCreate",
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy",
+          "Java_in_navrang_gate_BundledRelayEncoder_nativeEncode"
+        ],
+        "neededLibraries": [
+          "libc.so",
+          "libdl.so",
+          "libm.so"
+        ]
+      }
+    ],
+    "zip16KiBAlignment": "PASS",
+    "archiveCrc": "PASS",
+    "sourceAssetsAndOriginalArtwork": "PASS",
+    "classicCssSha256": "5ead41ffe774925f295ba8ac434bd98dc970b5e8aafdd3f1dec8a4a85d7bf42b",
+    "signingMaterialAbsent": "PASS",
+    "sourceAssetsSha256": {
+      "assets/config.js": "8d033e65c28ed1ec8c8931c47196fa672d360a2c45a693f5b6c7760d533b0688",
+      "assets/locator.js": "229661abb9540e4aad6946de06072114086213ca2d856a8b0ba9fca8f5ad4a1c",
+      "assets/index.html": "d918d5eb6422f6e22da3243cb802f42eb898ffc5054ef3f6723af4e68b50e247",
+      "assets/art/classic-restore.css": "5ead41ffe774925f295ba8ac434bd98dc970b5e8aafdd3f1dec8a4a85d7bf42b"
+    }
+  },
+  "releaseCandidateGate": {
+    "status": "BLOCKED",
+    "reason": "release.versionCode18 equals updates/latest.versionCode18; coordinated newer version required",
+    "tool": "tools/verify-unsigned-candidate.py",
+    "gateUnmodified": true
+  },
+  "existingBuilderZipalignF4Retest": {
+    "status": "PASS",
+    "source": "earlier8e45506 diagnostic APK",
+    "note": "Existing16KiB native offsets preserved; no builder change made"
+  },
+  "limits": [
+    "VOICE_ENABLED=false",
+    "PUSH_ENABLED=false",
+    "No production Firebase configuration supplied or generated",
+    "Daily SDK not included",
+    "No physical-device/WebView/IME/media acceptance",
+    "Unsigned diagnostic APK remains version18, matching published version18; fresh coordinated version and approval gates required",
+    "No signing or publication performed"
+  ],
+  "signed": false,
+  "published": false,
+  "nativeSourceChain": {
+    "status": "PASS",
+    "entrypoints": 19,
+    "java": "Temurin21.0.13+9 explicitly configured",
+    "log": "native-tests-87d7a57-jdk.log"
+  },
+  "logs": [
+    "toolchains/android-build/build-87d7a57.log",
+    "native-tests-87d7a57-jdk.log"
+  ],
+  "nativeRebuild": {
+    "status": "PASS",
+    "note": "Current native hashes differ from historical builds. Absolute restored workspace source paths are embedded in libopus assertion strings; new ELF/JNI/alignment inspection and exact APK-to-fresh-output hash comparison passed.",
+    "ndkArchiveSha256": "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2"
+  }
+}

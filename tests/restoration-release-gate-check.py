@@ -24,10 +24,25 @@ class RestorationGate(unittest.TestCase):
     def save(self):
         (self.root / 'docs/restoration-release-approval.json').write_text(json.dumps(self.approval))
 
+    @classmethod
+    def setUpClass(cls):
+        temp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(temp.cleanup)
+        cls.seed_root = Path(temp.name)
+        seed = cls()
+        seed.root = cls.seed_root
+        seed.create_fixture()
+        cls.seed_approval = seed.approval
+
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        # Copy the committed seed so each case still mutates its own Git repository.
+        shutil.copytree(self.seed_root, self.root, dirs_exist_ok=True)
+        self.approval = self.seed_approval.copy()
+
+    def create_fixture(self):
         (self.root / 'docs').mkdir()
         (self.root / 'app/assets/art').mkdir(parents=True)
         shutil.copyfile(ROOT / 'app/assets/art/app-icon.png', self.root / 'app/assets/art/app-icon.png')

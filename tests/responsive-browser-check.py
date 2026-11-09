@@ -24,7 +24,7 @@ DESK_RECORDS = [dict(id=f'synthetic-case-{i}',ticket_id=f'DESK{i:04d}',status=st
 STATS = dict(total=60,eligible=60,admitted=40,remaining=20,blocked=0,lastMinute=0,lastFiveMinutes=0,duplicateAttempts=2,blockedAttempts=1)
 SUMMARY = dict(registered=12,eligible=12,blocked=0,attended=9,registeredAttended=8,organizerConfirmed=1,noShow=4,serverIssues=1,issueTickets=1,duplicateAttempts=2,pendingHelpDesk=0,generatedAt=STAMP)
 def run():
- parser=argparse.ArgumentParser();parser.add_argument('--output',default=str(ROOT/'.build/responsive-review'));parser.add_argument('--baseline',action='store_true');parser.add_argument('--report-stress',action='store_true');parser.add_argument('--sizes',default='320x640,360x800,390x844,768x1024,1024x768,1366x768,1920x1080,640x360');args=parser.parse_args()
+ parser=argparse.ArgumentParser();parser.add_argument('--output',default=str(ROOT/'.build/responsive-review'));parser.add_argument('--baseline',action='store_true');parser.add_argument('--report-stress',action='store_true');parser.add_argument('--interactions-only',action='store_true');parser.add_argument('--login-only',action='store_true');parser.add_argument('--sizes',default='320x640,360x800,390x844,768x1024,1024x768,1366x768,1920x1080,640x360');args=parser.parse_args()
  out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
  assets=ROOT/'app/assets'
  markup=(assets/'index.html').read_text()
@@ -35,7 +35,7 @@ def run():
  images={}
  for path in (assets/'art').iterdir():
   if path.suffix in ('.png','.jpg','.webp','.svg'):
-   images['art/'+path.name]='data:'+mimetypes.guess_type(path.name)[0]+';base64,'+base64.b64encode(path.read_bytes()).decode()
+   images['art/'+path.name]='data:'+(mimetypes.guess_type(path.name)[0] or {'.webp':'image/webp','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'}[path.suffix])+';base64,'+base64.b64encode(path.read_bytes()).decode()
  for src,data in images.items():markup=markup.replace('src="'+src+'"','src="'+data+'"')
  reports=[]; failures=[]; errors=[]; unexpected=[]; review_shots=[]
  try:
@@ -55,12 +55,16 @@ def run():
       Object.defineProperty(HTMLImageElement.prototype,'src',{get:prop.get,set(value){prop.set.call(this,f.images[value]||value);}});
       const realTimeout=window.setTimeout.bind(window);window.setTimeout=(fn,ms,...args)=>fn?.name==='endIntro'?0:realTimeout(fn,ms,...args);
       window.AudioContext=undefined;window.webkitAudioContext=undefined;
-      window.fixtureCalls=[];window.fixtureUnexpected=[];window.fixtureReportMode='normal';window.fixtureDeskPopulated=false;
+      window.fixtureCalls=[];window.fixtureUnexpected=[];window.fixtureReportMode='normal';window.fixtureDeskPopulated=false;window.fixtureProfile=f.profile;window.fixtureAuthLost=false;
       window.fetch=async(url,options)=>{
        const body=options?.body?JSON.parse(options.body):{};const action=body.action||'config';window.fixtureCalls.push(action);
        let value;
+       if(window.fixtureAuthLost&&action!=='config')return new Response(JSON.stringify({ok:false,error:'Session expired.'}),{status:401});
        if(action==='config')value={eventId:'O9KL3',googleEnabled:true,pollMs:2000};
-       else if(action==='me')value=f.profile;
+       else if(action==='me')value=window.fixtureProfile;
+       else if(action==='notifications-feed')value={revision:0,serverTime:new Date().toISOString(),items:[],activeIds:[],dashboard:null};
+       else if(action==='locator-status')value=f.role==='admin'?{eventId:'O9KL3',administrator:true,assigned:false}:{eventId:'O9KL3',disclosureVersion:1,location:false,findMe:false,onDuty:false,version:0,expiresAt:null};
+       else if(action==='locator-inbox'||action==='locator-roster')value={items:[]};
        else if(action==='sync')value=f.role==='admin'?{dataRevision:1,records:f.records,entries:f.entries,cursor:8,hasMore:false,source:'Synthetic UI fixture',stats:f.stats,checkers:[{id:'11111111-1111-4111-8111-111111111111',name:'Demo Checker',method:'google',email:'checker@example.invalid',active:true,scanner:true,helpdesk:false,station:'checker',entries:8}]}:{staffSummary:true,scanner:f.role==='checker',dataRevision:-1,cursor:0,hasMore:false,records:null,entries:[],stats:{ownScans:f.role==='checker'?8:0,totalEntries:9}};
        else if(action==='reports-summary'){
         if(['unavailable','denied'].includes(window.fixtureReportMode))return new Response(JSON.stringify({ok:false,error:window.fixtureReportMode==='denied'?'Reporting access is not approved for this account.':'Report service temporarily unavailable. Refresh to retry.'}),{status:window.fixtureReportMode==='denied'?403:503});
@@ -81,8 +85,10 @@ def run():
        const blocked=action=>{window.fixtureUnexpected.push('Native.'+action);throw Error('Disallowed native fixture operation: '+action);};
        window.Native={
         local(action){
-         if(action==='session')return JSON.stringify({ok:true,data:{profile:f.profile}});
+         if(action==='session')return JSON.stringify({ok:true,data:{profile:f.profile,generation:1}});
          if(action==='snapshot')return JSON.stringify({ok:true,data:{deviceId:'synthetic-native-preview',dataRevision:1,cursor:40,source:'Synthetic UI fixture',lastSync:f.summary.generatedAt,stats:f.stats,localCount:f.records.length,pending:0,legacyCount:0,entries:f.entries.slice(0,15)}});
+         if(action==='admin-snapshot')return JSON.stringify({ok:true,data:{ownerGeneration:1,dataRevision:1,records:f.records,entries:f.entries,cursor:40,hasMore:false,source:'Synthetic UI fixture',lastSync:f.summary.generatedAt,stats:f.stats,checkers:[]}});
+         if(action==='refresh')return JSON.stringify({ok:true,data:{scheduled:true}});
          return blocked('local:'+action);
         },
         api(action,payload,id){
@@ -103,6 +109,12 @@ def run():
     for script in scripts:page.evaluate((assets/script).read_text())
     page.wait_for_function("[...document.querySelectorAll('.combined-brand-mark>img')].every(e=>e.complete&&e.naturalWidth===2400)")
     page.wait_for_timeout(50)
+   def navigate(page,view):
+    if view in ('settings','admin') or view=='reports' and page.evaluate("GateClient.profile()?.role==='admin'"):
+     if page.evaluate('document.body.dataset.route')!='account':page.locator('#main-nav [data-view="account"]').click()
+     page.locator({'settings':'#account-settings','admin':'#admin-nav','reports':'#admin-account-reports'}[view]).click()
+    else:page.locator(f'#main-nav [data-view="{view}"]').click()
+    assert page.evaluate('document.body.dataset.route')==view
    def measure(page,role,view,width,height):
     result=page.evaluate(r'''() => {
       const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'&&!e.closest('[hidden]');};
@@ -126,112 +138,45 @@ def run():
       // showModal places the dialog in the top layer: outer DOM overflow cannot clip it.
       // https://drafts.csswg.org/css-position-4/#top-layer-styling
       for(let p=e.parentElement;p;p=p.parentElement){const s=getComputedStyle(p),b=p.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(s.overflowY)){top=Math.max(top,b.top);bottom=Math.min(bottom,b.bottom)}if(/auto|scroll|hidden|clip/.test(s.overflowX)){left=Math.max(left,b.left);right=Math.min(right,b.right)}if(p.matches('dialog:modal'))break}
-      const x=(r.left+r.right)/2;const hitTarget=[r.top+2,(r.top+r.bottom)/2,r.bottom-2].every(y=>e.contains(document.elementFromPoint(x,y)));
-      return {height:r.height,width:r.width,visibleHeight:Math.max(0,bottom-top),visibleWidth:Math.max(0,right-left),hitTarget,viewport:{width:innerWidth,height:innerHeight}};
+      const x=(r.left+r.right)/2,hits=[r.top+2,(r.top+r.bottom)/2,r.bottom-2].map(y=>document.elementFromPoint(x,y));
+      const hitTarget=hits.every(t=>e.contains(t));
+      return {height:r.height,width:r.width,visibleHeight:Math.max(0,bottom-top),visibleWidth:Math.max(0,right-left),hitTarget,coveredByNavigation:hits.some(t=>!e.contains(t)&&t?.closest('#main-nav')),viewport:{width:innerWidth,height:innerHeight}};
     }""")
     reports.append(dict(control=label,**result))
     required_height=result['height']-.5 if minimum==0 else min(minimum,result['height'])
     if result['height']<minimum or result['visibleHeight']<required_height or result['visibleWidth']<min(43,result['width']) or not result['hitTarget']:failures.append(dict(unreachableControl=label,**result))
    def measure_report_downloads(page):
     page.wait_for_function("!document.getElementById('report-csv').disabled")
-    page.locator('#report-tab-downloads').click();page.wait_for_timeout(40)
-    in_dialog=page.locator('#report-download-open').is_visible()
-    if in_dialog:page.locator('#report-download-open').click()
-    if page.locator('#report-download-back').is_visible():page.locator('#report-download-back').click()
-    measure_control(page,'#report-kind','Dataset without page scrolling',minimum=40,scroll=in_dialog)
-    if page.locator('#report-download-next').is_visible():page.locator('#report-download-next').click()
-    in_dialog=page.locator('#report-download-dialog').is_visible()
-    if page.locator('#report-download-open').is_visible() and not in_dialog:
-     page.locator('#report-download-open').click();in_dialog=True
-    if page.locator('#report-format').is_visible():
-     measure_control(page,'#report-format','File format without scrolling',minimum=40,scroll=False)
-     for kind in ('csv','xlsx','pdf'):
-      page.locator('#report-format').select_option(kind)
-      measure_control(page,'#report-download-selected','Reachable report '+kind,minimum=40,scroll=False)
-    else:
-     for selector in ('#report-csv','#report-xlsx','#report-pdf'):
-      measure_control(page,selector,'Reachable report '+selector,minimum=40,scroll=in_dialog)
-    if in_dialog:page.locator('#report-download-close').click()
-    page.locator('#report-tab-overview').click();page.wait_for_timeout(40)
-    for _ in range(11):
-     if page.locator('#report-metrics-previous').is_visible() and not page.locator('#report-metrics-previous').is_disabled():page.locator('#report-metrics-previous').click()
-     else:break
-    seen=set()
-    for _ in range(11):
-     page.evaluate('NavrangReportLayout.fit()')
-     if page.locator('#report-totals-open').is_visible():
-      measure_control(page,'#report-totals-open','Accessible totals without page scroll',minimum=40,scroll=False)
-      page.locator('#report-totals-open').click()
-      seen.update(page.locator('#report-stats article').all_text_contents())
-      for i in range(page.locator('#report-stats article').count()):
-       measure_control(page,f'#report-stats article:nth-child({i+1})','Accessible total in dialog',minimum=0,scroll=True)
-      page.locator('#report-totals-dialog > button').click()
-     else:
-      seen.update(page.locator('#report-stats article:not([hidden])').all_text_contents())
-     result=page.evaluate("""()=>{
-      const view=document.getElementById('view-reports'),main=document.querySelector('main'),r=view.getBoundingClientRect(),m=main.getBoundingClientRect();
-      const bad=[...view.querySelectorAll('button,article.report-stat')].filter(e=>e.getClientRects().length&&!e.hidden).filter(e=>{const b=e.getBoundingClientRect();return b.height<=0||b.top<r.top-1||b.bottom>r.bottom+1}).map(e=>e.id||e.className);
-      return {height:view.clientHeight,scrollHeight:view.scrollHeight,mainHeight:main.clientHeight,mainScroll:main.scrollHeight,bounded:r.height>0&&r.top>=m.top-1&&r.bottom<=m.bottom+1,bad};
-     }""")
-     reports.append(dict(reportConsolidatedLayout=result))
-     if not result['bounded'] or result['scrollHeight']>result['height']+1 or result['mainScroll']>result['mainHeight']+1 or result['bad']:failures.append(dict(reportConsolidationFailure=result))
-     if page.locator('#report-totals-open').is_visible() or page.locator('#report-metrics-next').is_disabled():break
-     page.locator('#report-metrics-next').click()
-    if len(seen)!=11:failures.append(dict(unreachableReportMetrics=len(seen),viewport=page.viewport_size,seen=list(seen)))
+    page.locator('#report-tab-downloads').click()
+    for selector in ('#report-kind','#report-csv','#report-xlsx','#report-pdf'):
+     measure_control(page,selector,'Reachable report '+selector,minimum=40)
+    page.locator('#report-tab-overview').click()
+    metrics=page.locator('#report-stats article:not([hidden])')
+    if metrics.count()!=11:failures.append(dict(unreachableReportMetrics=metrics.count()))
+    for i in range(metrics.count()):measure_control(page,f'#report-stats article:nth-child({i+1})','Report metric',minimum=0)
+    if page.locator('.compact-pager').count():failures.append(dict(unwantedPager=True))
     page.locator('#report-tab-downloads').click()
    def measure_teacher_access(page):
-    page.locator('#report-tab-teachers').click();page.wait_for_timeout(40)
-    if page.locator('#report-teacher-search').is_visible():measure_control(page,'#report-teacher-search','Teacher search without scrolling',minimum=40,scroll=False)
-    seen=set()
-    for _ in range(20):
-     page.evaluate('NavrangReportLayout.fit()')
-     if page.locator('#report-teachers-open').is_visible():
-      measure_control(page,'#report-teachers-open','Teacher access without page scroll',minimum=40,scroll=False)
-      page.locator('#report-teachers-open').click()
-      for i in range(page.locator('#report-teachers .report-member').count()):
-       seen.add(page.locator(f'#report-teachers .report-member:nth-child({i+1}) strong').inner_text())
-       measure_control(page,f'#report-teachers .report-member:nth-child({i+1}) button','Teacher action in accessible dialog',minimum=40,scroll=True)
-      page.locator('#report-teacher-dialog > button').click()
-      break
-     for row in page.locator('#report-teachers .report-member:not([hidden])').all():
-      seen.add(row.locator('strong').inner_text())
-     for selector in ('#report-members-previous','#report-members-next'):
-      if page.locator(selector).is_visible():measure_control(page,selector,'Teacher pages without scroll',minimum=40,scroll=False)
-     for i in range(page.locator('#report-teachers .report-member:not([hidden])').count()):
-      control=page.locator('#report-teachers .report-member:not([hidden]) button').nth(i)
-      control.evaluate("e=>e.dataset.fixtureVisibleAction='true'")
-      measure_control(page,'[data-fixture-visible-action]','Visible teacher action',minimum=40,scroll=False)
-      control.evaluate("e=>delete e.dataset.fixtureVisibleAction")
-     if page.locator('#report-members-next').is_disabled():break
-     page.locator('#report-members-next').click()
-    if len(seen)!=9:failures.append(dict(unreachableTeacherAccounts=len(seen)))
-    search_in_dialog=page.locator('#report-teachers-open').is_visible()
-    if search_in_dialog:page.locator('#report-teachers-open').click()
+    page.locator('#report-tab-teachers').click()
+    measure_control(page,'#report-teacher-search','Teacher search',minimum=40)
+    rows=page.locator('#report-teachers .report-member:not([hidden])')
+    if rows.count()!=9:failures.append(dict(unreachableTeacherAccounts=rows.count()))
+    for i in range(rows.count()):measure_control(page,f'#report-teachers .report-member:nth-child({i+1}) button','Teacher action',minimum=40)
     page.locator('#report-teacher-search').fill('Synthetic Teacher 8')
-    page.wait_for_timeout(40)
     visible=page.locator('#report-teachers .report-member:not([hidden]) strong').all_text_contents()
     if len(visible)!=1 or 'Synthetic Teacher 8' not in visible[0]:failures.append(dict(teacherSearch=visible))
     page.locator('#report-teacher-search').fill('')
-    if search_in_dialog:page.locator('#report-teacher-dialog > button').click()
    def measure_scroll(page,view):
-    result=page.evaluate("""view=>{
-      const root=document.querySelector(view==='students'?'#admin-registrations':'#view-entries');
-      const scroller=root.querySelector('.rows-scroll');
-      const controls=[document.querySelector('.topbar'),document.querySelector('.mobile-nav'),root.querySelector('.list-status'),...(view==='students'?[root.querySelector('.table-toolbar'),document.querySelector('.admin-tabs')]:[])];
-      const bounds=()=>controls.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]});
-      const before=bounds();scroller.scrollTop=scroller.scrollHeight;
-      return {view,before,after:bounds(),offset:scroller.scrollTop,height:scroller.clientHeight,scrollHeight:scroller.scrollHeight};
-    }""",view)
-    if result['scrollHeight']>result['height']+1:failures.append(dict(paginatedListOverflow=result))
-    if result['height']<=0 or any(abs(a-b)>1 for x,y in zip(result['before'],result['after']) for a,b in zip(x,y)):failures.append(dict(stabilityFailure=result))
-    reports.append(dict(scroll=result))
-    root='#admin-registrations' if view=='students' else '#view-entries'
-    page.locator(root+' .rows-scroll').hover()
-    parent=page.locator(root if view=='students' else root+' .table-panel')
-    parent_before=parent.evaluate('e=>e.scrollTop')
-    page.mouse.wheel(0,300);page.wait_for_timeout(80)
-    parent_after=parent.evaluate('e=>e.scrollTop')
-    if abs(parent_after-parent_before)>1:failures.append(dict(scrollEscapedRows=view,before=parent_before,after=parent_after))
+    selector='#registration-rows' if view=='students' else '#recent-entries'
+    expected=60 if view=='students' else 40
+    if page.locator(selector+' tr').count()!=expected:failures.append(dict(inaccessibleRows=view,count=page.locator(selector+' tr').count()))
+    page.evaluate('window.scrollTo(0,0)')
+    before=page.locator('.topbar').bounding_box()['y']
+    page.locator(selector+' tr').last.scroll_into_view_if_needed()
+    after=page.locator('.topbar').bounding_box()['y']
+    if after>=before:failures.append(dict(headerDidNotScroll=view))
+    measure_control(page,selector+' tr:last-child button','Last record action',minimum=40)
+    reports.append(dict(allRowsReachable=view,count=expected,headerScrolled=after<before))
    def capture_review_states(width,height):
     """Actual UI clicks/scrolls and fixture responses only; no visual substitutions.
     Extra states use fresh contexts so existing geometry assertions stay unchanged.
@@ -267,11 +212,12 @@ def run():
     page.locator('#show-admin-login').click();shot(page,'login','administrator')
     page.locator('#auth-back').click();finish(ctx,page)
     ctx,page=fresh('admin')
+    navigate(page,'admin')
     dialog(page,'#registration-rows .table-link','#student-dialog','registration-details','#close-student','#dialog-details dd:last-child')
     page.locator('#registration-rows .table-link').first.click();page.locator('#edit-student').click()
     shot(page,'admin','edit-registration');shot(page,'admin','edit-registration-lower','#ticket-editor button')
     page.locator('#close-editor').click()
-    page.locator('#reports-nav').click();page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
+    navigate(page,'reports');page.wait_for_function("document.getElementById('report-status').textContent.includes('Live report ready')")
     page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
     shot(page,'admin','reports-evidence-caveat','#report-caveat')
     page.locator('#report-notes-dialog button').click();page.locator('#report-tab-downloads').click()
@@ -310,11 +256,17 @@ def run():
     page.locator('#desk-records .desk-record-info').first.click()
     shot(page,'admin','helpdesk-saved-record');shot(page,'admin','helpdesk-saved-record-lower','#desk-submit')
     page.locator('#desk-close-record').click()
-    page.locator('[data-view="account"]').click()
-    # Android readiness is deliberately hidden in the browser and is not fabricated.
-    if page.locator('#readiness-panel').is_visible():shot(page,'admin','account-readiness','#readiness-panel')
-    shot(page,'admin','account-update-settings','#automatic-updates')
-    page.locator('#admin-nav').click();page.locator('[data-admin-tab="checkers"]').click()
+    navigate(page,'account');shot(page,'admin','account-tools','#admin-account-tools')
+    navigate(page,'settings')
+    assert page.locator('#app-updates').is_visible()
+    assert page.locator('#settings-location-audio,#notifications-button').count()==0
+    shot(page,'admin','settings','#app-updates')
+    if width>=960:
+     page.locator('#portal-menu-toggle').click()
+     shot(page,'admin','portal-menu-collapsed')
+     page.locator('#portal-menu-toggle').click()
+    navigate(page,'account')
+    navigate(page,'admin');page.locator('[data-admin-tab="checkers"]').click()
     dialog(page,'#checker-list .checker-row button','#staff-dialog','staff-access','#close-staff','#staff-access-form button')
     dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
     page.locator('[data-admin-tab="updates"]').click()
@@ -327,16 +279,16 @@ def run():
     page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
     shot(page,'faculty','reports-evidence-caveat','#report-caveat')
     page.locator('#report-notes-dialog button').click()
-    page.locator('[data-view="account"]').click();shot(page,'faculty','account')
+    navigate(page,'account');shot(page,'faculty','account')
     finish(ctx,page)
     # Native-only shared-web controls, with a separately labelled mocked bridge.
     # Android OS permission prompts, file pickers and real camera remain excluded.
     ctx,page=fresh('admin',mocked_native=True)
-    page.locator('[data-view="account"]').click()
+    navigate(page,'settings')
     assert page.locator('#readiness-panel').is_visible()
     shot(page,'mock-native-admin','account-readiness','#readiness-panel')
     shot(page,'mock-native-admin','account-update-settings','#automatic-updates')
-    page.locator('#admin-nav').click();page.locator('[data-admin-tab="updates"]').click()
+    navigate(page,'admin');page.locator('[data-admin-tab="updates"]').click()
     assert page.locator('#import-registration').is_visible()
     shot(page,'mock-native-admin','import-controls','#import-registration')
     finish(ctx,page)
@@ -354,7 +306,129 @@ def run():
       page.wait_for_function("document.getElementById('desk-records').textContent.includes('No saved records')")
       shot(page,role,'saved-empty')
      finish(ctx,page)
+   def interaction_review(width,height):
+    ctx=browser.new_context(viewport=dict(width=width,height=height),reduced_motion='reduce')
+    ctx.route('**/*',lambda route:route.abort())
+    page=ctx.new_page();page.set_default_timeout(5000);page.on('pageerror',lambda e:errors.append(str(e)))
+    def check(name,passed,details=None):
+     item=dict(interaction=name,width=width,height=height,passed=bool(passed),details=details);reports.append(item)
+     if not passed:failures.append(item)
+    def ready():
+     open_source(page,'admin');page.evaluate("document.getElementById('skip-intro').click()")
+     page.wait_for_function("document.getElementById('intro').hidden")
+     if page.evaluate('document.body.dataset.route')!='admin':navigate(page,'admin')
+     page.wait_for_function("document.querySelectorAll('#registration-rows tr').length===60")
+    ready()
+    last=page.locator('#registration-rows tr:last-child button').first;last.focus();last.scroll_into_view_if_needed()
+    before=page.evaluate("window.fixtureFocused=document.activeElement;window.fixturePollCount=fixtureCalls.filter(a=>a==='sync').length;({scroll:scrollY,row:fixtureFocused.closest('tr').dataset.listKey})")
+    page.evaluate("document.getElementById('admin-refresh').click()")
+    page.wait_for_function("fixtureCalls.filter(a=>a==='sync').length>fixturePollCount")
+    page.wait_for_timeout(100)
+    after=page.evaluate("({scroll:scrollY,same:document.activeElement===fixtureFocused,connected:fixtureFocused.isConnected})")
+    check('poll preserves focused row and document scroll',after['same'] and after['connected'] and abs(after['scroll']-before['scroll'])<2,dict(before=before,after=after))
+    check('header scrolls naturally',page.locator('.topbar').bounding_box()['y']<0)
+    page.keyboard.press('Enter');page.locator('#student-dialog').wait_for(state='visible')
+    check('keyboard opens final registration',page.locator('#dialog-name').inner_text()=='Synthetic Student 60')
+    page.keyboard.press('Escape')
+    check('escape restores row focus',page.evaluate("document.activeElement===fixtureFocused&&!document.getElementById('student-dialog').open"))
+    page.locator('#student-search').fill('DEMO0060')
+    check('search includes final record',page.locator('#registration-rows tr').count()==1)
+    page.locator('#student-search').fill('')
+    page.locator('[data-admin-tab="registrations"]').focus();page.keyboard.press('End')
+    check('admin tabs support End',page.evaluate("document.activeElement.dataset.adminTab==='updates'&&!document.getElementById('admin-updates').hidden"))
+    page.keyboard.press('Home')
+    check('admin tabs support Home',page.evaluate("document.activeElement.dataset.adminTab==='registrations'"))
+    navigate(page,'reports');page.locator('#report-tab-downloads').focus();page.keyboard.press('Home')
+    check('report tabs support Home',page.evaluate("document.activeElement.id==='report-tab-overview'&&!document.getElementById('report-overview').hidden"))
+    page.keyboard.press('End')
+    check('report tabs support End',page.evaluate("document.activeElement.id==='report-tab-teachers'&&!document.getElementById('report-manage').hidden"))
+    page.locator('#report-tab-overview').click();page.locator('#report-notes-open').focus();page.keyboard.press('Enter')
+    page.locator('#report-notes-dialog').wait_for(state='visible');page.keyboard.press('Escape')
+    check('report dialog restores keyboard focus',page.evaluate("document.activeElement.id==='report-notes-open'"))
+    page.locator('#account-tool-back').focus();page.keyboard.press('Enter')
+    check('keyboard returns from admin Reports to Account tools',page.evaluate("document.body.dataset.route==='account'&&!document.getElementById('admin-account-tools').hidden&&document.querySelector('#main-nav [aria-current=page]')?.dataset.view==='account'"))
+    check('admin bottom navigation omits Admin and Reports',page.locator('#main-nav [data-view="admin"]:visible,#main-nav [data-view="reports"]:visible').count()==0)
+    page.locator('[data-section-info="account"]').focus();page.keyboard.press('Enter')
+    page.locator('#section-info').wait_for(state='visible');page.keyboard.press('Escape')
+    check('Account information restores keyboard focus',page.evaluate("document.activeElement.dataset.sectionInfo==='account'&&!document.getElementById('section-info').open"))
+    page.emulate_media(reduced_motion='no-preference')
+    motion=page.evaluate("""() => {
+      for(const selector of ['#entries-nav','#main-nav [data-view="account"]','#admin-nav','#account-tool-back','#admin-account-reports','#account-tool-back'])document.querySelector(selector).click();
+      const active=[...document.querySelectorAll('main .view')].filter(e=>!e.hidden).map(e=>e.id);
+      const animations=document.getAnimations().filter(a=>a.effect?.target?.closest('main .view'));
+      return {route:document.body.dataset.route,active,animations:animations.length,frames:animations.map(a=>a.effect.getKeyframes().map(k=>({opacity:k.opacity,transform:k.transform}))),snapshots:document.querySelectorAll('[data-motion-snapshot]').length};
+    }""")
+    check('rapid navigation leaves only latest authorized view',motion['route']=='account' and motion['active']==['view-account'] and motion['snapshots']==0,motion)
+    page.emulate_media(reduced_motion='reduce');page.wait_for_timeout(50)
+    check('system reduced motion cancels transitions',page.evaluate("document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
+    page.emulate_media(reduced_motion='no-preference')
+    navigate(page,'admin');check('native reduced motion cancels transitions',page.evaluate("NavrangMotion.setReducedMotion(true);document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
+    page.evaluate("NavrangMotion.setReducedMotion(false)")
+    navigate(page,'reports');page.locator('#report-tab-overview').click();page.locator('#report-notes-open').click()
+    page.evaluate("""async p=>{window.fixtureProfile=p;await GateClient.api('me');onGateEvent(JSON.stringify({type:'profile'}));}""",PROFILE['faculty'])
+    role=page.evaluate("""() => ({route:document.body.dataset.route,rows:[...document.querySelectorAll('#registration-rows tr,#recent-entries tr,#all-entry-rows tr,#checker-list .checker-row,#report-teachers .report-member')].length,teacherTabHidden:document.getElementById('report-tab-teachers').hidden,dialogOpen:document.getElementById('report-notes-dialog').open})""")
+    # Faculty keeps report access, so the report evidence dialog remains authorized.
+    check('admin loss removes private lists and teacher controls',role['rows']==0 and role['teacherTabHidden'] and page.locator('#admin-account-tools:visible').count()==0 and page.locator('#reports-nav').is_visible(),role)
+    page.evaluate("""async p=>{window.fixtureProfile=p;await GateClient.api('me');onGateEvent(JSON.stringify({type:'profile'}));}""",PROFILE['checker'])
+    lost=page.evaluate("""() => ({route:document.body.dataset.route,dialogs:document.querySelectorAll('#report-notes-dialog[open],#report-totals-dialog[open],#report-teacher-dialog[open],#report-download-dialog[open]').length,metrics:document.getElementById('report-stats').children.length,animations:document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running'&&!(a instanceof CSSAnimation)).length,cssAnimations:document.getAnimations().filter(a=>a instanceof CSSAnimation&&a.playState==='running').map(a=>({name:a.animationName,target:a.effect?.target?.className,private:!!a.effect?.target?.closest('.view[hidden]')}))})""")
+    check('report access loss closes evidence and clears metrics',lost['route']=='home' and lost['dialogs']==0 and lost['metrics']==0 and lost['animations']==0 and not any(a['private'] for a in lost['cssAnimations']),lost)
+    page.screenshot(path=str(out/f'role-loss-{width}x{height}.png'))
+    unexpected.extend(page.evaluate('fixtureUnexpected'));ctx.close()
+    ctx=browser.new_context(viewport=dict(width=width,height=height),reduced_motion='no-preference');ctx.route('**/*',lambda route:route.abort())
+    page=ctx.new_page();page.set_default_timeout(5000);page.on('pageerror',lambda e:errors.append(str(e)));ready()
+    page.locator('#registration-rows tr:last-child button').first.click()
+    page.evaluate("window.fixtureAuthLost=true;GateClient.api('sync').catch(()=>{})")
+    page.wait_for_function("GateClient.profile()===null")
+    auth=page.evaluate("""() => ({route:document.body.dataset.route,rows:document.querySelectorAll('#registration-rows tr,#recent-entries tr,#all-entry-rows tr').length,dialogs:document.querySelectorAll('dialog[open]').length,animations:document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length})""")
+    check('401 clears private rows and dialogs without an exit snapshot',auth['route']=='login' and auth['rows']==0 and auth['dialogs']==0 and auth['animations']==0,auth)
+    page.screenshot(path=str(out/f'auth-loss-{width}x{height}.png'));unexpected.extend(page.evaluate('fixtureUnexpected'));ctx.close()
    sizes=[tuple(map(int,size.split('x'))) for size in args.sizes.split(',')]
+   if args.login_only:
+    for width,height in sizes:
+     for scale in (1,1.6):
+      ctx=browser.new_context(viewport=dict(width=width,height=height),reduced_motion='reduce')
+      ctx.route('**/*',lambda route:route.abort())
+      page=ctx.new_page();page.set_default_timeout(5000);page.on('pageerror',lambda e:errors.append(str(e)))
+      open_source(page,'login')
+      page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()")
+      page.wait_for_timeout(650)
+      if scale!=1:
+       # Synthetic text enlargement, not an Android OS font setting or actual IME.
+       page.evaluate("scale=>{const items=[...document.querySelectorAll('#view-login *')].map(e=>[e,parseFloat(getComputedStyle(e).fontSize)]);for(const [e,size]of items)e.style.fontSize=(size*scale)+'px'}",scale)
+      def login_shot(state,anchor):
+       page.locator(anchor).scroll_into_view_if_needed()
+       page.wait_for_timeout(100)
+       data=page.evaluate("""() => {
+        const root=document.querySelector('#view-login');
+        const visible=e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length);
+        const controls=[...root.querySelectorAll('button,input,summary')].filter(visible).map(e=>{const r=e.getBoundingClientRect();return {id:e.id||e.textContent.trim(),height:r.height,left:r.left,right:r.right}});
+        const textMetrics=[...root.querySelectorAll('h2,button')].filter(visible).map(e=>({id:e.id||e.textContent.trim(),overflowY:getComputedStyle(e).overflowY,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight}));
+        const textOverflow=textMetrics.filter(e=>e.scrollWidth>e.clientWidth+1||(e.overflowY!=='visible'&&e.scrollHeight>e.clientHeight+1));
+        const visibleVerticalExtents=textMetrics.filter(e=>e.overflowY==='visible'&&e.scrollHeight>e.clientHeight+1);
+        const f=document.activeElement,s=f?getComputedStyle(f):null;
+        return {controls,textOverflow,visibleVerticalExtents,focus:f?.id,outline:s?.outlineWidth,outlineColor:s?.outlineColor,background:s?.backgroundColor,masked:[...root.querySelectorAll('input[type=password]')].map(e=>e.type)};
+       }""")
+       for control in data['controls']:
+        if control['height']<47.9 or control['left'] < -1 or control['right']>width+1:failures.append(dict(loginControl=control,width=width,scale=scale,state=state))
+       if data['textOverflow']:failures.append(dict(loginTextOverflow=data['textOverflow'],width=width,scale=scale,state=state))
+       if state.endswith('focused') and (data['outline']!='2px' or data['outlineColor']!='rgb(246, 242, 245)'):failures.append(dict(loginFocus=data,state=state))
+       filename=f'classic-login-{state}-{width}x{height}-text{scale}.png'
+       page.screenshot(path=str(out/filename))
+       reports.append(dict(classicLogin=state,width=width,height=height,textScale=scale,details=data))
+       review_shots.append(dict(file=filename,state=state,synthetic=True,renderer='Chromium production DOM/CSS/JS with fixture transport'))
+      login_shot('welcome','#auth-staff')
+      page.locator('#auth-staff').click();login_shot('roles','[data-login-role=checker]')
+      page.locator('[data-login-role=checker]').click();login_shot('google','#google-signin')
+      page.locator('#code-login summary').click();page.locator('#checker-code').fill('SYNTHETIC');page.locator('#checker-code').focus()
+      login_shot('staff-focused','#checker-code')
+      page.locator('#auth-back').click();page.locator('#auth-back').click();page.locator('#show-admin-login').click()
+      page.locator('#admin-password').fill('SYNTHETIC');page.locator('#admin-password').focus()
+      login_shot('admin-focused','#admin-password')
+      unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
+    sizes=[]
+   if args.interactions_only:
+    for width,height in sizes:interaction_review(width,height)
+    sizes=[]
    for width,height in sizes:
     for role in ('login','admin','faculty','checker'):
      ctx=browser.new_context(viewport=dict(width=width,height=height),reduced_motion='reduce')
@@ -386,14 +460,24 @@ def run():
        page.emulate_media(reduced_motion='reduce')
      page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
+     if role=='admin':navigate(page,'admin')
      measure(page,role,view,width,height)
+     if role=='checker':
+      scanner=page.locator('#pull-to-scan').bounding_box()
+      manual=page.locator('.manual-panel').bounding_box()
+      action=page.locator('#scan').bounding_box()
+      assert 44<=action['height']<=110, action
+      if width<760:assert abs(scanner['width']-manual['width'])<1, (scanner,manual)
+     if role=='login':
+      if height>570:assert page.locator('.login-foot').is_visible()
+      assert page.locator('.app-footer').is_hidden()
      if role=='faculty':
       measure_report_downloads(page)
       if args.report_stress:
        page.evaluate("""()=>{window.fixtureTextStyles=[...document.querySelectorAll('body *')].map(e=>[e,e.style.fontSize,parseFloat(getComputedStyle(e).fontSize)]);for(const [e,,size]of fixtureTextStyles)if(Number.isFinite(size))e.style.fontSize=(size*2)+'px';const n=document.getElementById('notice');n.textContent='Synthetic expanded connection notice: changes remain saved on the server.';n.hidden=false;NavrangReportLayout.fit()}""")
        page.wait_for_timeout(100);measure_report_downloads(page)
        page.evaluate("for(const [e,old]of fixtureTextStyles)e.style.fontSize=old;document.getElementById('notice').hidden=true;NavrangReportLayout.fit()")
-     if role=='admin':measure_control(page,'#registration-count','Student list footer',minimum=0,scroll=False)
+     if role=='admin':measure_control(page,'#registration-count','Student list footer',minimum=0,scroll=True)
      if role=='login':
       page.evaluate("document.getElementById('google-browser-signin').hidden=false")
       measure(page,role,'login-native-browser-fallback',width,height)
@@ -401,12 +485,22 @@ def run():
       page.screenshot(path=str(out/f'{role}-{width}.png'))
      if role=='admin':
       measure_scroll(page,'students')
-      for target in ('reports','desk','account','entries','station'):
-       selector=f'[data-view="{target}"]'
-       if target=='station':page.locator('#switch-station').click() if page.locator('#switch-station').is_visible() else page.evaluate("document.querySelector('[data-view=station]').click()")
-       else:page.locator(selector).click()
+      for target in ('reports','desk','account','settings','entries','station'):
+       if target=='station':
+        navigate(page,'account');page.locator('#switch-station').click()
+       else:navigate(page,target)
        page.wait_for_timeout(70);measure(page,role,target,width,height)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
+       if target=='settings':
+        assert page.locator('#settings-location-audio,#notifications-button').count()==0
+        assert page.locator('#app-updates').is_visible()
+        if width>=960:
+         toggle=page.locator('#portal-menu-toggle')
+         assert page.locator('#main-nav').bounding_box()['x'] < page.locator('main').bounding_box()['x']
+         toggle.click()
+         assert toggle.get_attribute('aria-expanded')=='false' and page.locator('#main-nav').is_hidden()
+         toggle.click()
+         assert toggle.get_attribute('aria-expanded')=='true' and page.locator('#main-nav').is_visible()
        if target=='reports':
         measure_report_downloads(page)
         if args.report_stress:
@@ -418,12 +512,18 @@ def run():
          page.evaluate("for(const [e,old]of fixtureTextStyles)e.style.fontSize=old;document.getElementById('notice').hidden=true;NavrangReportLayout.fit()")
          page.locator('#report-tab-downloads').click()
        if target=='desk':
+        for selector in ('#desk-quantity-down','#desk-quantity-up','#desk-submit'):
+         measure_control(page,selector,selector)
         page.evaluate('window.fixtureDeskPopulated=true')
         page.locator('#desk-saved').click()
         page.wait_for_function("document.querySelectorAll('#desk-records .desk-record').length===2")
         measure(page,role,'desk-saved',width,height)
         measure_control(page,'#desk-refresh','Help Desk refresh')
         measure_control(page,'#desk-records .button','Help Desk Review')
+        measure_control(page,'#desk-records .desk-record:last-child button','Last saved Help Desk record')
+        records_bottom=page.locator('#desk-records .desk-record').last.bounding_box()['y']+page.locator('#desk-records .desk-record').last.bounding_box()['height']
+        footer_top=page.locator('#desk-list-panel .list-footer').bounding_box()['y']
+        if footer_top<records_bottom-.5:failures.append(dict(helpDeskFooterOverlapsRecords=True,width=width,height=height,footerTop=footer_top,recordsBottom=records_bottom))
         list_height=page.locator('#desk-records').evaluate('e=>e.clientHeight')
         if list_height<111:failures.append(dict(collapsedHelpDeskList=list_height,width=width,height=height))
         if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-desk-saved-{width}.png'))
@@ -436,13 +536,14 @@ def run():
         page.locator('#desk-review-close').click()
         page.locator('#desk-new').click()
        if target=='entries':
-        measure_control(page,'#entry-coverage','Entry list footer',minimum=0,scroll=False)
+        measure_control(page,'#entry-coverage','Entry list footer',minimum=0,scroll=True)
         measure_scroll(page,'entries')
+      navigate(page,'admin')
       for tab in ('registrations','admissions','checkers','updates'):
-       page.locator('#admin-nav').click();page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
+       page.locator(f'[data-admin-tab="{tab}"]').click();measure(page,role,'admin-'+tab,width,height)
        if tab=='checkers':
         measure_control(page,'#checker-list .checker-row button','Manage access')
-        measure_control(page,'#staff-count','Staff list footer',minimum=0,scroll=False)
+        measure_control(page,'#staff-count','Staff list footer',minimum=0,scroll=True)
        if tab=='updates':measure_control(page,'#password-open','Change admin password')
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-tab-{tab}-{width}.png'))
        if tab=='updates':

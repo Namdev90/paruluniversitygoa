@@ -24,7 +24,8 @@ public class JSONObject {
  private static final Map<String,Map<String,Object>> serialized=new HashMap<>();private final Map<String,Object> values;
  public JSONObject(){values=new LinkedHashMap<>();}public JSONObject(String text){Map<String,Object> v=serialized.get(text);if(v==null)throw new IllegalArgumentException("Invalid JSON fixture");values=copy(v);}
  private static Map<String,Object> copy(Map<String,Object> input){Map<String,Object> out=new LinkedHashMap<>();for(String key:input.keySet()){Object v=input.get(key);out.put(key,v instanceof JSONObject?new JSONObject(((JSONObject)v).toString()):v);}return out;}
- public JSONObject put(String key,Object value){values.put(key,value);return this;}public JSONObject getJSONObject(String key){return (JSONObject)values.get(key);}public JSONObject optJSONObject(String key){return (JSONObject)values.get(key);}
+ public JSONObject put(String key,Object value){values.put(key,value);return this;}public Object opt(String key){return values.get(key);}public JSONObject getJSONObject(String key){return (JSONObject)values.get(key);}public JSONObject optJSONObject(String key){return (JSONObject)values.get(key);}
+ public boolean has(String key){return values.containsKey(key);}public void remove(String key){values.remove(key);}public String getString(String key){if(!values.containsKey(key))throw new IllegalArgumentException("Missing fixture field");return values.get(key).toString();}
  public String optString(String key){return optString(key,"");}public String optString(String key,String fallback){Object v=values.get(key);return v==null?fallback:v.toString();}public boolean optBoolean(String key){return optBoolean(key,false);}public boolean optBoolean(String key,boolean fallback){Object v=values.get(key);return v instanceof Boolean?(Boolean)v:fallback;}
  public String toString(){String id="json-fixture-"+java.util.UUID.randomUUID();serialized.put(id,copy(values));return id;}
 }''',
@@ -47,7 +48,9 @@ public class SessionCacheCheck {
   input.put("scanner",false);check(GateSession.canScan(session.read()),"caller mutation of save input cannot alter the cached session");
   session.read().getJSONObject("profile").put("scanner",false);check(GateSession.canScan(session.read()),"read snapshots cannot mutate cached permissions");
   GateSession restarted=new GateSession(context);int before=TestStore.loads;check(GateSession.canScan(restarted.read()),"a new process restores encrypted sign-in");restarted.read();check(TestStore.loads==before+1,"restored session decrypts once");
-  GateSession temporarilyLocked=new GateSession(context);TestStore.locked=true;check(temporarilyLocked.read()==null,"unavailable keystore fails closed");TestStore.locked=false;check(GateSession.canScan(temporarilyLocked.read()),"temporary keystore failures must retry even when encrypted preferences are unchanged");
+  check(session.validatedAtWall()>0&&session.validationAgeMillis()<10000,"successful server save records a bounded current-process validation");
+  check(restarted.validatedAtWall()==0&&restarted.validationAgeMillis()==Long.MAX_VALUE,"restored encrypted credentials are not a fresh server validation");
+  GateSession temporarilyLocked=new GateSession(context);TestStore.locked=true;check(temporarilyLocked.read()==null,"unavailable keystore fails closed");check(temporarilyLocked.hasSavedCredential(),"temporary keystore unavailability is not an anonymous public session");TestStore.locked=false;check(GateSession.canScan(temporarilyLocked.read()),"temporary keystore failures must retry even when encrypted preferences are unchanged");
   long generation=session.generation(),first=session.beginProfileRequest(),second=session.beginProfileRequest();
   check(session.refreshIfCurrent(generation,"synthetic-token",second,profile(false)),"current reassignment is saved");check(!GateSession.canScan(session.read()),"reassignment replaces cached scanner access immediately");
   check(!session.refreshIfCurrent(generation,"synthetic-token",first,profile(true)),"old profile reply cannot restore permission");
@@ -64,17 +67,42 @@ public class SessionCacheCheck {
   check(!session.saveIfCurrent(generation,"old-token",profile(true)),"late auth cannot undo a failed clear");
   context.prefs.fail=false;check(session.clearDurably(),"sign-out can be retried durably");
   check(new GateSession(context).read()==null,"new process remains signed out after confirmed clear");
+  check(!session.hasSavedCredential(),"durable logout removes the lock requirement for public registration");
+  JSONObject renewable=new JSONObject().put("token","a".repeat(64)).put("profile",profile(true)).put("refreshToken","b".repeat(64)).put("refreshFamilyId","12345678-1234-4234-9234-123456789abc").put("refreshExpiresAt","2026-11-01T00:00:00Z").put("absoluteExpiresAt","2026-11-24T00:00:00Z");
+  long renewalGeneration=session.generation();check(session.saveBundleIfCurrent(renewalGeneration,renewable),"renewable login is stored through the existing encrypted vault");
+  check(!context.prefs.getString("encrypted","").contains("b".repeat(64)),"refresh credential is never plaintext preferences");
+  long request=session.beginProfileRequest();check(session.refreshIfCurrent(renewalGeneration,"a".repeat(64),request,profile(false)),"ordinary profile refresh preserves the renewal bundle");
+  check("b".repeat(64).equals(session.read().optString("refreshToken")),"me refresh discarded the refresh credential");
+  JSONObject rotation=session.prepareRenewal(renewalGeneration,"a".repeat(64));check(rotation!=null,"rotation prepared");
+  check(rotation.optString("nextRefreshToken").matches("[a-f0-9]{64}")&&rotation.optString("requestId").length()==36,"rotation uses a fresh random successor and request UUID");
+  GateSession afterCrash=new GateSession(context);JSONObject recovered=afterCrash.prepareRenewal(renewalGeneration,"a".repeat(64));
+  check(rotation.optString("nextRefreshToken").equals(recovered.optString("nextRefreshToken"))&&rotation.optString("requestId").equals(recovered.optString("requestId")),"process death must retry the same encrypted pending rotation");
+  JSONObject renewed=new JSONObject().put("token","c".repeat(64)).put("profile",profile(false)).put("refreshFamilyId",renewable.optString("refreshFamilyId")).put("refreshExpiresAt","2026-11-02T00:00:00Z").put("absoluteExpiresAt","2026-11-24T00:00:00Z");
+  check(session.completeRenewalIfCurrent(renewalGeneration,"a".repeat(64),rotation.optString("requestId"),renewed),"current rotation commits atomically");
+  check(session.generation()==renewalGeneration&&session.isCurrent(renewalGeneration,"c".repeat(64)),"rotation is not a new identity");
+  check(session.sameIdentity(renewalGeneration,"a".repeat(64),renewable.optString("refreshFamilyId")),"a pending document retains its own logical identity across access rotation");
+  check(!session.sameIdentity(renewalGeneration,"a".repeat(64),"87654321-1234-4234-9234-123456789abc"),"a different refresh family cannot inherit pending work");
+  check(!session.sameIdentity(renewalGeneration,"a".repeat(64),""),"legacy pending work still requires its original access token");
+  check(rotation.optString("nextRefreshToken").equals(session.read().optString("refreshToken"))&&session.read().optJSONObject("pendingRefresh")==null,"successor replaced the consumed credential");
+  check("c".repeat(64).equals(session.accessTokenFor("a".repeat(64))),"short in-flight old access maps only to this identity's rotated access");
+  session.beginChange();check("a".repeat(64).equals(session.accessTokenFor("a".repeat(64))),"an identity change cannot route an old request through a new login");
+  check(!session.sameIdentity(renewalGeneration,"a".repeat(64),renewable.optString("refreshFamilyId")),"identity change invalidates a pending family's work");
+  check(!session.completeRenewalIfCurrent(renewalGeneration,"a".repeat(64),rotation.optString("requestId"),renewed),"late renewal cannot restore an old identity");
   System.out.println("PASS actual GateSession: "+checks+" checks for one-time decryption, isolated snapshots, invalidation, profile ordering and failed saves.");
  }
 }''',
 }
-with tempfile.TemporaryDirectory(prefix='navrang-session-cache-') as temp:
-    folder = Path(temp)
-    files = []
-    for name, source in sources.items():
-        path = folder / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(source)
-        files.append(str(path))
-    subprocess.run(['java', '--module', 'jdk.compiler/com.sun.tools.javac.Main', '-d', str(folder / 'classes'), *files, str(root / 'app/java/in/navrang/gate/GateSession.java'), str(root / 'app/java/in/navrang/gate/ResponseOrder.java')], check=True)
-    subprocess.run(['java', '-cp', str(folder / 'classes'), 'SessionCacheCheck'], check=True, timeout=20)
+def run():
+    with tempfile.TemporaryDirectory(prefix='navrang-session-cache-') as temp:
+        folder = Path(temp)
+        files = []
+        for name, source in sources.items():
+            path = folder / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(source)
+            files.append(str(path))
+        subprocess.run(['java', '--module', 'jdk.compiler/com.sun.tools.javac.Main', '-d', str(folder / 'classes'), *files, str(root / 'app/java/in/navrang/gate/GateSession.java'), str(root / 'app/java/in/navrang/gate/ResponseOrder.java')], check=True)
+        subprocess.run(['java', '-cp', str(folder / 'classes'), 'SessionCacheCheck'], check=True, timeout=20)
+
+if __name__ == '__main__':
+    run()

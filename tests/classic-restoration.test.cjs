@@ -8,12 +8,16 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 test('restored shell uses the original logo without removing faculty routes or fixed-list controls',()=>{
  const dom=new JSDOM(read('app/assets/index.html'),{runScripts:'outside-only',url:'https://fixture.invalid/'});
  const w=dom.window;
- w.GateClient={profile:()=>({role:'admin',active:true,reports:true}),on(){},api:async()=>({ok:true})};
+ let profile={role:'admin',active:true,reports:true};
+ w.GateClient={profile:()=>profile,on(){},api:async()=>({ok:true})};
  w.eval(read('app/assets/art/brand-shell.js'));
  assert.equal(w.document.querySelector('.brand>.classic-header-logo').getAttribute('src'),'art/navrang-transparent.png');
  assert.equal(w.document.querySelector('.intro-content .combined-brand-mark img').getAttribute('src'),'art/navrang-parul-combined.png');
- assert.ok(w.document.getElementById('station-faculty'));
- assert.ok(w.document.getElementById('reports-nav'));
+ const station=w.document.getElementById('station-faculty'),account=w.document.getElementById('account-faculty'),reports=w.document.getElementById('reports-nav');
+ assert.equal(station.hidden,true);assert.equal(account.hidden,true);assert.equal(reports.hidden,true);
+ profile={role:'checker',active:true,reports:true,scanner:false,method:'google'};w.NavrangBrand.paint();
+ assert.equal(station.hidden,false);assert.equal(account.hidden,false);
+ let opened=0;reports.onclick=()=>opened++;station.click();account.click();assert.equal(opened,2);
  assert.ok(w.document.querySelector('#admin-registrations .rows-scroll'));
  assert.ok(w.document.querySelector('#view-entries .rows-scroll'));
  const sheets=[...w.document.querySelectorAll('link[rel="stylesheet"]')].map(n=>n.getAttribute('href'));
@@ -78,7 +82,9 @@ test('restored build retains native Credential Manager and CameraX instead of th
 });
 
 test('restoration release cannot reuse another version approval or changed source/logo',()=>{
- require('node:child_process').execFileSync('python3',['tests/restoration-release-gate-check.py'],{cwd:root,stdio:'pipe',timeout:15000});
+ // Twelve isolated Git repositories can exceed 15 seconds on Windows while
+ // Android compilation runs; keep the same gate assertions with a bounded wait.
+ require('node:child_process').execFileSync('python3',['tests/restoration-release-gate-check.py'],{cwd:root,stdio:'pipe',timeout:30000});
 });
 
 test('classic host generation rejects missing or ambiguous Android back-navigation hooks',()=>{

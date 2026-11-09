@@ -1,0 +1,160 @@
+{
+  "date": "2026-11-05",
+  "purpose": "ANDROID_OPUS_CROSS_BUILD_AND_HOST_JNI_ONLY",
+  "sourceBaseCommit": "aaafab4977cc7578e40cfb4ed1c45039d31d8882",
+  "ndkDownload": {
+    "source": "https://dl.google.com/android/repository/android-ndk-r30-linux.zip",
+    "bytes": 738633529,
+    "officialSha1": "5107f898313790e449e87eee2183d9a20602dee9",
+    "sha256": "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2",
+    "entries": 10134,
+    "symlinks": 39,
+    "expandedBytes": 2347519582,
+    "pathSafety": "PASS"
+  },
+  "opus": {
+    "version": "1.6.1",
+    "source": "https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz",
+    "sha256": "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1",
+    "license": "BSD-style; COPYING retained with royalty-free patent references",
+    "ndk": "30.0.16248370",
+    "android_min_api": 24,
+    "default_android_abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64",
+      "x86"
+    ],
+    "status": "FOUR_ABI_API24_CROSS_BUILD_AND_HOST_JNI_VERIFIED_ANDROID_RUNTIME_PENDING"
+  },
+  "nativeSourceSha256": {
+    "native-app/src/main/cpp/encoder_core.c": "a620cbc7c515afec0c5bfe19adf4b59edb8fd5e98327992b481bde12484714cf",
+    "native-app/src/main/cpp/encoder_core.h": "d291e3afbc37184a22c1ed2f924c96777c92ccac23a8f5fb89949d1954bd1183",
+    "native-app/src/main/cpp/relay_opus_jni.c": "fc3d48fde0b56a32756854c37904dd44bbd4e8fce25f21e612e0dafe06a560b8",
+    "native-app/src/main/cpp/relay_opus.exports": "c7d2f314f6ccf7e9fd37fd00f2621eccfa4222261acb98be1404e839e9814669",
+    "native-app/src/main/java/in/navrang/gate/BundledRelayEncoder.java": "1571bbdd1fdd18984e671e2eeee617c207847876d6e5d4fef46b2d2c9a49f0d9",
+    "tools/build-relay-opus.py": "8ee81275d0a7d3fe5ba3bf15076c867d35a9bbb2c0571d24c9f2ed0171a353fc",
+    "tools/relay_opus_artifact.py": "957534030c95bdae96faeb0628a71142accb4d26f0ae5cd72cac8ea58bf69a14"
+  },
+  "outputs": [
+    {
+      "abi": "arm64-v8a",
+      "api": 24,
+      "bytes": 224704,
+      "sha256": "398b8bba280a076c64edb4ef628b6b8e14aeab227ddbe47e1c356fb5859f4def",
+      "elfBits": 64,
+      "elfMachine": 183,
+      "minimumLoadAlignment": 16384,
+      "jniExports": [
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeCreate",
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy",
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeEncode"
+      ],
+      "neededLibraries": [
+        "libc.so",
+        "libdl.so",
+        "libm.so"
+      ],
+      "androidIdent": {
+        "api": 24,
+        "ndkRelease": "r30",
+        "ndkBuild": "16248370"
+      }
+    },
+    {
+      "abi": "armeabi-v7a",
+      "api": 24,
+      "bytes": 220896,
+      "sha256": "2e85bf4887cf81902eb11b463666aa624491768ad6583ccac9de92dae18d184a",
+      "elfBits": 32,
+      "elfMachine": 40,
+      "minimumLoadAlignment": 16384,
+      "jniExports": [
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeCreate",
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy",
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeEncode"
+      ],
+      "neededLibraries": [
+        "libc.so",
+        "libdl.so",
+        "libm.so"
+      ],
+      "androidIdent": {
+        "api": 24,
+        "ndkRelease": "r30",
+        "ndkBuild": "16248370"
+      }
+    },
+    {
+      "abi": "x86_64",
+      "api": 24,
+      "bytes": 240744,
+      "sha256": "6907e5d075c9a69bcae6f1600e628bc96532ecf68530831062d54684f052900b",
+      "elfBits": 64,
+      "elfMachine": 62,
+      "minimumLoadAlignment": 16384,
+      "jniExports": [
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeCreate",
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy",
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeEncode"
+      ],
+      "neededLibraries": [
+        "libc.so",
+        "libdl.so",
+        "libm.so"
+      ],
+      "androidIdent": {
+        "api": 24,
+        "ndkRelease": "r30",
+        "ndkBuild": "16248370"
+      }
+    },
+    {
+      "abi": "x86",
+      "api": 24,
+      "bytes": 237808,
+      "sha256": "1981d6e4e15eb91dd20937009b310f74472aa4e7f5c743ebb54165534ea3cc52",
+      "elfBits": 32,
+      "elfMachine": 3,
+      "minimumLoadAlignment": 16384,
+      "jniExports": [
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeCreate",
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeDestroy",
+        "Java_in_navrang_gate_BundledRelayEncoder_nativeEncode"
+      ],
+      "neededLibraries": [
+        "libc.so",
+        "libdl.so",
+        "libm.so"
+      ],
+      "androidIdent": {
+        "api": 24,
+        "ndkRelease": "r30",
+        "ndkBuild": "16248370"
+      }
+    }
+  ],
+  "totalNativeBytes": 924152,
+  "packagingRegressionTests": {
+    "status": "PASS",
+    "tests": 18
+  },
+  "hostCore": {
+    "status": "PASS",
+    "encodedDecodedPackets": 300,
+    "rejectedInvalidInputs": 7
+  },
+  "hostJni": {
+    "status": "PASS",
+    "runtime": "OpenJDK 21.0.13",
+    "checkJni": true,
+    "encodedDecodedPackets": 300,
+    "encodeCloseRaceRounds": 100,
+    "java17ReleaseCheck": "NOT_SUPPORTED_BY_EXISTING_RUNTIME_SYMBOL_ARCHIVE"
+  },
+  "apkAssembly": "NOT_RUN",
+  "androidRuntime": "NOT_RUN",
+  "physicalDeviceMedia": "NOT_RUN",
+  "signed": false,
+  "published": false
+}

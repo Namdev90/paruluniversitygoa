@@ -3,12 +3,15 @@ package `in`.navrang.gate
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.SystemClock
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -19,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -75,11 +79,11 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
         }
     if (!permission) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Camera access is needed to scan ticket QR codes.")
-            Button(onClick = { request.launch(Manifest.permission.CAMERA) }) {
+            Text("Allow camera access to scan QR codes, or use a ticket ID.")
+            ClassicScannerButton(onClick = { request.launch(Manifest.permission.CAMERA) }, primary = true) {
                 Text("Allow camera")
             }
             if (!exactIdOpen) ClassicScannerButton(onClick = { exactIdOpen = true }) {
@@ -287,7 +291,7 @@ internal fun ScannerScreen(s: GateState, vm: GateViewModel, exit: () -> Unit = {
         onVerify = vm::submit,
         onDetails = { frameGate.invalidate(); inspectedResult = it },
         status = when {
-            exactIdOpen -> "Camera open · QR reading paused for exact ID"
+            exactIdOpen -> "QR reading paused · ticket ID"
             inspectedResult != null -> "Camera open · QR reading paused for details"
             else -> status
         },
@@ -329,15 +333,17 @@ internal fun ClassicScannerCameraLayout(
                         contentColor = Color.White,
                         modifier = Modifier.fillMaxWidth().testTagCompat("scanner-status"),
                     ) {
-                        Text(status, Modifier.padding(12.dp))
+                        Text(status, Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                     }
                     BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                         // Size against space remaining below the status, never the whole screen.
                         if (!exactIdOpen && maxHeight >= 48.dp) {
                             val frameSize = minOf(220.dp, maxHeight * .85f, maxWidth * .75f)
                             Box(Modifier.align(Alignment.Center).size(frameSize)
-                                .border(2.dp, Color.White, RoundedCornerShape(20.dp))
-                                .testTagCompat("scanner-frame"))
+                                .border(2.dp, ScannerGold, RoundedCornerShape(20.dp))
+                                .testTagCompat("scanner-frame")) {
+                                if (s.held == null && s.result == null && !s.appearance.reducedMotion) ScannerSweep()
+                            }
                         }
                     }
                 }
@@ -346,7 +352,7 @@ internal fun ClassicScannerCameraLayout(
                 Modifier.fillMaxWidth()
                     .heightIn(max = controlsHeight)
                     .verticalScroll(rememberScrollState())
-                    .padding(12.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 s.result?.let { result ->
@@ -357,16 +363,38 @@ internal fun ClassicScannerCameraLayout(
                     onVerify = onVerify,
                     onClose = { onExactIdOpen(false) },
                 )
-                ClassicScannerButton(
-                    onClick = { onExactIdOpen(!exactIdOpen) },
+                if (!exactIdOpen) ClassicScannerButton(
+                    onClick = { onExactIdOpen(true) },
                     enabled = s.held == null,
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (exactIdOpen) "Hide ID" else "Find ID") }
+                ) { Text("Find ID") }
                 Text(
                     "${s.pending} pending · ${if(s.online)"Connected"else"Offline — wait for confirmation"}",
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun BoxScope.ScannerSweep() {
+    val context = LocalContext.current
+    val motionEnabled = remember(context) {
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
+    }
+    if (!motionEnabled) return
+    val transition = rememberInfiniteTransition(label = "Scanner sweep")
+    val position by transition.animateFloat(
+        .12f, .88f,
+        infiniteRepeatable(tween(1900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "Sweep position",
+    )
+    Canvas(Modifier.matchParentSize().testTagCompat("scanner-sweep")) {
+        val y = size.height * position
+        drawLine(
+            Brush.horizontalGradient(listOf(Color.Transparent, ScannerGold.copy(alpha = .7f), Color.Transparent)),
+            Offset(0f, y), Offset(size.width, y), strokeWidth = 2.dp.toPx(),
+        )
     }
 }

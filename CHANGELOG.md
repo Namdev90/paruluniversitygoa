@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0 — Android code 19 · 9 November 2026
+
+- Refined Account, Admin, Reports, and scanning, with swipe navigation and app lock.
+- Moved Admin and Reports under Account and added a collapsible desktop menu.
+- Excluded Location & audio and event notifications from this release.
+- Verified the original-key signed APK with an in-place emulator upgrade from 0.8.0. [Release record](docs/RESTORATION-RELEASE-0.9.0.md)
+
 ## 0.8.0 — Android code 18 · 19 October 2026
 
 - Approved combined Navrang/Parul University artwork and maroon styling, staged sign-in, confirmation before sign-out and reduced-motion-aware screen transitions.

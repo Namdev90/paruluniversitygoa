@@ -4,6 +4,8 @@ AndroidX, Jetpack Compose, Material 3, CameraX, Kotlin, kotlinx.coroutines and Z
 
 Google ID / Google Play services are Google SDK components governed by their respective SDK terms. https://developers.google.com/terms and https://developers.google.com/android/guides/opensource
 
+Firebase Android SDK, including Firebase Cloud Messaging, is distributed under Apache License 2.0. Copyright Google LLC and contributors. Source and license: https://github.com/firebase/firebase-android-sdk . Versions are pinned through the Firebase BoM in gradle/libs.versions.toml; the Apache license is reproduced below.
+
 Audio: Kenney — Creative Commons CC0. Full notices are included below.
 
 The Navrang event artwork was supplied by the organizer. University and event marks remain their owners' property; they are not relicensed under this application's source license.

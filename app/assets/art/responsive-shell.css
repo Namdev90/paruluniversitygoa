@@ -12,8 +12,10 @@
 .brand.official-header .header-logo{width:clamp(122px,24vw,194px);max-width:100%;height:33px}
 .top-actions{flex:0 0 auto;gap:8px}
 .connection{line-height:1.35;overflow-wrap:anywhere}
+/* Keep scroll targets above the sticky navigation, even before they receive focus. */
+html:has(body:not(.login-mode)){scroll-padding-block-end:calc(var(--nav-clearance,9rem) + 8px + env(safe-area-inset-bottom,0px))}
 main{min-height:0;padding-top:18px}
-.view{min-width:0;min-height:0;scrollbar-gutter:stable;overscroll-behavior-y:contain}
+.view{min-width:0;min-height:0;scrollbar-gutter:stable;}
 .micro-note{font-size:12px;line-height:1.6}
 .login-role,.administrator-button,.mobile-nav button,.admin-tabs button,
 .table-link,.table-action,.crafted-login summary{
@@ -24,7 +26,7 @@ main{min-height:0;padding-top:18px}
 .crafted-login summary{background:transparent;border:0;border-radius:0;color:var(--muted);padding:14px 0}
 .administrator-entry{margin-top:22px;border-radius:10px}
 .administrator-button{border:0;border-radius:0;min-height:62px;padding:4px 0}
-.mobile-nav{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%;overflow:visible;gap:3px;padding:8px 0 6px;flex-shrink:0}
+.mobile-nav{display:grid;grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(min(100%,2.5em),1fr));width:100%;overflow:visible;gap:3px;padding:8px 0 6px;flex-shrink:0}
 .mobile-nav button,.administrator-session .mobile-nav button{min-width:0;min-height:54px;padding:7px 3px;background:transparent;border:0;box-shadow:none;font-size:11px;line-height:1.2;overflow-wrap:anywhere}
 .mobile-nav button.selected{background:#30392d;color:#f2e1bd}
 .mobile-nav button span{display:block;margin-bottom:4px;font-size:19px}
@@ -33,8 +35,8 @@ main{min-height:0;padding-top:18px}
 .admin-tabs button.selected{border-bottom-color:var(--gold);box-shadow:none}
 #admin-console{min-height:0;height:auto;display:flex;flex-direction:column;gap:12px}
 .admin-tab{flex:none;min-height:0;overflow:visible}
-.admin-tab .table-link{display:inline-block;background:transparent;border:0;box-shadow:none;border-radius:3px;min-height:36px;text-align:left;color:var(--ink);padding:5px 0;text-decoration:underline;text-decoration-color:#a7ab9850;text-underline-offset:3px;white-space:normal}
-.admin-tab .table-action{background:#303630;border:1px solid #596055;box-shadow:none;color:var(--ink);min-height:36px;border-radius:7px}
+.admin-tab .table-link{display:inline-block;background:transparent;border:0;box-shadow:none;border-radius:3px;min-height:44px;text-align:left;color:var(--ink);padding:5px 0;text-decoration:underline;text-decoration-color:#a7ab9850;text-underline-offset:3px;white-space:normal}
+.admin-tab .table-action{background:#303630;border:1px solid #596055;box-shadow:none;color:var(--ink);min-height:44px;border-radius:7px}
 th,td{overflow-wrap:anywhere}td{font-size:13px}
 .table-toolbar{min-width:0;gap:8px}.table-toolbar input{min-width:0;flex:1 1 auto}
 .report-view>.panel{flex:0 0 auto}.report-actions button{min-height:46px}
@@ -62,7 +64,7 @@ dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);oversc
  .login-role{grid-template-columns:96px minmax(0,1fr);padding:12px 10px;min-height:64px}
  .login-role small{font-size:12px}.crafted-login .micro-note{font-size:12px}
  .report-member{flex-wrap:wrap}.report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- .admin-stats{gap:5px}.admin-stats span{font-size:10px}.admin-tabs button{font-size:12px;padding:9px 5px}
+ .admin-stats{grid-template-columns:repeat(auto-fit,minmax(min(100%,4em),1fr));gap:5px}.admin-stats span{font-size:10px}.admin-tabs button{font-size:12px;padding:9px 5px}
  td{font-size:12px;padding:10px 3px}.admin-tab table{table-layout:fixed;width:100%}
  #admin-registrations th:first-child{width:39%}#admin-registrations th:last-child{width:15%}
  .table-toolbar{flex-wrap:wrap}.table-toolbar input{flex:1 1 150px}.table-toolbar select{flex:0 1 100px}
@@ -71,7 +73,7 @@ dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);oversc
 @media(max-height:500px){
  .topbar{min-height:56px;padding-block:6px}.brand.official-header h1{display:none}
  main{padding-top:10px}.mobile-nav{padding-top:4px;padding-bottom:2px}
- .mobile-nav button,.administrator-session .mobile-nav button{min-height:43px;padding:5px 3px}
+ .mobile-nav button,.administrator-session .mobile-nav button{min-height:44px;padding:5px 3px}
  .mobile-nav button span{font-size:15px;margin-bottom:2px}.app-footer.official-brand-line{display:none}
  .intro-content{margin-top:12px;gap:4px}.intro-content>.official-logo{height:32px;width:180px}
  .intro-content .event-wordmark-hero{width:min(270px,50vw)}.intro-tagline,.intro-content .pill{display:none}
@@ -79,18 +81,18 @@ dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);oversc
  .intro .intro-skip{bottom:12px;min-height:44px}
 }
 
-/* Stable controls: only bounded rows scroll. Data pages do not depend on height. */
-#view-admin,#view-entries{overflow:hidden;display:flex;flex-direction:column;min-height:0;height:100%}
+/* Lists grow with the document; controls stay in the same natural reading flow. */
+#view-admin,#view-entries{display:flex;flex-direction:column;min-height:0;}
 #view-admin[hidden],#view-entries[hidden]{display:none}
 #view-admin>.section-title,#view-entries>.section-title,.admin-tabs,.table-toolbar,.pager,#registration-count{flex-shrink:0}
-#admin-console{flex:1 1 0;min-height:0;overflow:hidden}
-#admin-console>.admin-tab{flex:1 1 0;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+#admin-console{flex:1 0 auto;min-height:0;}
+#admin-console>.admin-tab{flex:1 0 auto;min-height:0;display:flex;flex-direction:column}
 #admin-console>.admin-tab[hidden]{display:none}
-#admin-console>#admin-updates:not([hidden]){overflow:auto;display:block;overscroll-behavior:contain}
-.rows-scroll{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+#admin-console>#admin-updates:not([hidden]){display:block}
+.rows-scroll{flex:1 0 auto;min-height:0;scrollbar-gutter:stable}
 .rows-scroll thead{position:sticky;top:0;background:var(--panel,#20241f);z-index:1}
-#view-entries>.table-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-#checker-list{flex:1 1 0;min-height:0;overflow:auto}
+#view-entries>.table-panel{flex:1 0 auto;min-height:0;display:flex;flex-direction:column;}
+#checker-list{flex:1 0 auto;min-height:0;}
 #view-entries .pager{flex-wrap:wrap;min-height:60px}
 #entry-coverage{width:100%;text-align:center}
 #admin-registrations .table-link{min-height:44px}
@@ -100,12 +102,10 @@ dialog{width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);oversc
 #view-entries #recent-next{grid-column:3;grid-row:1}
 #view-entries #entry-coverage{grid-column:1/-1;grid-row:2}
 @media(max-height:720px){
- #admin-console>.namu-guide{display:none}
  #admin-console{gap:6px}
  #admin-console>.admin-stats{margin-block:4px}
 }
 @media(max-height:500px){
- #admin-console>.admin-stats,#admin-console>.panel-heading{display:none}
  #admin-console{gap:4px}
  #admin-console .admin-tabs{margin:0}
  #admin-console>.admin-tab{padding:6px}

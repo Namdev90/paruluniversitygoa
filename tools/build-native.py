@@ -13,6 +13,7 @@ import subprocess
 from native_release_gate import require_native_ready
 from restoration_release_gate import require_restoration_ready, ORIGINAL_LOGO_SHA256, TRANSPARENT_WORDMARK_SHA256
 from release_policy import require_signing_key, verify_apk, check_publication, SIGNER_SHA256
+from private_signing import OriginalSigner
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -40,22 +41,22 @@ def main():
         raise SystemExit('Select a coordinated unused version with a strictly higher versionCode before release.')
     key = Path(os.environ.get('NAVRANG_SIGNING_KEY', ROOT / 'signing/prototype-debug.p12'))
     require_signing_key(key)
-    certificate = subprocess.check_output(['keytool', '-exportcert', '-alias', 'androiddebugkey', '-keystore', str(key), '-storepass', 'android'], stderr=subprocess.PIPE)
-    if hashlib.sha256(certificate).hexdigest() != SIGNER_SHA256:
-        raise SystemExit('The local key is not the original installed-app signing identity. Refusing to sign.')
+    with OriginalSigner(key):
+        pass  # Verify the retained original private entry without exporting it.
     sdk = Path(os.environ['ANDROID_HOME'])
     tools = sdk / 'build-tools/36.0.0'
     run = lambda *args: subprocess.run([str(a) for a in args], cwd=ROOT, check=True)
-    run(ROOT / 'gradlew', ':native-app:clean', ':native-app:assembleRelease', ':native-app:testDebugUnitTest', ':native-app:lintRelease')
+    run('java', '-classpath', ROOT / 'gradle/wrapper/gradle-wrapper.jar', 'org.gradle.wrapper.GradleWrapperMain', ':native-app:assembleRelease', ':native-app:testDebugUnitTest', ':native-app:lintRelease')
     unsigned = ROOT / 'native-app/build/outputs/apk/release/native-app-release-unsigned.apk'
     aligned = ROOT / '.build/native-aligned.apk'
     aligned.parent.mkdir(exist_ok=True)
-    run(tools / 'zipalign', '-f', '4', unsigned, aligned)
+    run(tools / ('zipalign.exe' if os.name == 'nt' else 'zipalign'), '-f', '4', unsigned, aligned)
     candidate = ROOT / 'dist' / ('Navrang-Gate-' + release['versionName'] + '.apk')
     candidate.parent.mkdir(exist_ok=True)
     if candidate.exists():
         raise SystemExit('A candidate with this version already exists. Inspect it; do not overwrite.')
-    run(tools / 'apksigner', 'sign', '--ks', key, '--ks-pass', 'pass:android', '--key-pass', 'pass:android', '--ks-key-alias', 'androiddebugkey', '--v4-signing-enabled', 'false', '--out', candidate, aligned)
+    with OriginalSigner(key) as signer:
+        signer.sign_apk(tools / 'lib/apksigner.jar', aligned, candidate)
     verify_apk(candidate, release, tools)
     metadata = subprocess.check_output([str(tools / 'aapt2'), 'dump', 'badging', str(candidate)], text=True)
     if not re.search(r"^(?:minSdkVersion|sdkVersion):'24'$", metadata, re.M):

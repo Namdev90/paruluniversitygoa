@@ -7,6 +7,48 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ReportSaveCoordinatorTest {
+    @Test fun aPickerResultWaitsForUnlockAndResumesOnlyOnce() {
+        val coordinator = ReportSaveCoordinator()
+        val pending = request()
+        var writes = 0
+        coordinator.begin(pending)
+        coordinator.claimPicker(coordinator.requestCode(pending))
+        assertTrue(coordinator.defer(pending) { writes++ })
+        assertFalse(coordinator.resumeDeferred { false })
+        assertTrue(coordinator.isCurrent(pending))
+        assertEquals(0, writes)
+        assertTrue(coordinator.resumeDeferred { true })
+        assertFalse(coordinator.resumeDeferred { true })
+        assertEquals(1, writes)
+        assertTrue(coordinator.isCurrent(pending))
+    }
+
+    @Test fun revokedDeferredDocumentCannotResumeForAnotherIdentity() {
+        val coordinator = ReportSaveCoordinator()
+        val pending = request()
+        var writes = 0
+        coordinator.begin(pending)
+        coordinator.claimPicker(coordinator.requestCode(pending))
+        coordinator.defer(pending) { writes++ }
+        coordinator.retainIf { false }
+        coordinator.begin(request(generation = 2))
+        assertFalse(coordinator.resumeDeferred { true })
+        assertEquals(0, writes)
+    }
+
+    @Test fun duplicatePickerCannotReplaceTheOwnedDeferredWrite() {
+        val coordinator = ReportSaveCoordinator()
+        val pending = request()
+        val writes = mutableListOf<String>()
+        coordinator.begin(pending)
+        assertFalse(coordinator.defer(pending) { writes += "unclaimed" })
+        coordinator.claimPicker(coordinator.requestCode(pending))
+        assertTrue(coordinator.defer(pending) { writes += "owned" })
+        assertFalse(coordinator.defer(pending) { writes += "replacement" })
+        coordinator.resumeDeferred { true }
+        assertEquals(listOf("owned"), writes)
+    }
+
     private fun request(
         generation: Long = 1,
         kind: ReportSaveCoordinator.Kind = ReportSaveCoordinator.Kind.REPORT,
