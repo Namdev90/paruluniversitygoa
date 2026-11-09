@@ -45,6 +45,11 @@ class CandidatePolicyTests(unittest.TestCase):
       A: android:enabled(0x0101000e)=(type 0x12)0x0
 '''
         candidate.validate_manifest('', manifest)
+        modern = manifest.replace('android:', 'http://schemas.android.com/apk/res/android:').replace('(type 0x12)0x0', 'false')
+        candidate.validate_manifest('', modern)
+        for changed in (modern.replace('=false', '=true'), modern.replace('android:enabled', 'android:exported')):
+            with self.assertRaises(SystemExit):
+                candidate.validate_manifest('', changed)
         for permission in ('RECORD_AUDIO', 'ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION'):
             with self.assertRaises(SystemExit):
                 candidate.validate_manifest("uses-permission: name='android.permission." + permission + "'", manifest)

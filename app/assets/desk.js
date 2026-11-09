@@ -67,7 +67,8 @@
   if(!yes){clear();return}if(queryKey()!==listQuery)resetRecords();
   if(loading){if(force&&!append){refreshQueued=true;if(source==='manual'||source==='mutation'||source==='search'||source==='navigation'||source==='hint')queuedSource=source;}return}if(!force&&!visibleList())return;
   if((source==='auto'||source==='hint')&&monotonicNow()<retryNotBefore){schedulePoll(retryNotBefore-monotonicNow());return}
-  if(!force&&!append&&monotonicNow()-lastSuccessAt<60000)return;
+  const freshFor=60000-(monotonicNow()-lastSuccessAt);
+  if(!force&&!append&&freshFor>0){schedulePoll(freshFor);return;}
   if(append&&(listChanged||offset>=total))return;
   if(append&&offset>100000){listChanged=true;listStatus();return}
   loading=true;refreshQueued=false;listStatus();const requestGeneration=generation,requestRevision=listRevision,who=identity(),query={offset:append?offset:0,limit:listBatchSize,search:$('desk-search').value.trim(),status:$('desk-filter').value};let painted=false;

@@ -49,7 +49,7 @@ def validate_manifest(badging, manifest):
     elements = re.split(r'(?m)^\s*E: ', manifest)
     voices = [element for element in elements if 'VoiceSessionService' in element]
     require(len(voices) == 1 and re.search(
-        r'android:enabled\([^)]*\)=\(type 0x12\)0x0\b', voices[0]),
+        r'android:enabled\([^)]*\)=(?:false|\(type 0x12\)0x0)\s*$', voices[0], re.M),
         'Dormant voice service must be explicitly disabled.')
 
 
