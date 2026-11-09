@@ -21,6 +21,7 @@ public class JSONObject {
 public class GateSession {
  private long generation=1;private JSONObject auth;public GateSession(Context c){replace(1,"old-token",false);}
  public synchronized void replace(long gen,String token,boolean active){generation=gen;auth=new JSONObject().put("token",token).put("profile",new JSONObject().put("active",active).put("scanner",active));}
+ public boolean failRevocationSnapshot;public java.util.Map<String,String> pendingRevocations(){if(failRevocationSnapshot)throw new IllegalStateException("Synthetic preference failure");return java.util.Collections.emptyMap();}public org.json.JSONObject revocationCredential(String value){return new org.json.JSONObject();}public boolean acknowledgeRevocation(String id,String value){return true;}
  public synchronized long generation(){return generation;}public synchronized JSONObject read(){return auth;}
  public synchronized boolean isCurrent(long gen,String token){return gen==generation&&auth!=null&&token.equals(auth.optString("token"));}
  public synchronized boolean clearIfCurrent(long gen,String token){if(!isCurrent(gen,token))return false;generation++;auth=null;return true;}
@@ -135,6 +136,12 @@ public class NativeRuntimeRaceCheck {
    clear.invoke(r,2L,"new-token");check(r.db.clears==0,"inactive cleanup rereads current active status");
    r.sessions.replace(2,"new-token",false);clear.invoke(r,2L,"new-token");check(r.db.clears==1,"current inactive identity still clears temporary data");
   }finally{stop(r);}
+  GateRuntime snapshotFailure=runtime();try{
+   snapshotFailure.setPrivateAccess(()->false);snapshotFailure.sessions.failRevocationSnapshot=true;
+   Method tick=GateRuntime.class.getDeclaredMethod("tick");tick.setAccessible(true);tick.invoke(snapshotFailure);
+   snapshotFailure.sessions.failRevocationSnapshot=false;tick.invoke(snapshotFailure);
+   check(snapshotFailure.api.meCalls==0,"revocation snapshot failures stay contained and later locked ticks remain private");
+  }finally{stop(snapshotFailure);}
   System.out.println("PASS actual GateRuntime: "+checks+" checks for identified pending recovery, stale 401/403/503 replies and guarded cleanup.");
  }
 }''',
@@ -147,5 +154,5 @@ with tempfile.TemporaryDirectory(prefix="navrang-runtime-check-") as temp:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(source)
         files.append(str(path))
-    subprocess.run(["java", "--module", "jdk.compiler/com.sun.tools.javac.Main", "-d", str(folder / "classes"), *files, str(root / "app/java/in/navrang/gate/GateRuntime.java"), str(root / "app/java/in/navrang/gate/ReconcilePolicy.java")], check=True)
+    subprocess.run(["java", "--module", "jdk.compiler/com.sun.tools.javac.Main", "-d", str(folder / "classes"), *files, str(root / "app/java/in/navrang/gate/GateRuntime.java"), str(root / "app/java/in/navrang/gate/ReconcilePolicy.java"), str(root / "app/java/in/navrang/gate/LogoutRevocation.java")], check=True)
     subprocess.run(["java", "-cp", str(folder / "classes"), "NativeRuntimeRaceCheck"], check=True, timeout=20)
