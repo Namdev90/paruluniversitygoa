@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = (
     'schema.sql', 'communications-v080.sql', 'report-operations-v080.sql',
     'notifications-v080.sql', 'voice-v080.sql',
+    'voice-relay-idle-cleanup-v090.sql',
 )
 FIXTURES = (
     'roles-db.sql', 'helpdesk-db.sql', 'station-summary-db.sql', 'communications-db.sql',

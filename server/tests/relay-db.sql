@@ -396,4 +396,38 @@ end;
 $relay_cancelled$;
 select 'PASS: relay discovery membership guard, expired/cancelled commit rejection, role revocation and unchanged private access controls';
 
+do $idle_cleanup$
+declare token text:=repeat('ab',32);d jsonb;duty uuid;channel uuid;member uuid;
+begin
+ update navrang_private.voice_commands set state='acked' where state<>'acked';
+ update navrang_private.voice_floors set phase='idle',daily_plan=null;
+ update navrang_private.voice_runtime set configured=true,lease_enforced=true,
+  revocation_verified=true,worker_death_verified=true,revocation_mode='guarded-admission',
+  worker_at=clock_timestamp(),immutable_relay_only=true;
+ insert into navrang_private.sessions(hash,role,expires_at)
+  values(token,'admin',clock_timestamp()+interval '1 hour');
+ d:=navrang_private.voice_rpc('duty-join','{"installationId":"relay-idle-leave-fixture"}',token);
+ duty:=(d->>'dutyId')::uuid;channel:=(d->>'sessionId')::uuid;
+ d:=navrang_private.voice_rpc('voice-join',jsonb_build_object('dutyId',duty,'sessionId',channel),token);
+ if d->>'state' is distinct from 'idle' then raise exception 'Expected idle relay membership';end if;
+ select identity into strict member from navrang_private.voice_members where duty_id=duty and session_id=channel;
+ d:=navrang_private.voice_rpc('duty-leave',jsonb_build_object('dutyId',duty),token);
+ if d->>'active' is distinct from 'false' or
+  exists(select 1 from navrang_private.voice_members where identity=member) or
+  exists(select 1 from navrang_private.voice_commands where identity=member and operation='revoke') then
+  raise exception 'An idle immutable relay membership queued an unbound revoke';
+ end if;
+ -- The default mode still sends the legacy removal request.
+ update navrang_private.voice_runtime set immutable_relay_only=false,worker_at=clock_timestamp();
+ d:=navrang_private.voice_rpc('duty-join','{"installationId":"legacy-idle-leave-fixture"}',token);
+ duty:=(d->>'dutyId')::uuid;channel:=(d->>'sessionId')::uuid;
+ d:=navrang_private.voice_rpc('voice-join',jsonb_build_object('dutyId',duty,'sessionId',channel),token);
+ select identity into strict member from navrang_private.voice_members where duty_id=duty and session_id=channel;
+ d:=navrang_private.voice_rpc('duty-leave',jsonb_build_object('dutyId',duty),token);
+ if not exists(select 1 from navrang_private.voice_commands where identity=member and operation='revoke' and daily_plan is null) then
+  raise exception 'Legacy idle cleanup was skipped';
+ end if;
+end;
+$idle_cleanup$;
+
 rollback;
