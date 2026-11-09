@@ -262,6 +262,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    final long locatorFence=action.startsWith("locator-")?nativeLocatorRequest(action):0;
    if(changesIdentity)runOnUiThread(()->{clearExport();clearReport();});
    runtime.requests.execute(()->{try{
+    Long identityGeneration=null;
     final long callStarted=android.os.SystemClock.elapsedRealtime();
     GateApi.Reply r=runtime.api.call(action,new JSONObject(value),token);
     final String effective=r.sessionToken.isEmpty()?token:r.sessionToken;
@@ -272,11 +273,11 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
     if(r.status==200&&r.body.optBoolean("ok")){
      if("notifications-feed".equals(action)&&runtime.sessions.isCurrent(generation,effective))nativeNotificationFeed(r.body,generation,effective);
      if(action.startsWith("locator-")&&runtime.sessions.isCurrent(generation,effective))nativeLocatorResponse(action,new JSONObject(value),r.body,generation,effective,locatorFence,android.os.SystemClock.elapsedRealtime()-callStarted);
-     if(r.body.has("token")&&r.body.has("profile")){boolean saved=runtime.sessions.saveBundleIfCurrent(generation,r.body);if(!saved)throw new IllegalStateException("Sign-in changed.");runtime.db.clearTemporary();runtime.emit("auth",r.body.getJSONObject("profile"));runtime.refresh();}
+     if(r.body.has("token")&&r.body.has("profile")){boolean saved=runtime.sessions.saveBundleIfCurrent(generation,r.body);if(!saved)throw new IllegalStateException("Sign-in changed.");if(changesIdentity)identityGeneration=generation;runtime.db.clearTemporary();runtime.emit("auth",r.body.getJSONObject("profile"));runtime.refresh();}
      if("me".equals(action)&&auth!=null){JSONObject profile=new JSONObject(r.body.toString());profile.remove("ok");if(!runtime.sessions.refreshIfCurrent(generation,effective,profileRequest,profile)){JSONObject current=runtime.sessions.read();if(generation!=runtime.sessions.generation()||current==null||!effective.equals(current.optString("token")))throw new IllegalStateException("Sign-in changed.");r=new GateApi.Reply(200,new JSONObject(current.getJSONObject("profile").toString()).put("ok",true));}}
      if("sync".equals(action)&&generation==runtime.sessions.generation()&&GateSession.canSync(runtime.sessions.read())&&("admin".equals(GateSession.actor(runtime.sessions.read()))||r.body.optBoolean("staffSummary")))runtime.db.applySync(r.body);
     }
-    JSONObject response=new JSONObject().put("id",id).put("status",r.status).put("body",GateApi.publicBody(r.body));call("onApiResponse",response.toString());
+    JSONObject response=new JSONObject().put("id",id).put("status",r.status).put("body",GateApi.publicBody(r.body));if(identityGeneration!=null)response.put("identityGeneration",identityGeneration);call("onApiResponse",response.toString());
    }catch(Exception e){try{call("onApiResponse",new JSONObject().put("id",id).put("status",0).put("body",new JSONObject().put("ok",false).put("error","Connection interrupted. Unconfirmed scans stay only in memory while the app is open.")).toString());}catch(Exception ignored){}}});
   }
   @JavascriptInterface public String update(String action,boolean value){

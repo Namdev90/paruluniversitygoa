@@ -3,7 +3,7 @@
  const native=!!(root.Native&&typeof root.Native.local==='function'),L=root.NavrangLive,config=root.NavrangConfig;
  const cookieMode=!native&&config.gateway!=null;let browserSession=null,browserSessionError;
  const callbacks=new Map(),listeners=new Set(),locatorSamples=new Map();let initPromise,draining=false,automaticRegion=false,authGeneration=0,profileSequence=0,appliedProfile=0,syncSequence=0,appliedStaffSync=0;
- let nativeProfileLoaded=false,nativeProfile=null,nativeGeneration=null,trustedValidation=null;
+ let nativeProfileLoaded=false,nativeProfile=null,nativeGeneration=null,nativeIdentityRequest='',trustedValidation=null;
  let locatorHintScope='',locatorHintRevision=-1;
  const monotonic=()=>root.performance?.now?.()??Date.now();
  const validationIdentity=p=>JSON.stringify([p?.role,p?.checkerId,p?.expiresAt,p?.accessExpiresAt]);
@@ -80,7 +80,7 @@
   sample.finish(null,{latitude:fix.latitude,longitude:fix.longitude,accuracy:fix.accuracy,capturedAt:fix.capturedAt});
  }catch{}};
  const canScan=p=>!!p?.active&&(p.role==='admin'||p.role==='checker'&&p.scanner!==false&&(p.station==null||p.station==='checker')&&(p.method!=='google'||p.nameConfirmed!==false));
- root.onApiResponse=raw=>{try{const r=JSON.parse(raw),cb=callbacks.get(r.id);if(cb){if(native)refreshNativeProfile();callbacks.delete(r.id);clearTimeout(cb.timer);r.body.ok?cb.resolve(r.body):cb.reject(fail(r.body.error||'Request failed.',r.status));}}catch{}};
+ root.onApiResponse=raw=>{try{const r=JSON.parse(raw),cb=callbacks.get(r.id);if(cb){if(native)refreshNativeProfile();callbacks.delete(r.id);clearTimeout(cb.timer);r.body.ok?cb.resolve(r.body,r.identityGeneration):cb.reject(fail(r.body.error||'Request failed.',r.status));}}catch{}};
  root.onGateEvent=raw=>{try{const e=JSON.parse(raw);if(e.type==='auth')authGeneration++;if(native&&e.type==='data-invalidated'){
   const before=accessScope(profile()),owner=nativeGeneration;refreshNativeProfile();
   if(owner!==null&&owner!==nativeGeneration){authGeneration++;resetMemory();emit('auth',profile()||{});}
@@ -88,12 +88,28 @@
  }else if(native&&(e.type==='auth'||e.type==='profile'))refreshNativeProfile();if(e.type==='auth'||e.type==='profile')invalidateSaves();if(e.type==='report-save')finishSave(e.data);emit(e.type,e.data)}catch{}};
  root.onNativeError=text=>emit('error',{message:text});
  root.onNativeSaved=name=>emit('notice',{message:'Saved '+name});
+ function nativeRequest(action,payload,{changesIdentity,changesOwnProfile,generation,scope}){
+  return new Promise((resolve,reject)=>{
+   const id=L.uuid(),signingIn=changesIdentity&&action!=='logout';
+   if(changesIdentity)nativeIdentityRequest=id;
+   const timer=setTimeout(()=>{callbacks.delete(id);reject(fail('Server response timed out. Unconfirmed scans stay only in memory while the app is open.'));},25000);
+   callbacks.set(id,{resolve(value,identityGeneration){
+    const current=signingIn?
+     id===nativeIdentityRequest&&Number.isSafeInteger(identityGeneration)&&identityGeneration>=0&&identityGeneration===nativeGeneration:
+     generation===authGeneration;
+    if(!current){reject(fail('Sign-in changed while this request was running.',409));return;}
+    if(!changesIdentity&&!changesOwnProfile&&action!=='me'&&scope!==accessScope(profile())){reject(fail('Your station access changed while this request was running.',403));return;}
+    resolve(value);
+   },reject,timer});
+   try{Native.api(action,JSON.stringify(payload),id)}catch(error){callbacks.delete(id);clearTimeout(timer);reject(error)}
+  });
+ }
  async function api(action,payload={},sessionOverride){
   if(typeof action==='string'&&/^(voice|duty)-/.test(action))throw fail('Use the native voice controls.',503);
   const changesIdentity=['login','checker-login','google-login','logout'].includes(action),changesOwnProfile=['checker-profile','staff-request'].includes(action),generation=changesIdentity?++authGeneration:authGeneration,scope=accessScope(profile()),profileRequest=action==='me'?++profileSequence:0;
   // A name/station save can trigger the native profile refresh before its acknowledgement.
   // These acknowledgements contain no student data; identity guards still apply.
-  if(native)return new Promise((resolve,reject)=>{const id=L.uuid(),timer=setTimeout(()=>{callbacks.delete(id);reject(fail('Server response timed out. Unconfirmed scans stay only in memory while the app is open.'));},25000);callbacks.set(id,{resolve:value=>generation!==authGeneration?reject(fail('Sign-in changed while this request was running.',409)):!changesIdentity&&!changesOwnProfile&&action!=='me'&&scope!==accessScope(profile())?reject(fail('Your station access changed while this request was running.',403)):resolve(value),reject,timer});Native.api(action,JSON.stringify(payload),id);}).then(value=>{inspectPrivateHints(action,value);return value});
+  if(native){const value=await nativeRequest(action,payload,{changesIdentity,changesOwnProfile,generation,scope});inspectPrivateHints(action,value);return value;}
   if(cookieMode){
    if(!browserSession)throw browserSessionError||fail('Protected browser sign-in is unavailable.',503);
    const value=await browserSession.request(action,payload);
