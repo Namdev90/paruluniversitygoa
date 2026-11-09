@@ -14,11 +14,13 @@ import org.json.JSONObject;
 /** Activity attachment only. Credentials and the audio owner remain outside the WebView. */
 public final class VoiceSessionClient {
     static final String UNAVAILABLE="{\"available\":false,\"ready\":false,\"state\":\"unavailable\",\"microphone\":false,\"canTalk\":false,\"message\":\"Voice is not available yet.\"}";
+    private static final String IDLE="{\"available\":true,\"ready\":false,\"state\":\"idle\",\"microphone\":false,\"canTalk\":false,\"message\":\"Join when ready.\"}";
+    private static final String JOINING="{\"available\":true,\"ready\":false,\"state\":\"joining\",\"microphone\":false,\"canTalk\":false,\"message\":\"Joining voice.\"}";
     private final Activity activity;
     private final Handler main=new Handler(Looper.getMainLooper());
     private volatile VoiceSessionService service;
     private boolean active,focused,bound,closed;
-    private String pendingJoin;
+    private volatile String pendingJoin;
     private final ServiceConnection connection=new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName name,IBinder binder) {
             if(!(binder instanceof VoiceSessionService.LocalBinder)||closed)return;
@@ -37,11 +39,16 @@ public final class VoiceSessionClient {
         if(!"status".equals(action))main.post(()->execute(action,payload));
         return status();
     }
-    private String status() { VoiceSessionService current=service;return current==null?UNAVAILABLE:current.command("status",null); }
+    private String status() {
+        VoiceSessionService current=service;
+        if(current!=null)return current.command("status",null);
+        // A cold start can offer Join without creating the audio service.
+        return pendingJoin==null?IDLE:JOINING;
+    }
     private void execute(String action,String payload) {
         if(closed)return;
         if("join".equals(action)) {
-            if(!active)return;
+            if(!active||pendingJoin!=null)return;
             try {
                 JSONObject input=new JSONObject(payload==null?"{}":payload);
                 if(input.length()>1||input.length()==1&&(!input.has("sessionId")||!PushPolicy.id(input.optString("sessionId"))))return;
