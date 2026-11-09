@@ -6,6 +6,37 @@ function setup(initial,{native=false,crew=[]}={}){
  w.GateClient={native,profile:()=>profile,on:f=>listener=f,finishGoogle:async()=>{},feedback:()=>{},destination:value=>value?(destination=value):destination,local:async()=>({entries:[],stats:{},pending:0,localCount:0}),update:()=>({}),scan:()=>calls.push({action:'camera'}),submit:()=>calls.push({action:'checkin'}),googleLogin:async()=>calls.push({action:'google-browser'}),googleBrowserLogin:async()=>calls.push({action:'google-browser-fallback'}),signOut:async()=>{calls.push({action:'logout'});profile=null;listener?.({type:'auth',data:null})},copy:async text=>calls.push({action:'copy',text}),sync:async()=>{calls.push({action:'sync'});return{dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:crew}},api:async(action,payload={})=>{calls.push({action,payload});if(action==='config')return{googleEnabled:true};if(action==='checker-profile'){profile={...profile,name:payload.name,nameConfirmed:true};return{saved:true}}if(action==='staff-request'){profile={...profile,station:payload.station,requestedRole:profile.active?'':payload.station};return{requested:payload.station}}if(action==='me')return profile;if(action==='staff-create')return{code:'NG-SYNTHETIC-CODE'};return{saved:true}}};
  w.eval(asset('pagination.js'));w.eval(asset('gate.js'));return{w,dom,calls,setProfile:p=>profile=p,event:e=>listener(e),click:id=>w.document.getElementById(id).click(),$:(id)=>w.document.getElementById(id)};
 }
+function realNativeSignIn(){
+ const dom=new JSDOM(asset('index.html'),{url:'https://gate.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
+ let profile=null,generation=0,loginRequest;
+ w.matchMedia=()=>({matches:true});w.NavrangDesk={refresh:()=>{},clear:()=>{},hasDraft:()=>false};
+ const response=(id,body,identityGeneration)=>w.onApiResponse(JSON.stringify({id,status:200,body,...(identityGeneration===undefined?{}:{identityGeneration})}));
+ w.Native={
+  local:action=>JSON.stringify({ok:true,data:action==='session'?{generation,profile}:{entries:[],stats:{},pending:0,localCount:0}}),
+  api(action,payload,id){
+   if(action==='checker-login'){loginRequest=id;generation++;return;}
+   queueMicrotask(()=>response(id,action==='config'?{ok:true,googleEnabled:false}:action==='me'?{ok:true,...profile}:{ok:true}));
+  }
+ };
+ for(const file of ['live-core.js','config.js','client.js','pagination.js','gate.js','auth-flow.js'])w.eval(asset(file));
+ return{dom,w,$:id=>w.document.getElementById(id),complete({eventFirst,locked=false}){
+  const signedIn={role:'checker',checkerId:'synthetic-staff',name:'Synthetic Staff',method:'code',active:true,scanner:true,station:'checker',nameConfirmed:true};
+  profile=locked?null:signedIn;
+  const event=()=>w.onGateEvent(JSON.stringify({type:'auth',data:signedIn}));
+  if(eventFirst)event();response(loginRequest,{ok:true,profile:signedIn},generation);if(!eventFirst)event();
+ }};
+}
+for(const eventFirst of [true,false])for(const locked of [true,false])test(`real native client clears the submitted staff code (${eventFirst?'event first':'response first'}, ${locked?'locked':'unlocked'})`,async()=>{
+ const t=realNativeSignIn();try{
+  await tick();t.$('skip-intro').click();t.$('checker-code').value='NG-SYNTHETIC-ONLY';
+  t.$('checker-form').dispatchEvent(new t.w.Event('submit',{cancelable:true}));t.complete({eventFirst,locked});
+  await tick();await tick();
+  assert.equal(t.$('checker-code').value,'');
+  assert.equal(t.w.GateClient.profile()===null,locked);
+  assert.equal(t.$('view-home').hidden,locked);
+  assert.equal(t.$('checker-form').querySelector('button').disabled,false);
+ }finally{t.dom.window.close()}
+});
 test('Google stays available; the first station choice is saved and staff cannot choose again',async()=>{
  const t=setup(null,{native:true}),{w,dom,calls,$}=t;try{await tick();t.click('google-signin');await tick();assert.ok(calls.some(c=>c.action==='google-browser'));
  t.click('skip-intro');t.setProfile({role:'checker',checkerId:'test',name:'Google name',method:'google',nameConfirmed:false,active:true,scanner:true,helpdesk:true});t.event({type:'auth'});assert.equal($('name-dialog').open,true);

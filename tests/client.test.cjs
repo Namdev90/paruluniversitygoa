@@ -168,3 +168,94 @@ test('browser update status does not invent an installed Android version',()=>{
  for(const file of ['live-core.js','config.js','client.js'])w.eval(fs.readFileSync(root+'/app/assets/'+file,'utf8'));
  try{assert.equal(w.GateClient.native,false);assert.equal(w.GateClient.update().currentVersion,null);assert.match(w.GateClient.update().message,/Android app/)}finally{w.close()}
 });
+
+function nativeIdentityClient(){
+ const dom=new JSDOM('',{url:'https://gate.test/',runScripts:'outside-only'}),w=dom.window,requests=[];
+ let profile=null,generation=0;
+ w.Native={local:()=>JSON.stringify({ok:true,data:{profile,generation}}),api:(action,payload,id)=>requests.push({action,id})};
+ for(const file of ['live-core.js','config.js','client.js'])w.eval(fs.readFileSync(root+'/app/assets/'+file,'utf8'));
+ return{dom,w,requests,setSession(p,g){profile=p;generation=g},event:()=>w.onGateEvent(JSON.stringify({type:'auth',data:{role:'untrusted-event'}})),reply(request,identityGeneration,body={ok:true}){w.onApiResponse(JSON.stringify({id:request.id,status:200,body,...(identityGeneration===undefined?{}:{identityGeneration})}))}};
+}
+const signedInFixture={role:'checker',checkerId:'synthetic-staff',name:'Synthetic staff',active:true,scanner:true,station:'checker'};
+
+for(const action of ['login','checker-login','google-login'])for(const eventFirst of [true,false])test(`native ${action} acknowledgement belongs to its committed identity (${eventFirst?'event first':'response first'})`,async()=>{
+ const t=nativeIdentityClient();try{
+  const result=t.w.GateClient.api(action,{}),request=t.requests.at(-1);
+  t.setSession(signedInFixture,7);
+  if(eventFirst)t.event();t.reply(request,7);if(!eventFirst)t.event();
+  assert.equal((await result).ok,true);assert.equal(t.w.GateClient.profile().checkerId,signedInFixture.checkerId);
+ }finally{t.dom.window.close()}
+});
+
+test('a newer identity request supersedes an earlier login even before native state changes',async()=>{
+ const t=nativeIdentityClient();try{
+  const first=t.w.GateClient.api('checker-login'),firstRequest=t.requests.at(-1),denied=assert.rejects(first,e=>e.status===409);
+  const second=t.w.GateClient.api('login'),secondRequest=t.requests.at(-1);
+  t.setSession(signedInFixture,7);t.reply(firstRequest,7);await denied;
+  t.setSession({role:'admin',name:'Synthetic admin',active:true},8);t.event();t.reply(secondRequest,8);assert.equal((await second).ok,true);
+ }finally{t.dom.window.close()}
+});
+
+test('a login acknowledgement cannot outlive an external identity change without an event',async()=>{
+ const t=nativeIdentityClient();try{
+  const result=t.w.GateClient.api('checker-login'),request=t.requests.at(-1),denied=assert.rejects(result,e=>e.status===409);
+  t.setSession({...signedInFixture,checkerId:'different-synthetic-staff'},8);t.reply(request,7);await denied;
+ }finally{t.dom.window.close()}
+});
+
+test('missing, malformed or stale identity receipts cannot acknowledge native sign-in',async()=>{
+ for(const receipt of [undefined,null,'7',7.5,-1,8]){
+  const t=nativeIdentityClient();try{
+   const result=t.w.GateClient.api('checker-login'),request=t.requests.at(-1),denied=assert.rejects(result,e=>e.status===409);
+   t.setSession(signedInFixture,7);t.reply(request,receipt);await denied;
+  }finally{t.dom.window.close()}
+ }
+});
+
+test('a committed identity receipt can finish login cleanup while app lock keeps the profile hidden',async()=>{
+ const t=nativeIdentityClient();try{
+  const result=t.w.GateClient.api('checker-login'),request=t.requests.at(-1);
+  t.setSession(null,7);t.event();t.reply(request,7,{ok:true,profile:signedInFixture});await result;
+  assert.equal(t.w.GateClient.profile(),null,'the acknowledgement must not unlock or import the response profile');
+ }finally{t.dom.window.close()}
+});
+
+test('a failed canonical native session read cannot validate a login receipt',async()=>{
+ const t=nativeIdentityClient();try{
+  const result=t.w.GateClient.api('checker-login'),request=t.requests.at(-1),denied=assert.rejects(result,e=>e.status===409);
+  t.w.Native.local=()=>JSON.stringify({ok:false});t.reply(request,7,{ok:true,profile:signedInFixture});await denied;
+ }finally{t.dom.window.close()}
+});
+
+test('starting logout supersedes the outstanding native login acknowledgement',async()=>{
+ const t=nativeIdentityClient();try{
+  const login=t.w.GateClient.api('checker-login'),request=t.requests.at(-1),denied=assert.rejects(login,e=>e.status===409);
+  const logout=t.w.GateClient.signOut(),logoutRequest=t.requests.at(-1);
+  t.setSession(signedInFixture,7);t.reply(request,7);await denied;
+  t.setSession(null,8);t.reply(logoutRequest,undefined,{ok:true,signedOut:true});await logout;
+ }finally{t.dom.window.close()}
+});
+
+test('acknowledging an initiating login does not release older private responses',async()=>{
+ const t=nativeIdentityClient();try{
+  t.setSession({role:'admin',name:'Synthetic admin',active:true},6);
+  const privateResult=t.w.GateClient.api('helpdesk-export'),privateRequest=t.requests.at(-1),denied=assert.rejects(privateResult,e=>e.status===409);
+  const login=t.w.GateClient.api('checker-login'),loginRequest=t.requests.at(-1);
+  t.setSession(signedInFixture,7);t.event();t.reply(loginRequest,7);await login;
+  t.reply(privateRequest,7,{ok:true,csv:'synthetic-private-record'});await denied;
+ }finally{t.dom.window.close()}
+});
+
+test('an auth listener starting another login supersedes the first acknowledgement',async()=>{
+ const t=nativeIdentityClient();try{
+  let next,nextRequest;t.w.GateClient.on(e=>{if(e.type==='auth'&&!next){next=t.w.GateClient.api('checker-login');nextRequest=t.requests.at(-1)}});
+  const first=t.w.GateClient.api('login'),firstRequest=t.requests.at(-1),denied=assert.rejects(first,e=>e.status===409);
+  t.setSession({role:'admin',name:'Synthetic admin',active:true},7);t.event();t.reply(firstRequest,7);await denied;
+  t.setSession(signedInFixture,8);t.reply(nextRequest,8);await next;
+ }finally{t.dom.window.close()}
+});
+
+test('the shipped native bridge emits receipts only for its committed sign-in operation',()=>{
+ const output=require('node:child_process').execFileSync('python3',['tests/native-login-ack-check.py'],{cwd:root,encoding:'utf8',timeout:20000});
+ assert.match(output,/PASS shipped Bridge\.api method: 36 synthetic acknowledgement checks\./);
+});
