@@ -20,12 +20,47 @@ def require(value, message):
         raise SystemExit(message)
 
 
+DEFERRED_ASSETS = {'notifications.js', 'notifications.css', 'voice.js', 'locator.js', 'locator.css'}
+
+
+def validate_version(release, latest, source_check=False):
+    if source_check:
+        require(release['versionCode'] >= latest['versionCode'], 'Source QA cannot roll back the Android version code.')
+        if release['versionCode'] == latest['versionCode']:
+            require(release['versionName'] == latest['versionName'], 'Published version code has a different version name.')
+    else:
+        require(release['versionCode'] > latest['versionCode'], 'Candidate must have a new Android version code.')
+
+
+def validate_assets(names):
+    require(not ({'assets/' + name for name in DEFERRED_ASSETS} & names),
+            'Deferred communications assets must stay excluded from the release package.')
+    require({'assets/index.html', 'assets/core.js', 'assets/client.js', 'assets/gate.js',
+             'assets/desk.js', 'assets/reports.js'} <= names, 'Required shipping client assets are missing.')
+
+
+def validate_manifest(badging, manifest):
+    for permission in ('RECORD_AUDIO', 'ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION'):
+        require('android.permission.' + permission not in badging,
+                'Deferred permission is present: ' + permission)
+    for component in ('NavrangMessagingService', 'PushReconcileJob', 'PushOpenActivity'):
+        require(component not in manifest, 'Deferred component is present: ' + component)
+    # aapt2 xmltree indents each element's attributes beneath its E: line.
+    elements = re.split(r'(?m)^\s*E: ', manifest)
+    voices = [element for element in elements if 'VoiceSessionService' in element]
+    require(len(voices) == 1 and re.search(
+        r'android:enabled\([^)]*\)=(?:false|\(type 0x12\)0x0)\s*$', voices[0], re.M),
+        'Dormant voice service must be explicitly disabled.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('apk', type=Path)
     parser.add_argument('--build-tools', required=True, type=Path)
     parser.add_argument('--expected-source', required=True)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--source-check', action='store_true',
+                        help='Inspect source QA at the current version, never authorize a release.')
     args = parser.parse_args()
     require(re.fullmatch(r'[0-9a-f]{40}', args.expected_source), 'An immutable source SHA is required.')
     git = lambda *items: subprocess.check_output(['git', *items], cwd=ROOT, text=True).strip()
@@ -34,13 +69,16 @@ def main():
     require(not git('status', '--porcelain'), 'Commit and re-verify the source before issuing an immutable candidate receipt.')
     release = json.loads((ROOT / 'release.json').read_text())
     latest = json.loads((ROOT / 'updates/latest.json').read_text())
-    require(release['versionCode'] > latest['versionCode'], 'Candidate must have a new Android version code.')
+    validate_version(release, latest, args.source_check)
     require(args.apk.is_file() and 0 < args.apk.stat().st_size <= 25 * 1024 * 1024, 'Missing or oversized candidate.')
     badging = subprocess.check_output([str(args.build_tools / 'aapt2'), 'dump', 'badging', str(args.apk)], text=True)
     package = re.search(r"^package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'", badging, re.M)
     require(package and package.groups() == (PACKAGE, str(release['versionCode']), release['versionName']), 'Unexpected candidate package/version.')
     require(re.search(r"^(?:minSdkVersion|sdkVersion):'24'$", badging, re.M), 'Minimum API must remain 24.')
     require(re.search(r"^targetSdkVersion:'37'$", badging, re.M), 'Unexpected target API.')
+    manifest = subprocess.check_output([str(args.build_tools / 'aapt2'), 'dump', 'xmltree',
+                                        str(args.apk), '--file', 'AndroidManifest.xml'], text=True)
+    validate_manifest(badging, manifest)
     signature = subprocess.run([str(args.build_tools / 'apksigner'), 'verify', str(args.apk)], capture_output=True)
     require(signature.returncode != 0, 'This CI artifact must be unsigned; signing belongs to the original-key custodian.')
     with zipfile.ZipFile(args.apk) as archive:
@@ -51,7 +89,7 @@ def main():
         with args.apk.open('rb') as apk_stream:
             apk_stream.seek(max(0, archive.start_dir - 16))
             require(apk_stream.read(16) != b'APK Sig Block 42', 'Unexpected APK signing block in the unsigned artifact.')
-        require({'assets/notifications.js', 'assets/notifications.css'} <= names, 'Implemented communications assets are missing.')
+        validate_assets(names)
         markup = archive.read('assets/index.html').decode('utf-8')
         for asset in re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"', markup):
             require('assets/' + asset in names, 'A referenced client asset is missing: ' + asset)
@@ -72,8 +110,9 @@ def main():
         'minSdk': 24, 'targetSdk': 37, 'size': args.apk.stat().st_size,
         'sha256': hashlib.sha256(args.apk.read_bytes()).hexdigest(),
         'signed': False, 'publishable': False, 'requiredSignerSha256': SIGNER_SHA256,
-        'pendingGate': 'COMMUNICATIONS_ACCEPTANCE_ORIGINAL_KEY_SIGNING_AND_PUBLIC_DOWNLOAD_VERIFICATION',
-        'communications': 'PACKAGED_TRANSPORT_NOT_VERIFIED', 'physicalDeviceChecks': 'NOT_RUN',
+        'purpose': 'SOURCE_QA_ONLY' if args.source_check else 'UNPUBLISHED_CANDIDATE',
+        'pendingGate': 'FRESH_SOURCE_ACCEPTANCE_ORIGINAL_KEY_SIGNING_AND_PUBLIC_DOWNLOAD_VERIFICATION',
+        'communications': 'EXCLUDED', 'physicalDeviceChecks': 'NOT_RUN',
         'assetIntegrity': 'PASS',
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

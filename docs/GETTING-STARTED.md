@@ -64,6 +64,12 @@ The build generates the original-interface host, copies shared Java/resources/as
 
 No private signing key is required for the commands above. The signing/build publication tools are **not** a normal getting-started step. Use [the release procedure](RELEASE-PROCEDURE.md) only for a separately authorized, source-bound release.
 
+## Unsigned production-source verification
+
+Native CI also builds and lints the release variant on every matching pull request, even when `release.json` still names the published version. It checks out the exact PR head and runs `tools/verify-unsigned-candidate.py --source-check` against the unsigned APK. The receipt binds the source tree and APK digest and is always non-publishable. This is source QA, not a new release or an update to existing release evidence.
+
+The inspector checks package/version/API levels, unsigned status, original artwork, required client assets, and the intentionally excluded location, voice and event-alert surface. Synthetic policy tests run with `python3 tests/unsigned-candidate-check.py`. Without `--source-check`, candidate inspection still requires a strictly newer Android version code. Original-key signing, fresh source acceptance and public-download verification remain separate release gates; no old acceptance waiver is reused.
+
 ## Backend tests and production safety
 
 Read [server/TESTING.md](../server/TESTING.md) before any hosted check. `npm run test:hosted` is **mutating**: it replaces registrations and creates synthetic admissions in a separate disposable project. It requires the isolated API, a private credentials file and `NAVRANG_TEST_ALLOW_MUTATIONS=isolated-project`; it is not part of the default local sequence above. Never use the live event project or live credentials.
