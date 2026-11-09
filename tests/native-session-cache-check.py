@@ -12,6 +12,7 @@ public class Context {public static final int MODE_PRIVATE=0;public final Shared
 public class SharedPreferences {
  public final Map<String,Object> values=new HashMap<>();public boolean fail;
  public String getString(String key,String fallback){return (String)values.getOrDefault(key,fallback);}public long getLong(String key,long fallback){return (Long)values.getOrDefault(key,fallback);}
+ public Map<String,?> getAll(){return new HashMap<>(values);}
  public Editor edit(){return new Editor();}public class Editor {Map<String,Object> changes=new HashMap<>();public Editor putString(String k,String v){changes.put(k,v);return this;}public Editor putLong(String k,long v){changes.put(k,v);return this;}public Editor remove(String k){changes.put(k,null);return this;}public boolean commit(){if(fail)return false;for(String k:changes.keySet())if(changes.get(k)==null)values.remove(k);else values.put(k,changes.get(k));return true;}}
 }''',
     'android/util/Base64.java': '''package android.util;public class Base64 {public static final int NO_WRAP=0;public static String encodeToString(byte[] value,int flags){return java.util.Base64.getEncoder().encodeToString(value);}public static byte[] decode(String value,int flags){return java.util.Base64.getDecoder().decode(value);}}''',

@@ -21,6 +21,7 @@ public class JSONObject {
 public class GateSession {
  private long generation=1;private JSONObject auth;public GateSession(Context c){replace(1,"old-token",false);}
  public synchronized void replace(long gen,String token,boolean active){generation=gen;auth=new JSONObject().put("token",token).put("profile",new JSONObject().put("active",active).put("scanner",active));}
+ public boolean failRevocationSnapshot;public int revocationSnapshots;public final java.util.Map<String,String> revocationQueue=new java.util.HashMap<>();public synchronized java.util.Map<String,String> pendingRevocations(){revocationSnapshots++;if(failRevocationSnapshot)throw new IllegalStateException("Synthetic preference failure");return new java.util.HashMap<>(revocationQueue);}public org.json.JSONObject revocationCredential(String value){return new org.json.JSONObject().put("token","old-logout-token");}public synchronized boolean acknowledgeRevocation(String id,String value){revocationQueue.remove(id);return true;}
  public synchronized long generation(){return generation;}public synchronized JSONObject read(){return auth;}
  public synchronized boolean isCurrent(long gen,String token){return gen==generation&&auth!=null&&token.equals(auth.optString("token"));}
  public synchronized boolean clearIfCurrent(long gen,String token){if(!isCurrent(gen,token))return false;generation++;auth=null;return true;}
@@ -36,9 +37,10 @@ public class GateDb {
 }''',
     "in/navrang/gate/GateApi.java": '''package in.navrang.gate;import android.content.Context;import org.json.JSONObject;import java.util.concurrent.CountDownLatch;
 public class GateApi {
+ public final CountDownLatch logoutStarted=new CountDownLatch(1),logoutRelease=new CountDownLatch(1);public int logoutCalls;
  public final CountDownLatch started=new CountDownLatch(1),release=new CountDownLatch(1);public int response=503,meCalls,syncCalls,checkinCalls;public boolean failCheckin,rotateAccess;public JSONObject meBody;private GateSession sessions;public GateApi(Context c){}public GateApi(Context c,GateSession s,java.util.function.BooleanSupplier mayRenew){sessions=s;}
  public static class Reply {public final int status;public final JSONObject body;public final String sessionToken;public Reply(int s,JSONObject b){this(s,b,"");}public Reply(int s,JSONObject b,String t){status=s;body=b;sessionToken=t;}}
- public Reply call(String action,JSONObject payload,String token)throws Exception{if("me".equals(action)){meCalls++;started.countDown();release.await();if(rotateAccess){sessions.replace(sessions.generation(),"rotated-token",false);token="rotated-token";}if(meBody!=null)return new Reply(response,meBody,token);}if("sync".equals(action)){syncCalls++;return new Reply(response,new JSONObject().put("ok",response==200).put("staffSummary",true).put("cursor",0L),token);}if("checkin".equals(action)){checkinCalls++;if(failCheckin)throw new java.io.IOException("Connection interrupted");return new Reply(200,new JSONObject().put("ok",true).put("code","admitted").put("id",payload.optString("ticketId")));}return new Reply(response,new JSONObject().put("ok",false),token);}
+ public Reply call(String action,JSONObject payload,String token)throws Exception{if("logout".equals(action)){logoutCalls++;logoutStarted.countDown();logoutRelease.await();return new Reply(200,new JSONObject().put("ok",true).put("signedOut",true));}if("me".equals(action)){meCalls++;started.countDown();release.await();if(rotateAccess){sessions.replace(sessions.generation(),"rotated-token",false);token="rotated-token";}if(meBody!=null)return new Reply(response,meBody,token);}if("sync".equals(action)){syncCalls++;return new Reply(response,new JSONObject().put("ok",response==200).put("staffSummary",true).put("cursor",0L),token);}if("checkin".equals(action)){checkinCalls++;if(failCheckin)throw new java.io.IOException("Connection interrupted");return new Reply(200,new JSONObject().put("ok",true).put("code","admitted").put("id",payload.optString("ticketId")));}return new Reply(response,new JSONObject().put("ok",false),token);}
 }''',
     "in/navrang/gate/GateFeedback.java": '''package in.navrang.gate;import android.content.Context;public class GateFeedback {public static void play(Context c,String sound){}}''',
     "in/navrang/gate/GateUpdater.java": '''package in.navrang.gate;import android.content.Context;public class GateUpdater {public static void check(Context c,boolean force,boolean download){}}''',
@@ -49,7 +51,7 @@ public class NativeRuntimeRaceCheck {
  static final java.util.Map<GateRuntime,java.util.concurrent.atomic.AtomicLong> clocks=new java.util.IdentityHashMap<>();
  static GateRuntime runtime()throws Exception{Constructor<GateRuntime> c=GateRuntime.class.getDeclaredConstructor(Context.class);c.setAccessible(true);GateRuntime r=c.newInstance(new Context());((ScheduledExecutorService)field("sync").get(r)).shutdownNow();field("foreground").set(r,1);java.util.concurrent.atomic.AtomicLong clock=new java.util.concurrent.atomic.AtomicLong(10000);clocks.put(r,clock);try{field("elapsed").set(r,(java.util.function.LongSupplier)clock::get);}catch(NoSuchFieldException absent){}return r;}
  static void advance(GateRuntime r,long ms){clocks.get(r).addAndGet(ms);}
- static void stop(GateRuntime r)throws Exception{((ExecutorService)field("entries").get(r)).shutdownNow();r.requests.shutdownNow();}
+ static void stop(GateRuntime r)throws Exception{((ExecutorService)field("entries").get(r)).shutdownNow();((ExecutorService)field("revocations").get(r)).shutdownNow();r.requests.shutdownNow();}
  static void delayedOldReply(int status)throws Exception {
   GateRuntime r=runtime();try{r.api.response=status;Method tick=GateRuntime.class.getDeclaredMethod("tick");tick.setAccessible(true);
    Thread request=new Thread(()->{try{tick.invoke(r);}catch(Exception e){throw new RuntimeException(e);}});request.start();check(r.api.started.await(2,TimeUnit.SECONDS),"old me request started");
@@ -135,6 +137,25 @@ public class NativeRuntimeRaceCheck {
    clear.invoke(r,2L,"new-token");check(r.db.clears==0,"inactive cleanup rereads current active status");
    r.sessions.replace(2,"new-token",false);clear.invoke(r,2L,"new-token");check(r.db.clears==1,"current inactive identity still clears temporary data");
   }finally{stop(r);}
+  GateRuntime snapshotFailure=runtime();try{
+   snapshotFailure.setPrivateAccess(()->false);snapshotFailure.sessions.failRevocationSnapshot=true;
+   Method tick=GateRuntime.class.getDeclaredMethod("tick");tick.setAccessible(true);tick.invoke(snapshotFailure);
+   ((ExecutorService)field("revocations").get(snapshotFailure)).submit(()->{}).get(2,TimeUnit.SECONDS);
+   snapshotFailure.sessions.failRevocationSnapshot=false;tick.invoke(snapshotFailure);
+   ((ExecutorService)field("revocations").get(snapshotFailure)).submit(()->{}).get(2,TimeUnit.SECONDS);
+   check(snapshotFailure.api.meCalls==0,"revocation snapshot failures stay contained and later locked ticks remain private");
+  }finally{stop(snapshotFailure);}
+  GateRuntime slowLogout=runtime();try{
+   slowLogout.sessions.revocationQueue.put("logout-pending-fixture","encrypted-fixture");slowLogout.setPrivateAccess(()->false);
+   Method tick=GateRuntime.class.getDeclaredMethod("tick");tick.setAccessible(true);tick.invoke(slowLogout);
+   check(slowLogout.api.logoutStarted.await(2,TimeUnit.SECONDS),"revocation starts on its own worker while locked");
+   slowLogout.setPrivateAccess(()->true);slowLogout.api.release.countDown();tick.invoke(slowLogout);
+   check(slowLogout.api.meCalls==1,"blocked old logout does not delay current profile reconciliation");
+   for(int i=0;i<5;i++)tick.invoke(slowLogout);
+   check(slowLogout.api.logoutCalls==1,"repeated ticks preserve single-flight delivery");
+   slowLogout.api.logoutRelease.countDown();((ExecutorService)field("revocations").get(slowLogout)).submit(()->{}).get(2,TimeUnit.SECONDS);
+   check(slowLogout.sessions.revocationSnapshots==1&&slowLogout.sessions.revocationQueue.isEmpty(),"busy ticks do not accumulate queued revocation batches");
+  }finally{slowLogout.api.logoutRelease.countDown();stop(slowLogout);}
   System.out.println("PASS actual GateRuntime: "+checks+" checks for identified pending recovery, stale 401/403/503 replies and guarded cleanup.");
  }
 }''',
@@ -147,5 +168,5 @@ with tempfile.TemporaryDirectory(prefix="navrang-runtime-check-") as temp:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(source)
         files.append(str(path))
-    subprocess.run(["java", "--module", "jdk.compiler/com.sun.tools.javac.Main", "-d", str(folder / "classes"), *files, str(root / "app/java/in/navrang/gate/GateRuntime.java"), str(root / "app/java/in/navrang/gate/ReconcilePolicy.java")], check=True)
+    subprocess.run(["java", "--module", "jdk.compiler/com.sun.tools.javac.Main", "-d", str(folder / "classes"), *files, str(root / "app/java/in/navrang/gate/GateRuntime.java"), str(root / "app/java/in/navrang/gate/ReconcilePolicy.java"), str(root / "app/java/in/navrang/gate/LogoutRevocation.java")], check=True)
     subprocess.run(["java", "-cp", str(folder / "classes"), "NativeRuntimeRaceCheck"], check=True, timeout=20)

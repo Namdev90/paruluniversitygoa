@@ -15,6 +15,8 @@ public final class GateSession {
  private final SharedPreferences prefs;
  private String cachedEncrypted,cachedSession;
  private boolean clearedInMemory;
+ private String signOutCiphertext,signOutId;
+ private static final String REVOCATION_PREFIX="logout-pending-";
  private long validationNanos,validationWall;
  private String previousAccess="",rotatedAccess="";
  private long rotationNanos;
@@ -83,6 +85,7 @@ public final class GateSession {
  }
  private void forgetRotation(){previousAccess=rotatedAccess="";rotationNanos=0;}
  private void persist(JSONObject session,boolean validated)throws Exception{
+  if(signOutId!=null)throw new java.io.IOException("Finish saving sign-out before signing in.");
   String value=session.toString();
   Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.ENCRYPT_MODE,key());
   String encoded=Base64.encodeToString(cipher.getIV(),Base64.NO_WRAP)+":"+Base64.encodeToString(cipher.doFinal(value.getBytes(StandardCharsets.UTF_8)),Base64.NO_WRAP);
@@ -100,6 +103,35 @@ public final class GateSession {
    catch(Exception ignored){cachedEncrypted=null;}
   }
   try{return cachedSession==null?null:new JSONObject(cachedSession);}catch(Exception e){cachedEncrypted=null;cachedSession=null;return null;}
+ }
+ /** Immediately fence callbacks and private access; retain ciphertext even if the keystore is locked. */
+ public synchronized void beginSignOut(){
+  if(signOutId==null){signOutCiphertext=prefs.getString("encrypted","");signOutId=REVOCATION_PREFIX+java.util.UUID.randomUUID();}
+  generation++;clearedInMemory=true;cachedEncrypted=null;cachedSession=null;validationNanos=validationWall=0;forgetRotation();
+ }
+ /** One preferences transaction moves the credential out of active auth into the revocation-only queue. */
+ public synchronized boolean finishSignOut(){
+  if(signOutId==null)return true;
+  SharedPreferences.Editor edit=prefs.edit().putLong("generation",generation).remove("encrypted");
+  if(!signOutCiphertext.isEmpty())edit.putString(signOutId,signOutCiphertext);
+  if(!edit.commit())return false;
+  signOutId=signOutCiphertext=null;return true;
+ }
+ // Native-only snapshots. No queue data is returned by read(), exported, or used for renewal.
+ public synchronized java.util.Map<String,String> pendingRevocations(){
+  java.util.Map<String,String> result=new java.util.TreeMap<>();
+  for(java.util.Map.Entry<String,?> entry:prefs.getAll().entrySet())if(entry.getKey().startsWith(REVOCATION_PREFIX)&&entry.getValue() instanceof String&&!entry.getKey().equals(signOutId))result.put(entry.getKey(),(String)entry.getValue());
+  return result;
+ }
+ public synchronized JSONObject revocationCredential(String encoded)throws Exception{
+  String[] parts=encoded.split(":",2);Cipher c=Cipher.getInstance("AES/GCM/NoPadding");c.init(Cipher.DECRYPT_MODE,key(),new GCMParameterSpec(128,Base64.decode(parts[0],Base64.NO_WRAP)));
+  JSONObject stored=new JSONObject(new String(c.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),StandardCharsets.UTF_8));
+  return new JSONObject().put("token",stored.optString("token")).put("refreshToken",stored.optString("refreshToken"));
+ }
+ public synchronized boolean acknowledgeRevocation(String id,String encoded){
+  String current=prefs.getString(id,"");
+  if(!id.startsWith(REVOCATION_PREFIX)||!current.isEmpty()&&!encoded.equals(current))return false;
+  return prefs.edit().remove(id).commit();
  }
  public synchronized boolean clearDurably(){generation++;clearedInMemory=true;cachedEncrypted=null;cachedSession=null;validationNanos=validationWall=0;forgetRotation();return prefs.edit().putLong("generation",generation).remove("encrypted").commit();}
  public synchronized void clear(){clearDurably();}

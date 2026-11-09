@@ -39,6 +39,7 @@ public class NativeRenewalCheck {
   check(renewalPosts.get(0).optString("nextRefreshHash").matches("[a-f0-9]{64}")&&!renewalPosts.get(0).has("nextRefreshToken"),"only successor hash crosses the HTTP boundary");
   check(!R.equals(s.read().optString("refreshToken")),"successful rotation replaces the consumed refresh secret");
   check(nativeApi.call("sync",new JSONObject(),A).status==200&&renewalPosts.size()==1,"queued access from the same identity reuses the committed rotation");
+  check(nativeApi.call("logout",new JSONObject(),A).status==401,"legacy revocation uses captured token rather than substituting rotated current access");
 
   AtomicInteger posts=new AtomicInteger();GateSession offline=session();AtomicLong time=new AtomicLong(1000);List<JSONObject> retries=new ArrayList<>();
   SessionRenewal retryApi=new SessionRenewal(offline,"fixture-install",()->true,(action,payload,token)->{
