@@ -24,7 +24,7 @@ DESK_RECORDS = [dict(id=f'synthetic-case-{i}',ticket_id=f'DESK{i:04d}',status=st
 STATS = dict(total=60,eligible=60,admitted=40,remaining=20,blocked=0,lastMinute=0,lastFiveMinutes=0,duplicateAttempts=2,blockedAttempts=1)
 SUMMARY = dict(registered=12,eligible=12,blocked=0,attended=9,registeredAttended=8,organizerConfirmed=1,noShow=4,serverIssues=1,issueTickets=1,duplicateAttempts=2,pendingHelpDesk=0,generatedAt=STAMP)
 def run():
- parser=argparse.ArgumentParser();parser.add_argument('--output',default=str(ROOT/'.build/responsive-review'));parser.add_argument('--baseline',action='store_true');parser.add_argument('--report-stress',action='store_true');parser.add_argument('--interactions-only',action='store_true');parser.add_argument('--login-only',action='store_true');parser.add_argument('--sizes',default='320x640,360x800,390x844,768x1024,1024x768,1366x768,1920x1080,640x360');args=parser.parse_args()
+ parser=argparse.ArgumentParser();parser.add_argument('--output',default=str(ROOT/'.build/responsive-review'));parser.add_argument('--baseline',action='store_true');parser.add_argument('--report-stress',action='store_true');parser.add_argument('--interactions-only',action='store_true');parser.add_argument('--login-only',action='store_true');parser.add_argument('--adaptive-only',action='store_true');parser.add_argument('--sizes',default='320x640,360x800,390x844,768x1024,1024x768,1366x768,1920x1080,640x360');args=parser.parse_args()
  out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
  assets=ROOT/'app/assets'
  markup=(assets/'index.html').read_text()
@@ -144,6 +144,66 @@ def run():
     reports.append(dict(control=label,**result))
     required_height=result['height']-.5 if minimum==0 else min(minimum,result['height'])
     if result['height']<minimum or result['visibleHeight']<required_height or result['visibleWidth']<min(43,result['width']) or not result['hitTarget']:failures.append(dict(unreachableControl=label,**result))
+   def adaptive_review():
+    # CDP reports genuine CSS safe-area and viewport-segment values.
+    screens=(
+     ('curved-edge',320,550,dict(left=34,right=28,top=19,bottom=24),None),
+     ('book-fold',1000,690,{},dict(orientation='vertical',offset=390,maskLength=24)),
+     ('tabletop-fold',760,740,{},dict(orientation='horizontal',offset=345,maskLength=40)),
+    )
+    for name,width,height,insets,fold in screens:
+     ctx=browser.new_context(viewport=dict(width=width,height=height),is_mobile=True,has_touch=True,reduced_motion='reduce')
+     try:
+      ctx.route('**/*',lambda route:route.abort())
+      page=ctx.new_page();page.set_default_timeout(5000);page.on('pageerror',lambda e:errors.append(str(e)))
+      page.route('https://fixture.invalid/',lambda route:route.fulfill(body='<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">',content_type='text/html'))
+      page.goto('https://fixture.invalid/')
+      cdp=ctx.new_cdp_session(page)
+      metrics=dict(width=width,height=height,screenWidth=width,screenHeight=height,deviceScaleFactor=1,mobile=True)
+      if fold:
+       # setDeviceMetricsOverride attaches the fold to the emulated mobile screen.
+       cdp.send('Emulation.setDeviceMetricsOverride',dict(metrics,displayFeature=fold))
+       axis='horizontal' if fold['orientation']=='vertical' else 'vertical'
+       page.wait_for_function("(axis)=>matchMedia('('+axis+'-viewport-segments:2)').matches",arg=axis)
+      else:cdp.send('Emulation.setSafeAreaInsetsOverride',dict(insets=insets))
+      open_source(page,'admin')
+      page.locator('#intro').wait_for(state='hidden')
+      navigate(page,'settings')
+      page.evaluate("""()=>{const visible=[...document.querySelectorAll('.topbar h1,#view-settings h3,#view-settings button,#main-nav button')];for(const [node,size]of visible.map(node=>[node,parseFloat(getComputedStyle(node).fontSize)]))node.style.fontSize=(size*2)+'px'}""")
+      safe=dict(left=insets.get('left',0),top=insets.get('top',0),right=width-insets.get('right',0),bottom=height-insets.get('bottom',0))
+      if fold:safe['right' if axis=='horizontal' else 'bottom']=fold['offset']
+      def check_bounds(selector):
+       bounds=page.locator(selector).bounding_box()
+       info=dict(screen=name,control=selector,bounds=bounds,safe=safe)
+       reports.append(info)
+       if not bounds or bounds['x']<safe['left']-1 or bounds['y']<safe['top']-1 or bounds['x']+bounds['width']>safe['right']+1 or bounds['y']+bounds['height']>safe['bottom']+1:
+        failures.append(info)
+      page.locator('#intro').evaluate("node=>{node.hidden=false;node.classList.remove('leaving')}")
+      check_bounds('.intro .combined-brand-hero')
+      check_bounds('#skip-intro')
+      page.locator('#intro').evaluate("node=>node.hidden=true")
+      check_bounds('.topbar')
+      check_bounds('#main-nav')
+      page.locator('#password-open').scroll_into_view_if_needed()
+      check_bounds('#password-open')
+      page.locator('#password-open').click()
+      check_bounds('#password-dialog')
+      capture=cdp.send('Page.captureScreenshot',dict(format='png',captureBeyondViewport=False))
+      (out/f'adaptive-{name}.png').write_bytes(base64.b64decode(capture['data']))
+      page.locator('#close-password').click()
+      if fold:
+       page.evaluate("document.body.classList.remove('portal-layout')")
+       host=page.locator('.app-shell').bounding_box()
+       reports.append(dict(screen=name,nativeHost=host))
+       if not host or host['width']<width-1:failures.append(dict(screen=name,nativeHostClipped=host))
+       page.evaluate("document.body.classList.add('portal-layout')")
+       cdp.send('Emulation.setDeviceMetricsOverride',metrics)
+       page.wait_for_function("(axis)=>matchMedia('('+axis+'-viewport-segments:1)').matches",arg=axis)
+       box=page.locator('.app-shell').bounding_box()
+       if not box or box['width']<width-1 or page.evaluate('document.body.dataset.route')!='settings':
+        failures.append(dict(screen=name,unfolded=box,route=page.evaluate('document.body.dataset.route')))
+      unexpected.extend(page.evaluate('fixtureUnexpected'))
+     finally:ctx.close()
    def measure_report_downloads(page):
     page.wait_for_function("!document.getElementById('report-csv').disabled")
     page.locator('#report-tab-downloads').click()
@@ -388,6 +448,8 @@ def run():
     check('401 clears private rows and dialogs without an exit snapshot',auth['route']=='login' and auth['rows']==0 and auth['dialogs']==0 and auth['animations']==0,auth)
     page.screenshot(path=str(out/f'auth-loss-{width}x{height}.png'));unexpected.extend(page.evaluate('fixtureUnexpected'));ctx.close()
    sizes=[tuple(map(int,size.split('x'))) for size in args.sizes.split(',')]
+   if not args.login_only and not args.interactions_only:adaptive_review()
+   if args.adaptive_only:sizes=[]
    if args.login_only:
     for width,height in sizes:
      for scale in (1,1.6):

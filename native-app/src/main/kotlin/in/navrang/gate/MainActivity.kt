@@ -2,6 +2,7 @@ package `in`.navrang.gate
 
 import android.app.AlertDialog
 import android.net.Uri
+import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -27,6 +28,10 @@ class MainActivity : ClassicActivity() {
     private var nativeFindMe: NativeFindMeActions? = null
     @Volatile private var nativeLocatorScope = ""
     private var lockUi: NativeLockUi? = null
+
+    override fun configureWebHost(frame: FrameLayout) {
+        fitNavrangWindow(findViewById(android.R.id.content))
+    }
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         NativeAppLock.install(this)

@@ -134,6 +134,9 @@ class ClassicScannerUiTest {
     @Test fun actualCameraLayoutKeepsPreviewMountedDuringExactIdEntry() {
         val verified = mutableListOf<String>()
         compose.setContent { CameraFixture({ verified += it }) }
+        val portraitPreview = compose.onNodeWithTag("synthetic-camera-preview").fetchSemanticsNode().boundsInRoot
+        val portraitAction = compose.onNodeWithText("Find ID").fetchSemanticsNode().boundsInRoot
+        assertTrue(portraitPreview.bottom <= portraitAction.top)
         compose.onNodeWithTag("scanner-frame").assertIsDisplayed()
         compose.onNodeWithTag("scanner-sweep").assertIsDisplayed()
         compose.onNodeWithContentDescription("Camera zoom").assertDoesNotExist()
@@ -168,7 +171,11 @@ class ClassicScannerUiTest {
                 CameraFixture({}, result)
             }
         }
-        compose.onNodeWithText("Find ID").performScrollTo().performClick()
+        compose.onNodeWithText("Find ID").performScrollTo()
+        val landscapePreview = compose.onNodeWithTag("synthetic-camera-preview").fetchSemanticsNode().boundsInRoot
+        val landscapeAction = compose.onNodeWithText("Find ID").fetchSemanticsNode().boundsInRoot
+        assertTrue(landscapePreview.right <= landscapeAction.left)
+        compose.onNodeWithText("Find ID").performClick()
         compose.onNodeWithTag("scanner-exact-id").performScrollTo().performTextInput("TEST0002")
         compose.onNodeWithText("Verify entry").performScrollTo().assertIsDisplayed().assertIsEnabled()
         compose.onNodeWithTag("synthetic-camera-preview").assertIsDisplayed()
@@ -176,6 +183,23 @@ class ClassicScannerUiTest {
         screenshot("classic-scanner-compact-id-controls")
         compose.onNodeWithText("Entry confirmed").performScrollTo().assertIsDisplayed()
         screenshot("classic-scanner-compact-confirmed-result")
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w640dp-h360dp")
+    fun changingWindowWidthPreservesExactIdDraft() {
+        var width by mutableStateOf(300.dp)
+        compose.setContent {
+            Box(Modifier.width(width).height(320.dp)) { CameraFixture({}) }
+        }
+        compose.onNodeWithText("Find ID").performScrollTo().performClick()
+        compose.onNodeWithTag("scanner-exact-id").performScrollTo().performTextInput("TEST0001")
+        compose.runOnIdle { width = 640.dp }
+        val field = compose.onNodeWithTag("scanner-exact-id").performScrollTo().fetchSemanticsNode()
+        assertEquals("TEST0001", field.config[SemanticsProperties.EditableText].text)
+        val preview = compose.onNodeWithTag("synthetic-camera-preview").fetchSemanticsNode().boundsInRoot
+        assertTrue(preview.right <= field.boundsInRoot.left)
+        compose.onNodeWithText("Verify entry").performScrollTo().assertIsDisplayed().assertIsEnabled()
     }
 
     @Test fun reducedMotionKeepsTheCameraFrameWithoutTheSweep() {

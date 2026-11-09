@@ -66,7 +66,7 @@ dialog::backdrop{background:#08050bdf}
 .list-status{flex-shrink:0;min-height:30px;padding:9px 2px 0;font-size:11px;line-height:1.4;color:var(--muted)}
 
 /* Launch has three real layout regions, so figures never cross the logo or CTA. */
-.intro{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:max(18px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 25%,#742a4c66,transparent 62%),linear-gradient(155deg,#241221,#100d15);transition:none}
+.intro{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:18px 18px 16px;background:radial-gradient(ellipse at 50% 25%,#742a4c66,transparent 62%),linear-gradient(155deg,#241221,#100d15);transition:none}
 .intro-content{grid-column:1;grid-row:1;position:relative;align-self:center;justify-self:center;width:100%;height:auto;padding:0;margin:0;gap:8px;z-index:3}
 .intro-content>.official-logo{width:min(230px,66vw);height:28px;margin:0;flex:none;animation:none}
 .intro-content .event-wordmark-hero.classic-event-mark{width:min(208px,32vh,54vw);max-height:none;aspect-ratio:1;filter:drop-shadow(0 7px 12px #0007)}
@@ -462,4 +462,81 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
  body.portal-layout.portal-menu-collapsed:not(.login-mode) .app-shell{grid-template-columns:minmax(0,1fr)}
  body.portal-layout.portal-menu-collapsed:not(.login-mode) :is(main,.app-footer){grid-column:1}
  body.portal-layout.portal-menu-collapsed:not(.login-mode) #main-nav{display:none}
+}
+
+/* Safe edges also apply to fixed overlays and browser-reported hinges. */
+:root{
+ --safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);
+ --safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);
+ --viewport-height:100vh;--screen-height:var(--viewport-height);--screen-width:100vw;
+ --pane-right:calc(100vw - var(--screen-width));--pane-bottom:calc(var(--viewport-height) - var(--screen-height));
+}
+@supports(height:100dvh){:root{--viewport-height:100dvh}}
+.app-shell{
+ --shell-gutter:clamp(12px,calc(var(--screen-width) * .024),32px);
+ container-type:inline-size;
+ min-height:var(--screen-height);
+ padding:var(--safe-top) calc(var(--shell-gutter) + var(--safe-right)) var(--safe-bottom) calc(var(--shell-gutter) + var(--safe-left));
+}
+.brand.official-header{flex-wrap:wrap;row-gap:3px}
+.brand.official-header h1{overflow-wrap:anywhere}
+.input-action input{min-inline-size:0}
+@container(max-width:300px){
+ #view-settings .panel-heading{flex-wrap:wrap}
+}
+@container(max-width:250px){
+ #main-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.intro,.classic-signout-pending,dialog[id][open]{
+ inset:var(--safe-top) calc(var(--pane-right) + var(--safe-right)) calc(var(--pane-bottom) + var(--safe-bottom)) var(--safe-left);
+}
+.classic-signout-pending{overflow:auto}
+dialog[open]{
+ --safe-dialog-height:calc(var(--screen-height) - var(--safe-top) - var(--safe-bottom) - 24px);
+ max-inline-size:min(100%,calc(var(--screen-width) - var(--safe-left) - var(--safe-right) - 24px));
+ max-block-size:min(var(--dialog-height,var(--viewport-height)),var(--safe-dialog-height));
+}
+#exit-dialog{max-inline-size:min(390px,calc(var(--screen-width) - var(--safe-left) - var(--safe-right) - 24px))}
+#report-notes-dialog{--dialog-height:calc(var(--viewport-height) * .8)}
+#report-totals-dialog,#report-teacher-dialog,#report-download-dialog{--dialog-height:calc(var(--viewport-height) * .85)}
+#result-popup[open]:not([data-modal=true]){
+ --result-offset:calc(var(--nav-clearance,86px) + 8px);
+ top:auto;bottom:calc(var(--pane-bottom) + var(--safe-bottom) + var(--result-offset));
+ max-block-size:calc(var(--safe-dialog-height) - var(--result-offset));
+}
+@media(max-height:660px){
+ #result-popup[open]:not([data-modal=true]){--result-offset:0px;top:var(--safe-top);margin:auto}
+}
+@media(horizontal-viewport-segments >= 2),(vertical-viewport-segments >= 2){
+ :root:has(body.portal-layout){
+  --screen-width:env(viewport-segment-width 0 0,100vw);
+  --screen-height:env(viewport-segment-height 0 0,var(--viewport-height));
+ }
+ body.portal-layout .app-shell{width:var(--screen-width);height:var(--screen-height);min-height:0;margin:0;overflow:hidden}
+ body.portal-layout .app-shell main{min-width:0;overflow:auto;overscroll-behavior:contain;scroll-padding:8px}
+ body.portal-layout .app-footer{display:none}
+}
+@media(horizontal-viewport-segments >= 2){
+ :root:has(body.portal-layout){--safe-right:0px}
+ body.portal-layout:not(.login-mode) .app-shell{display:flex}
+ body.portal-layout:not(.login-mode) .portal-menu-toggle{display:none}
+ body.portal-layout:not(.login-mode) #main-nav:not([hidden]){
+  display:grid;align-self:center;top:auto;bottom:auto;padding:6px 0;border-inline:0;border-bottom:0;border-radius:0;
+ }
+ body.portal-layout:not(.login-mode) #main-nav button{padding-inline:3px;text-align:center}
+ body.portal-layout:not(.login-mode) #main-nav button span{display:block;min-width:0;margin:0 0 4px}
+ body.portal-layout :is(#view-home,#view-login){display:flex;flex-direction:column}
+ body.portal-layout #view-home .manual-panel{align-self:stretch}
+ body.portal-layout .login-art{display:none}
+ body.portal-layout #desk-fields{grid-template-columns:minmax(0,1fr)}
+ body.portal-layout .admin-stats{grid-template-columns:repeat(auto-fit,minmax(min(100%,4.5rem),1fr))}
+ body.portal-layout .stats strong{font-size:1.4rem;overflow-wrap:anywhere}
+}
+@media(vertical-viewport-segments >= 2){
+ :root:has(body.portal-layout){--safe-bottom:0px}
+ body.portal-layout .intro{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr) auto;padding:12px}
+ body.portal-layout .intro-content>.combined-brand-hero{width:min(100%,320px,calc(var(--screen-height) * .95))}
+ body.portal-layout .intro-dancers{grid-column:2;grid-row:1}
+ body.portal-layout .intro .intro-skip{grid-column:1/-1;grid-row:2}
+ body.portal-layout #result-popup[open]:not([data-modal=true]){--result-offset:0px;top:var(--safe-top);margin:auto}
 }

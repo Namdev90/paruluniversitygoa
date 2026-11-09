@@ -173,6 +173,7 @@ dependencies {
     implementation(libs.fragment)
     implementation(libs.biometric)
     implementation(libs.adaptive)
+    implementation("androidx.window:window:1.5.0")
     implementation(libs.navigation)
     implementation(libs.lifecycle.runtime)
     implementation(libs.lifecycle.viewmodel)

@@ -23,6 +23,9 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  protected Class<? extends Activity> scannerActivity(){return ScanActivity.class;}
  protected void clearCredentialProvider(){}
  protected void nativeHostReady(){}
+ protected void configureWebHost(FrameLayout frame){
+  frame.setOnApplyWindowInsetsListener((v,i)->{v.setPadding(i.getSystemWindowInsetLeft(),i.getSystemWindowInsetTop(),i.getSystemWindowInsetRight(),i.getSystemWindowInsetBottom());return i.consumeSystemWindowInsets();});
+ }
  protected void nativeIdentityChanging(){}
  protected final void nativePrivateCover(boolean covered){if(web!=null){if(covered)web.onPause();else web.onResume();}if(!covered)resumeDocumentSave();}
  protected final void nativeLocalSignOut(){durableSignOut("");}
@@ -46,7 +49,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   FrameLayout frame=new FrameLayout(this);
   try{web=new WebView(this);}catch(Exception e){showMessage("Update Android System WebView / Chrome and reopen Navrang Gate.");return;}
   if(!WebViewSupport.supported(web.getSettings().getUserAgentString())){web.destroy();web=null;showMessage("Update Android System WebView / Chrome to version 86 or newer, then reopen Navrang Gate. Confirmed entries remain on the server. Unconfirmed requests are temporary and may be lost when the app closes.");return;}
-  frame.addView(web);frame.setOnApplyWindowInsetsListener((v,i)->{v.setPadding(i.getSystemWindowInsetLeft(),i.getSystemWindowInsetTop(),i.getSystemWindowInsetRight(),i.getSystemWindowInsetBottom());return i.consumeSystemWindowInsets();});setContentView(frame);frame.requestApplyInsets();
+  frame.addView(web);configureWebHost(frame);setContentView(frame);frame.requestApplyInsets();
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setAllowFileAccessFromFileURLs(false);s.setAllowUniversalAccessFromFileURLs(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
   s.setCacheMode(WebSettings.LOAD_NO_CACHE);web.clearCache(true);web.clearFormData();web.setSaveEnabled(false);web.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);web.setOnLongClickListener(v->{WebView.HitTestResult hit=web.getHitTestResult();return hit==null||hit.getType()!=WebView.HitTestResult.EDIT_TEXT_TYPE;});
   WebView.setWebContentsDebuggingEnabled(false);web.addJavascriptInterface(new Bridge(),"Native");

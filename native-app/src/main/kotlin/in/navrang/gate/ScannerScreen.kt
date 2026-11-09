@@ -26,7 +26,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -315,11 +317,11 @@ internal fun ClassicScannerCameraLayout(
     onFocus: (Offset) -> Unit,
     previewContent: @Composable BoxScope.() -> Unit,
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val controlsHeight = maxHeight * (if (exactIdOpen) .7f else .55f)
-        Column(Modifier.fillMaxSize()) {
+    Layout(
+        modifier = Modifier.fillMaxSize(),
+        content = {
             Box(
-                Modifier.weight(1f).fillMaxWidth().background(Color.Black).pointerInput(onFocus) {
+                Modifier.background(Color.Black).pointerInput(onFocus) {
                     detectTapGestures { point -> onFocus(point) }
                 }
             ) {
@@ -347,7 +349,6 @@ internal fun ClassicScannerCameraLayout(
             }
             Column(
                 Modifier.fillMaxWidth()
-                    .heightIn(max = controlsHeight)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -370,6 +371,27 @@ internal fun ClassicScannerCameraLayout(
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
+        },
+    ) { (preview, controls), bounds ->
+        // Remeasure the same preview and controls when the window resizes.
+        val width = bounds.maxWidth
+        val height = bounds.maxHeight
+        val sideBySide = width >= 560.dp.roundToPx() && width > height
+        val controlsWidth = if (sideBySide) minOf(width / 2, 360.dp.roundToPx())
+            else minOf(width, 520.dp.roundToPx())
+        val controlsHeight = if (sideBySide) height else minOf(
+            height,
+            maxOf(48.dp.roundToPx(), (height * (if (exactIdOpen) .7f else .55f)).toInt()),
+        )
+        val panel = controls.measure(
+            Constraints(minWidth = controlsWidth, maxWidth = controlsWidth, maxHeight = controlsHeight),
+        )
+        val camera = if (sideBySide) preview.measure(Constraints.fixed(width - panel.width, height))
+            else preview.measure(Constraints.fixed(width, height - panel.height))
+        layout(width, height) {
+            camera.placeRelative(0, 0)
+            if (sideBySide) panel.placeRelative(camera.width, 0)
+            else panel.placeRelative((width - panel.width) / 2, camera.height)
         }
     }
 }
