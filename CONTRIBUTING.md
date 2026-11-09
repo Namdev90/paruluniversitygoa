@@ -23,6 +23,8 @@ Never attach real rosters, payment details, contact lists, staff codes, tokens, 
 
 ## Run local checks
 
+The [development guide](docs/GETTING-STARTED.md) gives prerequisites, command scope, safe previews and troubleshooting. Read [architecture](docs/ARCHITECTURE.md) before changing platform boundaries and [current status](docs/CURRENT-STATUS.md) before making release claims.
+
 Use the versions and platform setup in the repository's [verification workflow](.github/workflows/navrang-verification.yml) and [native workflow](.github/workflows/navrang-native.yml). The general checks require Node.js, Python 3 and a JDK; Android assembly and lint additionally need the documented Android toolchain.
 
 ```sh

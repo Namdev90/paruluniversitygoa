@@ -1,6 +1,16 @@
-# Current upgrade and acceptance checklist
+# Upgrade and acceptance checklist
 
-Current baseline: **0.7.9 / code 17**, published in [PR #12](https://github.com/Namdev90/paruluniversitygoa/pull/12). The [release record](RESTORATION-RELEASE-0.7.9.md) separates publication facts from the earlier candidate checkpoints. Preserve this APK, every earlier archive, the original signing identity and the existing updater channel. The next version number is coordinated with the implementation/release owner; it is not a release until the exact signed bytes are verified and published.
+Current baseline: **0.9.0 / code 19**, published in [PR #21](https://github.com/Namdev90/paruluniversitygoa/pull/21). The [release record](RESTORATION-RELEASE-0.9.0.md) separates the earlier candidate from final publication. Preserve all APKs, the original signing identity and updater channel.
+
+## Current next decisions
+
+- Recheck [current status](CURRENT-STATUS.md), main, the manifest and open PRs before selecting another version. The still-open PR #20 was not the final publication route at this snapshot.
+- Keep location sharing, voice and event alerts excluded unless a separately reviewed scope changes that decision. Historical all-feature/0.9.0 candidate plans do not override the published scope.
+- Record fresh source-specific tests for each change. The final 0.9.0 upgrade evidence is from an API 37 emulator; it does not cover the owner's physical phone or transfer a waiver to the next release.
+- Validate physical camera/OAuth/update/document-save behavior, affected accessibility/performance and separately deployed backend/portal behavior when in scope. Use synthetic or authorized isolated fixtures, never real admissions as tests.
+- Publish only exact approved signed bytes with a coordinated higher version code. Review retained branches separately without rewriting active work.
+
+The following 0.7.9 checklist and acceptance notes are retained as history. Their references to the next update and unfinished checks describe that checkpoint; consult the current release record before reusing them.
 
 ## Historical interface requirements for 0.7.9
 
