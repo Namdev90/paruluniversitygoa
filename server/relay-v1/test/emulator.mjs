@@ -5,9 +5,9 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 const root=process.cwd();
-const runtime=path.resolve(root,'../task-5/node_modules/.pnpm/miniflare@5.20261019.2-beta/node_modules/miniflare/dist/src/index.js');
+const runtime=path.resolve(root,'../cloudflare-platform/node_modules/miniflare/dist/src/index.js');
 const {Miniflare,convertV4MiniflareOptions}=await import(pathToFileURL(runtime));
-const modules=async(entry)=>Promise.all([entry,'src/core.mjs','src/storage.mjs','src/protocol.mjs','src/auth.mjs'].map(async name=>({type:'ESModule',path:path.join(root,name),contents:await readFile(path.join(root,name),'utf8')})));
+const modules=async(entry)=>Promise.all([entry,'src/core.mjs','src/storage.mjs','src/protocol.mjs','src/auth.mjs','src/route.mjs'].map(async name=>({type:'ESModule',path:path.join(root,name),contents:await readFile(path.join(root,name),'utf8')})));
 const mf=new Miniflare(convertV4MiniflareOptions({
   modules:await modules('src/worker.mjs'),
   compatibilityDate:'2026-10-19',compatibilityFlags:['nodejs_compat'],
@@ -18,8 +18,8 @@ try {
   const unauth=await mf.dispatchFetch('http://localhost/v1/rooms/room/socket',{headers:{Upgrade:'websocket'}});
   assert.equal(unauth.status,503);
   assert.equal((await mf.dispatchFetch('http://localhost/v1/rooms/room/socket?token=forbidden')).status,404);
-  assert.equal((await mf.dispatchFetch('http://localhost/v1/rooms/room/socket')).status,426);
-  console.log('PASS production module in workerd: missing verifier503, query token404, no upgrade426');
+  assert.equal((await mf.dispatchFetch('http://localhost/v1/rooms/room/socket')).status,400);
+  console.log('PASS production module in workerd: missing verifier503, query token404, missing clock nonce400');
 } finally {await mf.dispose();}
 
 // Test harness has no public endpoint or auth bypass in production source/config.
