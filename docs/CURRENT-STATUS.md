@@ -1,8 +1,16 @@
 # Current project status
 
+## Navrang 0.9.1
+
+Navrang Gate 0.9.1 uses Android version code 20 and package `in.navrang.gate`. The APK is **24,004,898 bytes** and its SHA-256 is `d5d4e8a46bd9f340fe70a408a270f55cb8a45344982f21eb4489dd971ea03512`. The app source used for this build is [`b8a6c2e`](https://github.com/Namdev90/paruluniversitygoa/commit/b8a6c2e5a516491ac5265e800d99f89ae12cda24).
+
+The signed APK passed a direct upgrade from 0.9.0 on the dedicated Android emulator. On the curved Android phone, the full-width fix preserved app data and used all 1,260 pixels across the app viewport while keeping the camera cutout and bottom corners clear. Fold geometry and scanner resizing were tested with Android fixtures. Browser tests exercised narrow windows, large text, curved-edge insets, and simulated book and tabletop folds. The [portal](https://navrang-gate-admin.namubhai.chatgpt.site/) uses the same adaptive web styles. [Release evidence](restoration-release-approval.json) · [GitHub release](https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.9.1) · [Signed update manifest](../updates/latest.json)
+
+## Historical 0.9.0 checkpoint
+
 This is a source-and-publication snapshot checked on **9 November 2026 (UTC)** against `main` commit [`b21798702fe2a99e1d419e15b8d31011f2fc7fa6`](https://github.com/Namdev90/paruluniversitygoa/commit/b21798702fe2a99e1d419e15b8d31011f2fc7fa6). Recheck the manifest and Releases before using this as a future release decision.
 
-## Published Android version
+### Android release at this checkpoint
 
 **Navrang Gate 0.9.0, Android code 19**, package `in.navrang.gate`, is the published release. The [GitHub Release](https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.9.0), [release configuration](../release.json), [updater manifest](../updates/latest.json), [checksum list](../SHA256SUMS.txt) and [download archive](../downloads/) identify the current artifacts. The private Node test package's `0.7.6` version is not the Android release version.
 
@@ -24,7 +32,7 @@ The published release refines ticket checking, Help Desk, Account, Admin and Rep
 
 | Evidence | Scope | What it does not establish |
 |---|---|---|
-| Final [approval/verification record](restoration-release-approval.json) | Original-key-signed final APK upgraded from 0.8.0 on an isolated Android API 37 emulator; app identity, original install time and data directory retained; both versions launched | Physical-phone camera, OAuth, real-event admission, radio conditions, accessibility or performance acceptance |
+| Final [0.9.0 approval record](https://github.com/Namdev90/paruluniversitygoa/blob/v0.9.0/docs/restoration-release-approval.json) | Original-key-signed final APK upgraded from 0.8.0 on an isolated Android API 37 emulator; app identity, original install time and data directory retained; both versions launched | Physical-phone camera, OAuth, real-event admission, radio conditions, accessibility or performance acceptance |
 | Published manifest, checksum list and GitHub asset metadata | Published version, byte length and expected digest | A fresh signature verification or a new device test by the reader |
 | Earlier browser/render and diagnostic test records | Their named source, fixture and environment only | A pass for a later source commit, final APK, live backend or public portal |
 | Dated hosted/backend receipts | Only the recorded inspection or authorized deployment at that time | Current service health or blanket permission to repeat a migration |

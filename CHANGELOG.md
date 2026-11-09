@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.1 — Android code 20 · 10 November 2026
+
+- Made Google and staff-code sign-in direct, shortened transitions, and moved rare controls into role-specific Settings.
+- Preserved Help Desk drafts and in-progress report exports while navigating.
+- Kept the full drawable width on curved displays and adapted the scanner, portal and dialogs to smaller windows and separating hinges.
+- Removed legacy spreadsheet libraries and an unused poster from the APK. The signed APK is 24,004,898 bytes.
+- Verified the original-key in-place upgrade from 0.9.0 and measured the full-width viewport on a physical curved Android phone. [Release evidence](docs/restoration-release-approval.json) · [Release PR](https://github.com/Namdev90/paruluniversitygoa/pull/27)
+
 ## 0.9.0 — Android code 19 · 9 November 2026
 
 - Refined Account, Admin, Reports, and scanning, with swipe navigation and app lock.
