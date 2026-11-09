@@ -5,7 +5,8 @@
 - Refined Account, Admin, Reports, and scanning, with swipe navigation and app lock.
 - Moved Admin and Reports under Account and added a collapsible desktop menu.
 - Excluded Location & audio and event notifications from this release.
-- Verified the original-key signed APK with an in-place emulator upgrade from 0.8.0. [Release record](docs/RESTORATION-RELEASE-0.9.0.md)
+- Final published source `885cf33d587a78ba5040109a8e0d7e3a665046b1`; merged by [PR #21](https://github.com/Namdev90/paruluniversitygoa/pull/21). APK: 24,673,136 bytes, SHA-256 `548686ed0c0c02e0066f41beab1356169e331431218600e2d05fed10e34b652a`.
+- The final approval record verifies the original-key-signed APK with an in-place API 37 emulator upgrade from 0.8.0. The owner’s physical phone was excluded. The [release record](docs/RESTORATION-RELEASE-0.9.0.md) separates this artifact from the earlier candidate; [project history](docs/history/PROJECT-HISTORY.md) provides the complete baseline commit ledger.
 
 ## 0.8.0 — Android code 18 · 19 October 2026
 

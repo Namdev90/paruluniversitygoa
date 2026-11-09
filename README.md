@@ -7,11 +7,11 @@
 
 [Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.9.0.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
-[Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Accessibility](ACCESSIBILITY.md)
+[Current status](docs/CURRENT-STATUS.md) · [Development setup](docs/GETTING-STARTED.md) · [Architecture](docs/ARCHITECTURE.md) · [Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Accessibility](ACCESSIBILITY.md)
 
 </div>
 
-> **Release status** · **0.9.0 · Android code 19** brings the refined Account, Admin, Reports, and scanner designs with swipe navigation and app lock. The original-key-signed APK passed an in-place emulator upgrade. See [the release record](docs/RESTORATION-RELEASE-0.9.0.md).
+> **Release status** · **0.9.0 · Android code 19** brings the refined Account, Admin, Reports, and scanner designs with swipe navigation and app lock. The final original-key-signed APK passed an in-place emulator upgrade; the owner’s physical phone was excluded. Location sharing, voice and event alerts are not included. See [the release record](docs/RESTORATION-RELEASE-0.9.0.md) and [current status](docs/CURRENT-STATUS.md).
 
 
 ## Original Navrang interface
@@ -72,6 +72,8 @@ Operational caches are RAM-only, but reports you choose to download and screensh
 
 ## Development and verification
 
+Start with [development setup and troubleshooting](docs/GETTING-STARTED.md) for toolchain versions, safe local preview, Android debug builds and the distinction between offline and mutating hosted checks. The [architecture map](docs/ARCHITECTURE.md) explains the original-interface host, native scanner and server boundaries.
+
 ```sh
 npm ci --ignore-scripts
 npm test
@@ -86,7 +88,7 @@ The web package includes every referenced script, including Faculty Reports. `te
 
 ## The development record
 
-The project preserves its APK history from the 0.1.0 offline prototype through native rebuilding and subsequent releases. [CHANGELOG.md](CHANGELOG.md) links versions to their archive commits and explains what changed. The bounded [historical inventory](docs/history/apk-inventory.json) covers the first **17 versions, 0.1.0–0.7.9**, including embedded package/version codes, byte sizes and hashes. Those 17 versions are available as [GitHub archive Releases](https://github.com/Namdev90/paruluniversitygoa/releases), published and independently verified on 19 October 2026 with original APKs, checksums and source-commit provenance. Older architectures remain clearly labelled. The [publication receipt and policy](docs/history/GITHUB-RELEASES.md) distinguish actual GitHub publication times from original archive dates. Newer app releases follow the current download and updater channel above; the historical migration does not change that channel.
+The project preserves its APK history from the 0.1.0 offline prototype through native rebuilding and subsequent releases. The [project history and complete baseline commit ledger](docs/history/PROJECT-HISTORY.md) cover milestones, merged/unmerged work and all 146 commits reachable from the documented 0.9.0 main baseline. [CHANGELOG.md](CHANGELOG.md) links versions to their archive commits and explains what changed. The bounded [historical inventory](docs/history/apk-inventory.json) covers the first **17 versions, 0.1.0–0.7.9**, including embedded package/version codes, byte sizes and hashes. Those 17 versions are available as [GitHub archive Releases](https://github.com/Namdev90/paruluniversitygoa/releases), published and independently verified on 19 October 2026 with original APKs, checksums and source-commit provenance. Older architectures remain clearly labelled. The [publication receipt and policy](docs/history/GITHUB-RELEASES.md) distinguish actual GitHub publication times from original archive dates. Newer app releases follow the current download and updater channel above; the historical migration does not change that channel.
 
 ## Project map
 
@@ -109,4 +111,4 @@ The project code and documentation are provided under the existing [MIT License]
 
 ## Next upgrade
 
-The [current checklist](docs/NEXT-STEPS.md) records the deeper original-style visuals, background-free logo treatments, non-overlapping intro, scroll-and-search lists, in-camera exact-ID search and permission-appropriate receipt details delivered in 0.7.9, alongside remaining acceptance work. Future changes must be demonstrated in their own candidate and pass independent review before a new signed release is advertised here.
+Use [current status](docs/CURRENT-STATUS.md) for the published 0.9.0 scope and remaining decisions. The [acceptance checklist](docs/NEXT-STEPS.md) also preserves the earlier 0.7.9 interface requirements as history. Future changes must be demonstrated in their own candidate and pass independent review before a new signed release is advertised here.

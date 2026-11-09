@@ -1,3 +1,5 @@
+> **Historical checkpoint (26 October 2026).** This file predates the published 0.9.0/code 19 release. Its candidate plans, release-channel statements and blockers describe that time only. Use [current status](CURRENT-STATUS.md) and [the final release record](RESTORATION-RELEASE-0.9.0.md) for current publication facts. Original text is retained below.
+
 RELEASE PREPARATION UPDATE — 2026-10-26T03:35:54+00:00
 
 Remote main rechecked unchanged b8605c5e; current release/channel remainsv0.8.0/code18. No release.json/latest.json/download/checksum mutation, signing or publication.
