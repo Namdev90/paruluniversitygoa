@@ -385,12 +385,10 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 
 /* Shared grouped surfaces and touch controls across the station views. */
 .section-heading :is(h2,h3){margin:0}
-:where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account) .panel,
-#notifications-center .notification-live{background:linear-gradient(145deg,#2a1e2b,#1c1621);border-color:#a2726b4a;box-shadow:0 4px 15px #09060d42}
+:where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account) .panel{background:linear-gradient(145deg,#2a1e2b,#1c1621);border-color:#a2726b4a;box-shadow:0 4px 15px #09060d42}
 :where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account) .panel-heading{flex-wrap:wrap}
 :where(#view-home,#view-desk,#view-reports,#view-admin,#view-account) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-height:44px;font-size:max(16px,1rem)}
 :where(#view-desk,#view-admin,#view-reports) :is(.desk-tabs,.admin-tabs,.report-tabs) button{min-height:44px;line-height:1.25;word-break:normal}
-.login-mode #notifications-button{display:none}
 .intro .intro-skip{min-height:48px}
 @media(orientation:portrait){.intro .dancer-stage>.dancer{object-position:center 56%}}
 @media(max-height:560px){
@@ -411,17 +409,9 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 #view-reports .report-tabs button{flex:1 1 auto;min-inline-size:min-content;max-inline-size:100%;overflow-wrap:normal;white-space:normal}
 #report-kind{width:100%;max-width:100%;height:auto;min-height:44px;padding-block:8px}
 #desk-form #desk-bill{padding:10px 12px;border:1px solid var(--line);border-radius:10px}
-#locator-consent-dialog label{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:start;gap:10px;min-height:44px}
-#locator-consent-dialog input[type=checkbox]{width:20px;height:20px;min-width:20px;min-height:20px;margin:2px 0 0;justify-self:start}
-#notifications-center{padding:clamp(12px,4vw,20px)}
-#notifications-center button{min-height:44px}
 
 .account-tool-row svg{display:block;width:24px;height:24px;margin-bottom:6px;stroke:var(--gold);stroke-width:1.6;stroke-linejoin:round}
 .account-settings-row{display:flex;justify-content:space-between;align-items:center;min-height:48px;width:100%;text-align:left}
-#settings-location-audio:not([open]){padding:0}
-#settings-location-audio>summary{min-height:44px;padding:10px;cursor:pointer;font-weight:700}
-#settings-location-audio[open]>summary{margin-bottom:10px}
-#settings-locator-host:empty,#settings-voice-host:empty{display:none}
 .portal-menu-toggle{display:none}
 @media(min-width:960px){
  html:has(body.portal-layout:not(.login-mode)){scroll-padding-block-end:0}

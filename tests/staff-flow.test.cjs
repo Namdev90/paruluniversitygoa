@@ -72,7 +72,7 @@ test('Account Settings offers manual update checks only in the Android host',asy
    assert.equal($('view-settings').hidden,false);
    assert.ok($('view-settings').contains($('check-update')));
    t.event({type:'update',data:state});
-   assert.equal($('app-updates').hidden,!native);
+   assert.equal($('app-updates').hidden,false);
    assert.equal($('check-update').hidden,!native);
    assert.equal($('update-message').textContent,native?'Your app is up to date.':state.message);
    t.click('check-update');

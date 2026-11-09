@@ -47,7 +47,9 @@ val prepareNativeAssets = tasks.register<Exec>("prepareNativeAssets") {
     commandLine("python3", rootProject.file("tools/prepare-classic-host.py"), layout.buildDirectory.dir("generated/classicJava").get().asFile)
 }
 val copyNativeAssets = tasks.register<Sync>("copyNativeAssets") {
-    from(rootProject.file("app/assets")) { exclude("legacy.html") }
+    from(rootProject.file("app/assets")) {
+        exclude("legacy.html", "notifications.js", "notifications.css", "voice.js", "locator.js", "locator.css")
+    }
     into(layout.buildDirectory.dir("generated/assets"))
 }
 

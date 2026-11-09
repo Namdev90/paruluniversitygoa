@@ -1,6 +1,6 @@
 {
   "versionCode": 19,
   "versionName": "0.9.0",
-  "notes": "Updates the original Navrang interface, adds app lock and guarded report operations, and integrates opt-in Find Me with the matching backend.",
+  "notes": "Refines Account, Admin, Reports, and ticket scanning. Adds swipe navigation, app lock, and a collapsible website menu.",
   "interface": "original"
 }

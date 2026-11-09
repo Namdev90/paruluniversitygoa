@@ -258,16 +258,14 @@ def run():
     page.locator('#desk-close-record').click()
     navigate(page,'account');shot(page,'admin','account-tools','#admin-account-tools')
     navigate(page,'settings')
-    assert page.locator('#app-updates').is_hidden()
-    shot(page,'admin','settings','#settings-location-audio summary')
-    page.locator('#settings-location-audio summary').click()
-    shot(page,'admin','settings-location-audio')
+    assert page.locator('#app-updates').is_visible()
+    assert page.locator('#settings-location-audio,#notifications-button').count()==0
+    shot(page,'admin','settings','#app-updates')
     if width>=960:
      page.locator('#portal-menu-toggle').click()
      shot(page,'admin','portal-menu-collapsed')
      page.locator('#portal-menu-toggle').click()
     navigate(page,'account')
-    dialog(page,'#notifications-button','#notifications-center','notifications','#notifications-close')
     navigate(page,'admin');page.locator('[data-admin-tab="checkers"]').click()
     dialog(page,'#checker-list .checker-row button','#staff-dialog','staff-access','#close-staff','#staff-access-form button')
     dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
@@ -485,11 +483,8 @@ def run():
        page.wait_for_timeout(70);measure(page,role,target,width,height)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
        if target=='settings':
-        summary=page.locator('#settings-location-audio summary')
-        measure_control(page,'#settings-location-audio summary','Location & audio settings')
-        assert not page.locator('#settings-location-audio').evaluate('e=>e.open')
-        summary.click();assert page.locator('#settings-location-audio').evaluate('e=>e.open')
-        measure(page,role,'settings-location-audio',width,height)
+        assert page.locator('#settings-location-audio,#notifications-button').count()==0
+        assert page.locator('#app-updates').is_visible()
         if width>=960:
          toggle=page.locator('#portal-menu-toggle')
          assert page.locator('#main-nav').bounding_box()['x'] < page.locator('main').bounding_box()['x']
