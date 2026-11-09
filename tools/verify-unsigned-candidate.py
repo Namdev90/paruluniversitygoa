@@ -51,7 +51,9 @@ def main():
         with args.apk.open('rb') as apk_stream:
             apk_stream.seek(max(0, archive.start_dir - 16))
             require(apk_stream.read(16) != b'APK Sig Block 42', 'Unexpected APK signing block in the unsigned artifact.')
-        require({'assets/notifications.js', 'assets/notifications.css'} <= names, 'Implemented communications assets are missing.')
+        deferred = {'assets/notifications.js', 'assets/notifications.css', 'assets/voice.js',
+                    'assets/locator.js', 'assets/locator.css'}
+        require(names.isdisjoint(deferred), 'Deferred communications assets entered the release APK.')
         markup = archive.read('assets/index.html').decode('utf-8')
         for asset in re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"', markup):
             require('assets/' + asset in names, 'A referenced client asset is missing: ' + asset)
@@ -72,8 +74,8 @@ def main():
         'minSdk': 24, 'targetSdk': 37, 'size': args.apk.stat().st_size,
         'sha256': hashlib.sha256(args.apk.read_bytes()).hexdigest(),
         'signed': False, 'publishable': False, 'requiredSignerSha256': SIGNER_SHA256,
-        'pendingGate': 'COMMUNICATIONS_ACCEPTANCE_ORIGINAL_KEY_SIGNING_AND_PUBLIC_DOWNLOAD_VERIFICATION',
-        'communications': 'PACKAGED_TRANSPORT_NOT_VERIFIED', 'physicalDeviceChecks': 'NOT_RUN',
+        'pendingGate': 'ORIGINAL_KEY_SIGNING_AND_PUBLIC_DOWNLOAD_VERIFICATION',
+        'communications': 'DEFERRED_ASSETS_ABSENT', 'physicalDeviceChecks': 'NOT_RUN',
         'assetIntegrity': 'PASS',
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

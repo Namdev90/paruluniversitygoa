@@ -393,6 +393,14 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 #view-reports .report-tabs{flex-wrap:wrap}
 #view-reports .report-tabs button{flex:1 1 auto;min-inline-size:min-content;max-inline-size:100%;overflow-wrap:normal;white-space:normal}
 #report-kind{width:100%;max-width:100%;height:auto;min-height:44px;padding-block:8px}
+select:not([multiple]){
+ appearance:none;
+ padding-inline-end:2.1rem;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23e5be7d' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8' d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right .65rem center;background-size:1rem;
+}
+select option{background:#211923;color:var(--ink)}
+@media(forced-colors:active){select:not([multiple]){appearance:auto;background-image:none;padding-inline-end:0}}
 #desk-form #desk-bill{padding:6px 8px;border:1px solid var(--line);border-radius:10px}
 
 .account-tool-row svg{display:block;width:24px;height:24px;margin-bottom:6px;stroke:var(--gold);stroke-width:1.6;stroke-linejoin:round}

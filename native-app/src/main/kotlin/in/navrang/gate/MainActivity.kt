@@ -230,7 +230,7 @@ class MainActivity : ClassicActivity() {
                 val payload = withContext(Dispatchers.Default) { RegistrationImport.payload(rows) }
                 requireImportIdentity(repo, identity)
                 importDialog =
-                    AlertDialog.Builder(this@MainActivity)
+                    AlertDialog.Builder(this@MainActivity, R.style.NativeImportDialog)
                         .setTitle("Import registrations?")
                         .setMessage(
                             "Import ${rows.length()} registrations for this event. Confirmed entry history is preserved."
