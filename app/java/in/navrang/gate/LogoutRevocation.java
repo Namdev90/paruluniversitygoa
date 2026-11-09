@@ -3,15 +3,16 @@ package in.navrang.gate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.LongSupplier;
+import java.util.function.BooleanSupplier;
 import org.json.JSONObject;
 
 /** Revocation-only retries. Never renews, restores auth, emits private data, or clears a newer login. */
 public final class LogoutRevocation {
  public interface Transport {GateApi.Reply revoke(JSONObject payload,String access)throws Exception;}
- private final GateSession sessions;private final Transport transport;private final LongSupplier clock;
+ private final GateSession sessions;private final Transport transport;private final LongSupplier clock;private final BooleanSupplier foreground;
  private final Map<String,String> retained=new HashMap<>();
  private final Map<String,Long> due=new HashMap<>();private final Map<String,Integer> failures=new HashMap<>();
- public LogoutRevocation(GateSession sessions,Transport transport,LongSupplier clock){this.sessions=sessions;this.transport=transport;this.clock=clock;}
+ public LogoutRevocation(GateSession sessions,Transport transport,LongSupplier clock,BooleanSupplier foreground){this.sessions=sessions;this.transport=transport;this.clock=clock;this.foreground=foreground;}
  // The runtime calls this only while foregrounded, including its locked/public screen.
  // Retention also handles SharedPreferences updating memory before a failed disk commit.
  public synchronized void tick(){
@@ -21,12 +22,13 @@ public final class LogoutRevocation {
   for(Map.Entry<String,String> entry:work){
    String id=entry.getKey(),encoded=entry.getValue();long now=clock.getAsLong();
    if(now<due.getOrDefault(id,0L))continue;
-   if(budget--<=0)break;
+   if(budget--<=0||!foreground.getAsBoolean())break;
    try{
     JSONObject credential=sessions.revocationCredential(encoded),payload=new JSONObject();
     String refresh=credential.optString("refreshToken"),token=credential.optString("token");
     if(!refresh.isEmpty())payload.put("refreshToken",refresh);
     if(token.isEmpty()&&refresh.isEmpty())throw new IllegalStateException("Revocation credential unavailable.");
+    if(!foreground.getAsBoolean())break;
     GateApi.Reply reply=transport.revoke(payload,token);
     // A gateway/authorization error is not proof that this family was revoked.
     if(reply.status==200&&reply.body.optBoolean("ok")&&reply.body.optBoolean("signedOut")&&sessions.acknowledgeRevocation(id,encoded)){
