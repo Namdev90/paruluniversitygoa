@@ -1,7 +1,7 @@
 name: Native Compose verification
 on:
   pull_request:
-    paths: ['native-app/**', 'app/java/**', 'app/res/**', 'app/assets/**', 'gradle/**', '*.gradle.kts', 'gradle.properties', 'tools/**', 'third_party/opus/**', 'tests/relay-opus/**', 'tests/relay-opus-*.py', '.github/workflows/navrang-native.yml']
+    paths: ['native-app/**', 'app/java/**', 'app/res/**', 'app/assets/**', 'gradle/**', '*.gradle.kts', 'gradle.properties', 'tools/**', 'third_party/opus/**', 'tests/relay-opus/**', 'tests/relay-opus-*.py', 'tests/unsigned-candidate-check.py', 'release.json', 'updates/latest.json', '.github/workflows/navrang-native.yml']
   push:
     branches: [codex/native-compose-rebuild]
 permissions:
@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 2
           persist-credentials: false
       - uses: actions/setup-java@v4
@@ -24,6 +25,7 @@ jobs:
           java-version: '17'
       - name: Verify Opus packaging policy and host encoder core
         run: |
+          python3 tests/unsigned-candidate-check.py
           python3 tests/relay-opus-packaging-check.py
           python3 tests/relay-opus-core-check.py
       - uses: android-actions/setup-android@v3
@@ -35,25 +37,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - run: ./gradlew :native-app:assembleDebug :native-app:testDebugUnitTest :native-app:lintDebug
-      - name: Detect an unpublished release candidate
-        id: candidate
-        run: |
-          python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          candidate = json.loads(Path('release.json').read_text())['versionCode'] > json.loads(Path('updates/latest.json').read_text())['versionCode']
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('enabled=' + str(candidate).lower() + '\n')
-          PY
-      - name: Build and inspect unsigned production candidate
-        if: steps.candidate.outputs.enabled == 'true'
+      - name: Build and inspect unsigned production source
         env:
           NAVRANG_CANDIDATE_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           ./gradlew :native-app:assembleRelease :native-app:lintRelease
-          python3 tools/verify-unsigned-candidate.py native-app/build/outputs/apk/release/native-app-release-unsigned.apk --build-tools "$ANDROID_HOME/build-tools/36.0.0" --expected-source "$NAVRANG_CANDIDATE_SOURCE" --output .build/unsigned-candidate/receipt.json
+          python3 tools/verify-unsigned-candidate.py native-app/build/outputs/apk/release/native-app-release-unsigned.apk --build-tools "$ANDROID_HOME/build-tools/36.0.0" --expected-source "$NAVRANG_CANDIDATE_SOURCE" --source-check --output .build/unsigned-candidate/receipt.json
       - uses: actions/upload-artifact@v4
-        if: steps.candidate.outputs.enabled == 'true'
         with:
           name: navrang-unsigned-candidate-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
