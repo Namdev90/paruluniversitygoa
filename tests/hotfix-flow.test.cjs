@@ -84,7 +84,8 @@ for(const state of [
 ])test('recovered Android installation remains reachable regardless of cached update '+JSON.stringify(state),async()=>{
  const t=nativeApp(admin);const actions=[];try{
   await tick();t.w.Native.update=action=>{actions.push(action);return JSON.stringify(state)};t.emit('update',state);
-  assert.equal(t.$('install-update').hidden,false);assert.equal(t.$('install-update').textContent,'Finish app update');assert.equal(t.$('update-banner').hidden,false);
+  t.$('account-settings').click();assert.equal(t.$('view-settings').hidden,false);
+  assert.equal(t.$('install-update').hidden,false);assert.equal(t.$('install-update').textContent,'Finish app update');
   t.$('install-update').click();assert.deepEqual(actions,['install'],'recovery must not be redirected to downloading');
  }finally{await tick();t.dom.window.close()}
 });

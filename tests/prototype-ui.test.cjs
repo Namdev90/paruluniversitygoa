@@ -9,7 +9,8 @@ test('repeated unchanged admin updates keep existing row and button nodes',async
 test('branded close dialog warns about unconfirmed scans and unsaved Help Desk drafts',async()=>{const {w,dom}=ui({role:'checker',name:'Raju',active:true,method:'code'});try{
  await tick();assert.equal(w.document.getElementById('sound'),null);w.GateClient.local=async()=>({pending:2});await w.onBackRequested();assert.equal(w.document.getElementById('exit-dialog').open,true);assert.match(w.document.getElementById('exit-message').textContent,/2 scan.*awaiting/);w.document.getElementById('exit-keep').click();
  w.GateClient.local=async()=>({pending:0});w.NavrangDesk={hasDraft:()=>true};await w.onBackRequested();assert.match(w.document.getElementById('exit-message').textContent,/unsaved/);w.document.getElementById('exit-keep').click();
- w.NavrangDesk.hasDraft=()=>false;await w.onBackRequested();assert.match(w.document.getElementById('exit-message').textContent,/stored on the server/);
+ w.NavrangDesk.hasDraft=()=>false;let exits=0;w.Native={exit:()=>exits++};w.GateClient.native=true;
+ await w.onBackRequested();assert.equal(exits,1);assert.equal(w.document.getElementById('exit-dialog').open,false);
  }finally{await tick();dom.window.close()}});
 
 test('session expiry clears hidden admin rows, codes and dialogs and ignores late scan results',async()=>{
@@ -31,7 +32,7 @@ test('session expiry clears hidden admin rows, codes and dialogs and ignores lat
 test('a slow sign-out receipt cannot reset the station screen of a newer login',async()=>{
  const {w,dom,event}=ui({role:'admin',name:'namdev',active:true});let deliver;try{
   await tick();w.GateClient.signOut=()=>{w.GateClient.profile=()=>null;event({type:'auth',data:null});return new Promise(r=>deliver=r)};
-  w.document.getElementById('sign-out').click();w.document.getElementById('confirm-signout').click();assert.equal(w.document.getElementById('view-login').hidden,false);
+  w.document.getElementById('sign-out').click();await tick();assert.equal(w.document.getElementById('view-login').hidden,false);
   w.GateClient.profile=()=>({role:'checker',checkerId:'new',name:'Raju',active:true,scanner:true});event({type:'auth'});
   deliver();await tick();assert.equal(w.document.getElementById('view-home').hidden,false);assert.equal(w.document.getElementById('view-login').hidden,true);
  }finally{await tick();dom.window.close()}
@@ -63,6 +64,8 @@ test('Admin tools live under Account and each child returns to its parent',async
   }
   $('admin-nav').click();$('account-tool-back').click();assert.equal(route(),'account');
   let refreshed=0;w.NavrangReports={refresh:()=>refreshed++};$('admin-account-reports').click();
+  w.document.querySelector('main').scrollTop=320;$('admin-account-reports').click();
+  assert.equal(refreshed,1);assert.equal(w.document.querySelector('main').scrollTop,320);
   w.GateClient.profile=()=>({role:'checker',checkerId:'synthetic-faculty',name:'Synthetic Faculty',active:true,reports:true,scanner:false});event({type:'profile'});
   assert.equal($('admin-account-tools').hidden,true);assert.equal($('reports-nav').hidden,false);
   assert.equal(route(),'reports');assert.equal($('reports-nav').getAttribute('aria-current'),'page');

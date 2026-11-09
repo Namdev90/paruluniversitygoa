@@ -101,17 +101,19 @@ test('Account Settings offers manual update checks only in the Android host',asy
    w.GateClient.update=action=>{actions.push(action);return state};
    w.document.querySelector('#main-nav [data-view="account"]').click();t.click('account-settings');
    assert.equal($('view-settings').hidden,false);
+   assert.equal($('admin-security').hidden,false);
+   assert.ok($('view-settings').contains($('password-open')));
    assert.ok($('view-settings').contains($('check-update')));
    t.event({type:'update',data:state});
-   assert.equal($('app-updates').hidden,false);
-   assert.equal($('check-update').hidden,!native);
-   assert.equal($('update-message').textContent,native?'Your app is up to date.':state.message);
+   assert.equal($('app-updates').hidden,!native);
+   if(native)assert.equal($('update-message').textContent,'Your app is up to date.');
    t.click('check-update');
    assert.deepEqual(actions,native?['check']:[]);
    if(native){
     t.click('account-tool-back');t.event({type:'update',data:{...state,available:true,versionName:'0.9.1'}});
-    assert.equal($('update-banner').hidden,false);t.click('open-update');
+    assert.equal($('view-settings').hidden,true);t.click('account-settings');
     assert.equal($('view-settings').hidden,false);
+    assert.equal($('install-update').textContent,'Download 0.9.1');
    }
   }finally{await tick();dom.window.close()}
  }

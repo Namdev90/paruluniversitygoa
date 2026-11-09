@@ -30,6 +30,16 @@ function desk(profile={role:'checker',name:'Raju',checkerId:'desk-1',active:true
  for(const [key,value]of Object.entries(details))w.document.getElementById('desk-'+key).value=value??'';
  return{dom,w,calls,timers,setBehavior:f=>behavior=f,setProfile:p=>profile=p,event:e=>{for(const fn of listeners)fn(e)},advance:ms=>{clock+=ms},fireTimer:timer=>{timer.active=false;timer.fn()}};
 }
+test('reselecting New person or visiting saved cases preserves the unsaved registration',async()=>{
+ const {w,dom,calls}=desk(),$=id=>w.document.getElementById(id);try{
+  $('desk-new').click();assert.equal($('desk-name').value,details.name);
+  $('desk-saved').click();assert.equal($('desk-saved').getAttribute('aria-pressed'),'true');
+  await pause();assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,1);
+  $('desk-saved').click();assert.equal(calls.filter(c=>c.a==='helpdesk-list').length,1);
+  $('desk-new').click();assert.equal($('desk-new').getAttribute('aria-pressed'),'true');
+  assert.equal($('desk-name').value,details.name);assert.equal(w.NavrangDesk.hasDraft(),true);
+ }finally{dom.window.close()}
+});
 test('an uncertain help desk save retries the identical request and only clears the form after server receipt',async()=>{
  const t=desk(),{w,dom,calls}=t;let saves=0;
  t.setBehavior(async action=>{if(action==='helpdesk-save'&&++saves===1)throw Error('Connection lost');return{registration:{ticket_id:'HDABCDEF'}}});

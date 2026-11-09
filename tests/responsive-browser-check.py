@@ -53,7 +53,6 @@ def run():
       if(f.profile)storage.setItem('navrang-session',JSON.stringify({token:'a'.repeat(64),profile:f.profile}));
       const prop=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');
       Object.defineProperty(HTMLImageElement.prototype,'src',{get:prop.get,set(value){prop.set.call(this,f.images[value]||value);}});
-      const realTimeout=window.setTimeout.bind(window);window.setTimeout=(fn,ms,...args)=>fn?.name==='endIntro'?0:realTimeout(fn,ms,...args);
       window.AudioContext=undefined;window.webkitAudioContext=undefined;
       window.fixtureCalls=[];window.fixtureUnexpected=[];window.fixtureReportMode='normal';window.fixtureDeskPopulated=false;window.fixtureProfile=f.profile;window.fixtureAuthLost=false;
       window.fetch=async(url,options)=>{
@@ -118,7 +117,7 @@ def run():
    def measure(page,role,view,width,height):
     result=page.evaluate(r'''() => {
       const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'&&!e.closest('[hidden]');};
-      const over=[...document.querySelectorAll('button,input,select,.topbar,.brand,.top-actions,.login-role-picker,.panel-heading,.report-member,.mobile-nav')].filter(visible).map(e=>{const r=e.getBoundingClientRect();return {id:e.id||e.className,left:r.left,right:r.right};}).filter(r=>r.left < -1 || r.right > innerWidth+1);
+      const over=[...document.querySelectorAll('button,input,select,.topbar,.brand,.top-actions,.panel-heading,.report-member,.mobile-nav')].filter(visible).map(e=>{const r=e.getBoundingClientRect();return {id:e.id||e.className,left:r.left,right:r.right};}).filter(r=>r.left < -1 || r.right > innerWidth+1);
       const logos=[...document.querySelectorAll('.institution-wordmark,.header-logo,.crafted-login>.official-logo,.combined-brand-mark>img')].filter(visible);
       const distortedBrand=[...document.querySelectorAll('.combined-brand-mark>img')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return Math.abs(r.width/r.height-15/8)>.02||getComputedStyle(e).objectFit!=='contain'||e.naturalWidth!==2400||e.naturalHeight!==1280}).map(e=>e.className||e.parentElement.className);
       const luminance=c=>{const rgb=c.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722};
@@ -204,13 +203,11 @@ def run():
      if lower:shot(page,'admin',state+'-lower',lower)
      page.locator(close_id).click();page.locator(dialog_id).wait_for(state='hidden')
     ctx,page=fresh('login')
-    for role in ('helpdesk','faculty'):
-     page.locator('#auth-staff').click()
-     page.locator(f'[data-login-role="{role}"]').click()
-     shot(page,'login',role)
-     page.locator('#auth-back').click();page.locator('#auth-back').click()
+    shot(page,'login','google','#google-signin')
+    page.locator('#code-login summary').click();shot(page,'login','staff-code','#checker-code')
+    page.locator('#code-login summary').click()
     page.locator('#show-admin-login').click();shot(page,'login','administrator')
-    page.locator('#auth-back').click();finish(ctx,page)
+    page.locator('#show-checker-login').click();finish(ctx,page)
     ctx,page=fresh('admin')
     navigate(page,'admin')
     dialog(page,'#registration-rows .table-link','#student-dialog','registration-details','#close-student','#dialog-details dd:last-child')
@@ -258,9 +255,10 @@ def run():
     page.locator('#desk-close-record').click()
     navigate(page,'account');shot(page,'admin','account-tools','#admin-account-tools')
     navigate(page,'settings')
-    assert page.locator('#app-updates').is_visible()
+    assert page.locator('#app-updates').is_hidden()
+    assert page.locator('#admin-security').is_visible()
     assert page.locator('#settings-location-audio,#notifications-button').count()==0
-    shot(page,'admin','settings','#app-updates')
+    shot(page,'admin','settings','#admin-security')
     if width>=960:
      page.locator('#portal-menu-toggle').click()
      shot(page,'admin','portal-menu-collapsed')
@@ -271,6 +269,7 @@ def run():
     dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
     page.locator('[data-admin-tab="updates"]').click()
     dialog(page,'#add-registration','#edit-dialog','add-registration','#close-editor','#ticket-editor button')
+    navigate(page,'settings')
     dialog(page,'#password-open','#password-dialog','password-dialog','#close-password')
     finish(ctx,page)
     ctx,page=fresh('faculty')
@@ -286,14 +285,14 @@ def run():
     ctx,page=fresh('admin',mocked_native=True)
     navigate(page,'settings')
     assert page.locator('#readiness-panel').is_visible()
+    assert page.locator('#app-updates').is_visible()
     shot(page,'mock-native-admin','account-readiness','#readiness-panel')
-    shot(page,'mock-native-admin','account-update-settings','#automatic-updates')
+    shot(page,'mock-native-admin','account-update-settings','#check-update')
     navigate(page,'admin');page.locator('[data-admin-tab="updates"]').click()
     assert page.locator('#import-registration').is_visible()
     shot(page,'mock-native-admin','import-controls','#import-registration')
     finish(ctx,page)
     ctx,page=fresh('login',mocked_native=True)
-    page.locator('#auth-staff').click();page.locator('[data-login-role=checker]').click()
     assert not page.locator('#google-browser-signin').is_visible()
     page.locator('#google-signin').click()
     page.locator('#google-browser-signin').wait_for(state='visible')
@@ -352,6 +351,12 @@ def run():
     page.locator('#section-info').wait_for(state='visible');page.keyboard.press('Escape')
     check('Account information restores keyboard focus',page.evaluate("document.activeElement.dataset.sectionInfo==='account'&&!document.getElementById('section-info').open"))
     page.emulate_media(reduced_motion='no-preference')
+    tab_motion=page.evaluate("""() => {
+      document.querySelector('#entries-nav').click();
+      const marker=document.querySelector('#main-nav>.nav-motion-marker');
+      return {route:document.body.dataset.route,timing:marker?.getAnimations()[0]?.effect.getTiming().duration,decorative:marker?.getAttribute('aria-hidden'),current:document.querySelector('#main-nav [aria-current=page]')?.id};
+    }""")
+    check('tab highlight moves without delaying the active route',tab_motion==dict(route='entries',timing=185,decorative='true',current='entries-nav'),tab_motion)
     motion=page.evaluate("""() => {
       for(const selector of ['#entries-nav','#main-nav [data-view="account"]','#admin-nav','#account-tool-back','#admin-account-reports','#account-tool-back'])document.querySelector(selector).click();
       const active=[...document.querySelectorAll('main .view')].filter(e=>!e.hidden).map(e=>e.id);
@@ -360,7 +365,7 @@ def run():
     }""")
     check('rapid navigation leaves only latest authorized view',motion['route']=='account' and motion['active']==['view-account'] and motion['snapshots']==0,motion)
     page.emulate_media(reduced_motion='reduce');page.wait_for_timeout(50)
-    check('system reduced motion cancels transitions',page.evaluate("document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
+    check('system reduced motion cancels transitions',page.evaluate("!document.querySelector('.nav-motion-marker')&&document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
     page.emulate_media(reduced_motion='no-preference')
     navigate(page,'admin');check('native reduced motion cancels transitions',page.evaluate("NavrangMotion.setReducedMotion(true);document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
     page.evaluate("NavrangMotion.setReducedMotion(false)")
@@ -391,7 +396,7 @@ def run():
       page=ctx.new_page();page.set_default_timeout(5000);page.on('pageerror',lambda e:errors.append(str(e)))
       open_source(page,'login')
       page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()")
-      page.wait_for_timeout(650)
+      page.locator('#intro').wait_for(state='hidden')
       if scale!=1:
        # Synthetic text enlargement, not an Android OS font setting or actual IME.
        page.evaluate("scale=>{const items=[...document.querySelectorAll('#view-login *')].map(e=>[e,parseFloat(getComputedStyle(e).fontSize)]);for(const [e,size]of items)e.style.fontSize=(size*scale)+'px'}",scale)
@@ -416,14 +421,15 @@ def run():
        page.screenshot(path=str(out/filename))
        reports.append(dict(classicLogin=state,width=width,height=height,textScale=scale,details=data))
        review_shots.append(dict(file=filename,state=state,synthetic=True,renderer='Chromium production DOM/CSS/JS with fixture transport'))
-      login_shot('welcome','#auth-staff')
-      page.locator('#auth-staff').click();login_shot('roles','[data-login-role=checker]')
-      page.locator('[data-login-role=checker]').click();login_shot('google','#google-signin')
+      assert page.locator('[data-login-role]').count()==0
+      login_shot('google','#google-signin')
       page.locator('#code-login summary').click();page.locator('#checker-code').fill('SYNTHETIC');page.locator('#checker-code').focus()
       login_shot('staff-focused','#checker-code')
-      page.locator('#auth-back').click();page.locator('#auth-back').click();page.locator('#show-admin-login').click()
+      page.locator('#code-login summary').click();page.locator('#show-admin-login').click()
       page.locator('#admin-password').fill('SYNTHETIC');page.locator('#admin-password').focus()
       login_shot('admin-focused','#admin-password')
+      page.locator('#show-checker-login').click()
+      assert page.locator('#google-signin').is_visible()
       unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
     sizes=[]
    if args.interactions_only:
@@ -434,6 +440,7 @@ def run():
      ctx=browser.new_context(viewport=dict(width=width,height=height),reduced_motion='reduce')
      ctx.route('**/*',lambda route:route.abort())
      page=ctx.new_page();page.set_default_timeout(4000);page.on('pageerror',lambda e:errors.append(str(e)));open_source(page,role);
+     page.locator('#intro').wait_for(state='hidden')
      if role=='login':
       page.evaluate("const i=document.getElementById('intro');i.hidden=false;i.classList.remove('leaving')")
       launch=page.evaluate("""() => {
@@ -458,7 +465,7 @@ def run():
         if page.locator('#skip-intro').evaluate('e=>Number(getComputedStyle(e).opacity)')<1:failures.append(dict(hiddenLaunchActionAtMs=frame,width=width))
         page.screenshot(path=str(out/f'launch-{width}x{height}-motion-{frame}.png'))
        page.emulate_media(reduced_motion='reduce')
-     page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
+      page.evaluate("document.getElementById('intro').hidden=true")
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
      if role=='admin':navigate(page,'admin')
      measure(page,role,view,width,height)
@@ -493,7 +500,8 @@ def run():
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
        if target=='settings':
         assert page.locator('#settings-location-audio,#notifications-button').count()==0
-        assert page.locator('#app-updates').is_visible()
+        assert page.locator('#app-updates').is_hidden()
+        measure_control(page,'#password-open','Change admin password')
         if width>=960:
          toggle=page.locator('#portal-menu-toggle')
          assert page.locator('#main-nav').bounding_box()['x'] < page.locator('main').bounding_box()['x']
@@ -544,7 +552,6 @@ def run():
        if tab=='checkers':
         measure_control(page,'#checker-list .checker-row button','Manage access')
         measure_control(page,'#staff-count','Staff list footer',minimum=0,scroll=True)
-       if tab=='updates':measure_control(page,'#password-open','Change admin password')
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-tab-{tab}-{width}.png'))
        if tab=='updates':
         # The Android bridge exposes this same control. Exercise its layout

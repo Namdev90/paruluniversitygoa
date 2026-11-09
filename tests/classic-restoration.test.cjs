@@ -29,10 +29,10 @@ test('failed durable sign-out blocks new sign-in until retry succeeds in the res
  const dom=new JSDOM(read('app/assets/index.html'),{runScripts:'outside-only',url:'https://fixture.invalid/'});
  const w=dom.window;
  let profile={role:'checker',checkerId:'synthetic',name:'Synthetic Checker',active:true,scanner:true,station:'checker',nameConfirmed:true};
- let listener,attempts=0;
+ let listener,attempts=0,pending=1;
  w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
  w.GateClient={native:true,profile:()=>profile,on:f=>listener=f,finishGoogle:async()=>{},feedback(){},
-  destination:()=> 'home',local:async()=>({entries:[],stats:{},pending:0,localCount:0}),
+  destination:()=> 'home',local:async()=>({entries:[],stats:{},pending,localCount:0}),
   update:()=>({}),readiness:()=>({native:true}),sync:async()=>({staffSummary:true,stats:{},entries:[],records:[]}),
   api:async action=>action==='config'?{googleEnabled:true}:profile,
   signOut:async()=>{profile=null;listener?.({type:'auth',data:null});if(++attempts===1)throw Error('Synthetic durable storage failure');},
@@ -41,14 +41,16 @@ test('failed durable sign-out blocks new sign-in until retry succeeds in the res
  try{
  await new Promise(r=>setTimeout(r,10));
  w.document.getElementById('sign-out').click();
+ await new Promise(r=>setTimeout(r,0));
  assert.equal(w.document.getElementById('signout-confirm').open,true);
+ assert.match(w.document.getElementById('signout-warning').textContent,/1 scan is still awaiting/);
  assert.equal(attempts,0);
  w.document.getElementById('cancel-signout').click();
  assert.equal(attempts,0);
  assert.equal(w.GateClient.profile(),profile);
- w.document.getElementById('sign-out').click();
- w.document.getElementById('confirm-signout').click();
+ pending=0;w.document.getElementById('sign-out').click();
  await new Promise(r=>setTimeout(r,10));
+ assert.equal(w.document.getElementById('signout-confirm').open,false);
  assert.equal(w.document.getElementById('classic-signout-pending').hidden,false);
  assert.equal(w.document.getElementById('classic-signout-retry').hidden,false);
  assert.match(w.document.getElementById('classic-signout-message').textContent,/Private access is blocked/);

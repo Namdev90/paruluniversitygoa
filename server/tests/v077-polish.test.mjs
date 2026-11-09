@@ -21,15 +21,17 @@ test('brand shell is shipped and loaded after the main app',()=>{
  assert.ok(html.indexOf('art/brand-shell.js')>html.indexOf('src="gate.js"'));
  assert.ok(html.includes('art/brand-shell.css'));
 });
-test('login presents three staff routes and a separate admin route',()=>{
- const {dom,w}=fixture();
- assert.deepEqual([...w.document.querySelectorAll('[data-login-role]')].map(x=>x.dataset.loginRole),['checker','helpdesk','faculty']);
- assert.ok(w.document.getElementById('show-admin-login').closest('#auth-welcome'));
- assert.equal(w.document.getElementById('auth-roles').hidden,true);
- w.document.getElementById('auth-staff').click();
- assert.equal(w.document.getElementById('auth-roles').hidden,false);
- assert.equal(w.document.getElementById('show-admin-login').textContent.includes('Administrator'),true);
- dom.window.close();
+test('login opens directly with one secondary admin route',()=>{
+ const {dom,w,calls}=fixture(),$=id=>w.document.getElementById(id);
+ try{
+  assert.equal($('signin-panel').hidden,false);
+  assert.equal($('google-signin').disabled,false);
+  assert.equal($('code-login').open,false);
+  assert.equal(w.document.querySelector('[data-login-role]'),null);
+  $('show-admin-login').click();assert.equal($('admin-signin').hidden,false);
+  $('show-checker-login').click();assert.equal($('signin-panel').hidden,false);
+  assert.equal(calls.length,0);
+ }finally{dom.window.close()}
 });
 test('visual brand marks use the approved combined artwork and a concise footer',()=>{
  const {dom,w}=fixture();

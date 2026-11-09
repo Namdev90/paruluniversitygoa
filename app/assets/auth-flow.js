@@ -1,36 +1,46 @@
-/* Sign-in stages express intent only; existing server permissions remain authoritative. */
+/* Sign-in leads directly to the stations authorized by the server. */
 (function(root){
  'use strict';
- const $=id=>document.getElementById(id),roles={checker:['Checker','Scan and verify entry'],helpdesk:['Help Desk','Resolve registration cases'],faculty:['Faculty','View and download reports']};
+ const $=id=>document.getElementById(id);
  function mount({client:C,onStageChange=()=>{}}){
   if(!$('view-login')||!C)return null;
-  let stage='welcome',role='checker',pending=false,operation='',fallback=false,epoch=0;
-  try{const saved=sessionStorage.getItem('navrang-login-intent');if(roles[saved])role=saved}catch{}
-  const make=(tag,text,cls)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(cls)e.className=cls;return e};
-  const card=document.querySelector('.login-card'),welcome=make('div',null,'auth-welcome'),heading=make('h2','Welcome to Navrang'),staff=make('button','Staff','button primary wide'),admin=$('show-admin-login');
-  welcome.id='auth-welcome';staff.id='auth-staff';staff.type='button';welcome.append(heading,staff);admin.textContent='Administrator';admin.className='button secondary wide';welcome.append(admin);
-  const picker=make('div',null,'auth-roles'),title=make('h2','Choose your work'),group=make('div',null,'login-role-picker');picker.id='auth-roles';group.setAttribute('role','group');group.setAttribute('aria-label','Choose your work');picker.append(title,group);
-  for(const [name,copy]of Object.entries(roles)){const b=make('button',null,'login-role');b.type='button';b.dataset.loginRole=name;b.append(make('strong',copy[0]),make('small',copy[1]));b.onclick=()=>{role=name;try{sessionStorage.setItem('navrang-login-intent',role)}catch{}go('signin')};group.append(b)}
-  const back=make('button','← Back','text-button');back.type='button';back.id='auth-back';back.onclick=()=>api.back();card.prepend(back);const brand=card.querySelector('.combined-brand-login');(brand||back).after(welcome,picker);
-  const originalBack=$('show-checker-login');originalBack.hidden=true;
+  let stage='signin',pending=false,operation='',fallback=false,epoch=0;
+  const card=document.querySelector('.login-card'),brand=card.querySelector('.combined-brand-login');
+  const signin=$('signin-panel'),admin=$('admin-signin'),adminLink=$('show-admin-login'),code=$('code-login');
+  const google=$('google-signin'),browser=$('google-browser-signin'),status=$('google-status');
   function paint(){
-   welcome.hidden=stage!=='welcome';picker.hidden=stage!=='roles';$('signin-panel').hidden=stage!=='signin';$('admin-signin').hidden=stage!=='admin';back.hidden=stage==='welcome';
-   $('signin-title').textContent=roles[role][0]+' sign-in';$('signin-copy').textContent=roles[role][1];$('code-login').hidden=role==='faculty';$('google-browser-signin').hidden=!fallback||stage!=='signin';$('google-signin').disabled=pending;$('google-signin').setAttribute('aria-busy',String(pending));
-   for(const b of group.children)b.setAttribute('aria-pressed',String(b.dataset.loginRole===role));
+   signin.hidden=stage!=='signin';admin.hidden=stage!=='admin';
+   browser.hidden=!fallback||stage!=='signin';google.disabled=pending;adminLink.disabled=pending;code.inert=pending;
+   google.setAttribute('aria-busy',String(pending));
    card.dataset.authStage=stage;onStageChange(stage);
   }
-  function go(next){stage=next;paint();const focusTitle=next==='welcome'?heading:next==='roles'?title:next==='admin'?document.querySelector('#admin-signin h2'):$('signin-title');if(focusTitle){focusTitle.tabIndex=-1;focusTitle.focus?.()}}
-  function reset({preservePending=false}={}){if(preservePending&&pending)return;epoch++;pending=false;operation='';fallback=false;stage='welcome';paint()}
-  const api={stage:()=>stage,reset,back:()=>{if(pending)return false;if(stage==='welcome')return false;go(stage==='signin'?'roles':'welcome');return true}};
-  staff.onclick=()=>go('roles');admin.onclick=()=>go('admin');originalBack.onclick=()=>go('roles');
-  $('google-signin').onclick=async()=>{
+  function go(next){
+   if(pending||stage===next)return;
+   const motion=root.NavrangMotion;
+   const from=motion&&!motion.reduced()?brand?.getBoundingClientRect():null;
+   motion?.cancel();
+   stage=next;paint();
+   const panel=stage==='admin'?admin:signin;
+   panel.querySelector('h2').focus();
+   if(from)motion.morph(brand,from);
+   motion?.enter(panel,{y:stage==='signin'?-6:6});
+  }
+  function reset({preservePending=false}={}){if(preservePending&&pending)return;epoch++;pending=false;operation='';fallback=false;stage='signin';paint()}
+  const api={stage:()=>stage,reset,back:()=>{
+   if(pending)return false;
+   if(stage==='admin'){go('signin');return true}
+   if(!code.open)return false;
+   code.open=false;code.querySelector('summary').focus();return true;
+  }};
+  adminLink.onclick=()=>go('admin');$('show-checker-login').onclick=()=>api.back();
+  google.onclick=async()=>{
    if(pending||stage!=='signin'||C.profile())return;pending=true;fallback=false;operation=root.crypto?.randomUUID?.()||'login-'+Date.now()+'-'+(++epoch);const op=operation,version=epoch;paint();
    try{await C.googleLogin(op);if(!C.native&&version===epoch&&operation===op){pending=false;paint()}}
-   catch{if(version===epoch&&operation===op){pending=false;fallback=!!C.native;paint()}}
+   catch(error){if(version===epoch&&operation===op){pending=false;fallback=!!C.native;status.textContent=error?.message||'Google sign-in could not start. Try again or use a staff code.';paint()}}
   };
-  $('google-browser-signin').onclick=async()=>{if(pending||stage!=='signin'||C.profile())return;try{await C.googleBrowserLogin()}catch{fallback=true;paint()}};
+  browser.onclick=async()=>{if(pending||stage!=='signin'||C.profile())return;try{await C.googleBrowserLogin()}catch(error){status.textContent=error?.message||'Browser sign-in could not start.'}};
   C.on(e=>{
-   if(e.type==='credential'&&e.data?.operationId===operation&&operation){if(['cancelled','failed','completed'].includes(e.data.phase)){pending=false;fallback=e.data.phase!=='completed';paint()}}
+   if(e.type==='credential'&&e.data?.operationId===operation&&operation){if(['cancelled','failed','completed'].includes(e.data.phase)){operation='';pending=false;fallback=e.data.phase!=='completed';paint()}}
    if(e.type==='auth'&&C.profile())reset();
   });
   paint();return api;

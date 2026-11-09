@@ -12,8 +12,6 @@ input,select{background:#17121b;border-color:#6f465c;border-radius:12px;color:va
 .secondary,.admin-tab .table-action{background:linear-gradient(155deg,#3b2638,#291e2d);color:#f5d4a3;border-color:#8f5d7170;box-shadow:0 3px 0 #100c14}
 .quiet{background:#ffffff05;color:var(--muted)}
 .mobile-nav button.selected,.admin-tabs button.selected{background:#5e253a40;color:var(--gold)}
-.login-role{background:#211923;border:1px solid #6f465c;border-radius:12px}
-.login-role.selected{background:#5e253a60;border-color:#dbad75;color:var(--gold)}
 .administrator-entry{background:#411b2e55;border-color:#b88056}
 .administrator-button{color:var(--gold)}
 .crafted-login{padding:22px;background:linear-gradient(145deg,#2c1e2d,#19141f);border:1px solid var(--line);border-radius:18px}
@@ -51,9 +49,14 @@ input:focus,select:focus{border-color:var(--gold);box-shadow:inset 0 2px 5px #00
 .mobile-nav{position:sticky;bottom:env(safe-area-inset-bottom,0px);z-index:2;background:linear-gradient(#17111c,#1e1521);box-shadow:0 -12px 24px -20px #000d;border-top:1px solid #dbb08424}
 @supports not selector(html:has(body)){body:not(.login-mode) main :focus{scroll-margin-block-end:calc(max(80px,7rem) + env(safe-area-inset-bottom,0px))}}
 .mobile-nav button.selected,.admin-tabs button.selected{background:linear-gradient(145deg,#71354d,#3b2036);border-color:#d7a36d65;box-shadow:inset 0 1px #f5d7b12b,0 3px 0 #100b15;color:#ffe0aa}
+#main-nav>.nav-motion-marker{position:absolute;transform-origin:top left;pointer-events:none;border:1px solid #d7a36d65;border-radius:12px;background:linear-gradient(145deg,#71354d,#3b2036);box-shadow:inset 0 1px #f5d7b12b,0 3px 0 #100b15}
+#main-nav[data-moving]>button{position:relative;z-index:1}
+#main-nav[data-moving]>button.selected{background:transparent;box-shadow:none}
 .mobile-nav button:focus-visible,.admin-tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 dialog{background:radial-gradient(ellipse at 0 0,#8d4a5e30,transparent 58%),linear-gradient(145deg,#302232,#1b1521);box-shadow:inset 0 1px #ffe9c92b,var(--shadow-high);border-color:#d7a36d80}
-dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
+dialog[open]{animation:dialog-enter 150ms cubic-bezier(.22,1,.36,1)}
+@keyframes dialog-enter{from{opacity:.86;translate:0 6px}to{opacity:1;translate:0 0}}
+dialog::backdrop{background:#08050bdf}
 /* Official vector marks already have alpha. Remove only their added UI backplates. */
 .institution-wordmark,.crafted-login>.official-logo,.official-logo,.brand.official-header .header-logo{background:transparent!important;padding:0;border-radius:0;box-shadow:none}
 .brand.official-header>.classic-header-logo{box-shadow:none;border-radius:0}
@@ -63,7 +66,7 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 .list-status{flex-shrink:0;min-height:30px;padding:9px 2px 0;font-size:11px;line-height:1.4;color:var(--muted)}
 
 /* Launch has three real layout regions, so figures never cross the logo or CTA. */
-.intro{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:max(18px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 25%,#742a4c66,transparent 62%),linear-gradient(155deg,#241221,#100d15)}
+.intro{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding:max(18px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 25%,#742a4c66,transparent 62%),linear-gradient(155deg,#241221,#100d15);transition:none}
 .intro-content{grid-column:1;grid-row:1;position:relative;align-self:center;justify-self:center;width:100%;height:auto;padding:0;margin:0;gap:8px;z-index:3}
 .intro-content>.official-logo{width:min(230px,66vw);height:28px;margin:0;flex:none;animation:none}
 .intro-content .event-wordmark-hero.classic-event-mark{width:min(208px,32vh,54vw);max-height:none;aspect-ratio:1;filter:drop-shadow(0 7px 12px #0007)}
@@ -72,17 +75,15 @@ dialog::backdrop{background:#08050bdf;backdrop-filter:blur(4px)}
 .intro-content .intro-tagline,.intro-content p:not(.eyebrow){color:#ead0bb;font-size:14px;line-height:1.25}
 .intro-content .pill{color:#f5d4a3;background:#4e283754;border-color:#bd905652}
 .intro-dancers{grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:min(520px,100%);height:100%;min-height:0;justify-self:center;align-self:stretch;overflow:hidden;isolation:isolate}
-.intro .dancer-stage{position:relative;inset:auto;bottom:auto;left:auto;right:auto;width:100%;height:100%;min-height:0;max-height:none;animation:figure-arrive .7s ease both;transform-origin:50% 95%}
-.intro .dancer-stage-right{animation-delay:.08s}
-.intro .dancer-stage>.dancer{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 8px 5px #0007);animation:figure-breathe 3s 1s ease-in-out infinite;transform-origin:50% 95%}
-.intro .dancer-stage-right>.dancer{animation-delay:1.25s}
+.intro .dancer-stage{position:relative;inset:auto;bottom:auto;left:auto;right:auto;width:100%;height:100%;min-height:0;max-height:none;animation:figure-arrive 420ms cubic-bezier(.22,1,.36,1) both;transform-origin:50% 95%}
+.intro .dancer-stage-right{animation-delay:40ms}
+.intro .dancer-stage>.dancer{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 8px 5px #0007);animation:none}
 .intro .intro-skip{grid-column:1;grid-row:3;position:relative;inset:auto;left:auto;right:auto;bottom:auto;transform:none;justify-self:center;min-width:180px;min-height:46px;margin:4px 0 0;background:linear-gradient(155deg,#ffe6b8,#d9aa6d);color:#281620;border-color:#ffe3a6;box-shadow:inset 0 1px #fff4d5,0 4px 0 #805134,0 10px 20px #0005}
 .intro .intro-skip:active{transform:translateY(2px)}
 @keyframes figure-arrive{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-@keyframes figure-breathe{50%{transform:translateY(-3px) rotate(.7deg)}}
 @media(max-height:560px) and (min-width:520px){.intro{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);grid-template-rows:minmax(0,1fr) auto;gap:8px 16px;padding:12px 22px}.intro-content{grid-column:1;grid-row:1;gap:5px}.intro-content>.official-logo{width:min(205px,33vw);height:24px}.intro-content .event-wordmark-hero.classic-event-mark{width:min(160px,42vh)}.intro-content .eyebrow{display:none}.intro-content .intro-tagline,.intro-content p:not(.eyebrow){font-size:12px}.intro-dancers{grid-column:2;grid-row:1;width:100%}.intro .intro-skip{grid-column:1/-1;grid-row:2;min-height:42px;margin:0}}
 @media(max-height:600px) and (max-width:519px){.intro-content .event-wordmark-hero.classic-event-mark{width:min(150px,28vh)}.intro-content .eyebrow{display:none}.intro-content .pill{display:none}.intro-content>.official-logo{height:24px}.intro{gap:6px;padding-block:12px}}
-@media(prefers-reduced-motion:reduce){.intro .dancer-stage,.intro .dancer-stage>.dancer{animation:none!important;transform:none!important}.intro-content .event-wordmark-hero.classic-event-mark{filter:none}}
+@media(prefers-reduced-motion:reduce){.intro .dancer-stage,.intro .dancer-stage>.dancer{animation:none!important;transform:none!important}.intro-content .event-wordmark-hero.classic-event-mark{filter:none}dialog[open]{animation:none}}
 .institution-wordmark,.crafted-login>.official-logo,.official-logo,.intro-content>.official-logo,.brand.official-header .header-logo{border:0;padding:0;border-radius:0}
 #view-desk.desk-list-mode{min-height:0}
 #view-desk.desk-list-mode>.panel-heading,#view-desk.desk-list-mode>.stats{flex-shrink:0}
@@ -207,18 +208,11 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 .list-footer .button{max-width:100%}
 #desk-review-dialog .update-actions .button{min-height:44px;padding:10px 16px;font-size:13px}
 
-/* Staged sign-in: one purpose per page, shared branding stays in the header. */
-.auth-welcome,.auth-roles{display:flex;flex-direction:column;gap:16px;min-height:0}
-.auth-welcome h2,.auth-roles h2{margin:0 0 6px}
-.auth-welcome[hidden],.auth-roles[hidden]{display:none!important}
+/* Shared sign-in, with administrator credentials on their own panel. */
 .login-card{justify-content:center;max-width:560px;width:100%;margin-inline:auto}
-.login-card #auth-back{align-self:flex-start;min-height:44px;margin:0 0 12px}
 .login-card .login-foot,.creator-credit{font-size:11px;color:#cdbec9;text-align:center}
 .login-card #code-login{margin-top:14px}
-.login-card #google-status{min-height:1.5em}
-.login-card .login-role-picker{display:grid;gap:12px}
-.login-card #signin-panel>.eyebrow{display:none}
-.login-card #show-checker-login{display:none}
+.login-card #google-status:empty{margin:0}
 .app-footer.creator-credit{min-height:24px;padding:4px}
 
 /* Consolidated reports: naturally sized panels and accessible tabs. */
@@ -269,10 +263,9 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 #report-notes-dialog #report-caveat{font-size:14px;line-height:1.6}
 #signout-confirm .dialog-actions{display:flex;gap:12px}
 #signout-confirm .dialog-actions button{flex:1;min-height:44px}
-body[data-route=login] .classic-header-logo{transition:width .4s cubic-bezier(.2,0,.1,1);width:72px}
+body[data-route=login] .classic-header-logo{width:72px}
 @media(min-width:600px){#report-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-height:620px){#view-reports{gap:6px}#view-reports>.section-title{display:none}#view-reports>.panel{padding:10px;gap:6px}#report-stats .report-stat{padding:7px;min-height:56px}#report-stats .report-stat strong{font-size:24px}}
-@media(prefers-reduced-motion:reduce){body[data-route=login] .classic-header-logo{transition:none}}
 
 /* Navigation motion is owned by presentation-motion.js; never stack legacy entry animations. */
 .view{animation:none!important}
@@ -311,7 +304,8 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 .intro{background:radial-gradient(ellipse at center,#680724 0%,#260919 100%)}
 .intro-content>.combined-brand-hero{width:min(560px,92vw,58vh);margin:0 auto;animation:none;opacity:1}
 .crafted-login{background:radial-gradient(ellipse at 50% 18%,#680724 0%,#260919 100%)}
-.crafted-login>.combined-brand-login{width:min(360px,100%);margin:0 auto 20px}
+.crafted-login>.combined-brand-login{width:min(200px,55%,24vh);margin:0 auto 8px}
+.crafted-login[data-auth-stage=admin]>.combined-brand-login{width:min(150px,45%,18vh)}
 .topbar{background:radial-gradient(ellipse at 40% 0,#68072480,transparent 80%)}
 .brand.official-header h1{margin-top:0}
 .compact-brand-copy{color:#d9bdc8;font-size:10px;line-height:1.4;letter-spacing:.04em}
@@ -320,22 +314,16 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 @media(max-height:600px) and (max-width:519px){.intro-content>.combined-brand-hero{width:min(340px,88vw,55vh)}}
 
 
-.crafted-login[data-auth-stage=welcome]>.combined-brand-login{width:min(300px,100%,42vh);margin-bottom:12px}
-.crafted-login:not([data-auth-stage=welcome])>.combined-brand-login{width:min(150px,45%,18vh);margin-bottom:6px}
-
 /* Quiet sign-in forms only. Keep the approved maroon brand surround and dark shell. */
-#view-login :is(#auth-welcome,#auth-roles,#signin-panel,#admin-signin){
+#view-login :is(#signin-panel,#admin-signin){
  --ink:#f6f2f5;--muted:#c9c2cb;
  padding:var(--panel-padding);background:#211d23;color:var(--ink);border:1px solid #504650;border-radius:16px;
 }
-#view-login :is(#auth-welcome,#auth-roles,#signin-panel,#admin-signin) h2{font-weight:600;letter-spacing:-.4px}
-#view-login .login-role-picker{border:0;margin-block:12px}
-#view-login .login-role{background:#302b32;border:1px solid #625865;border-radius:12px;box-shadow:none}
+#view-login :is(#signin-panel,#admin-signin) h2{margin:0;font-weight:600;letter-spacing:-.4px}
 #view-login input{min-height:48px;height:auto;padding:12px;font-size:16px;background:#302b32;border:1px solid #817584;border-radius:12px;box-shadow:none;color:#f6f2f5}
 #view-login input::placeholder{color:#c9c2cb}
 #view-login label{font-size:13px;margin-block:12px 6px}
 #view-login :is(button,summary){min-height:48px}
-#view-login #auth-back{min-height:48px}
 #view-login .google-button{height:auto;min-height:48px;padding:12px;line-height:1.4}
 #view-login h2{overflow-wrap:anywhere}
 #view-login :is(.button,.google-button){box-shadow:none}
@@ -345,16 +333,11 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
  outline:2px solid #f6f2f5;outline-offset:2px;border-color:#f6f2f5;box-shadow:none;
 }
 #view-login .button:active{transform:none;box-shadow:none}
-@media(max-width:360px){#view-login :is(#auth-welcome,#auth-roles,#signin-panel,#admin-signin){padding:14px}}
+@media(max-width:360px){#view-login :is(#signin-panel,#admin-signin){padding:14px}}
 
 @media(max-height:620px){
  .crafted-login{padding-block:8px}
- .crafted-login:not([data-auth-stage=welcome])>.combined-brand-login{width:min(95px,35%,16vh)}
- .login-card #auth-back{margin-bottom:4px}
- .auth-roles{gap:8px}
- .auth-roles .login-role-picker{gap:6px;margin:8px 0}
- .auth-roles .login-role{min-height:48px;padding:6px 10px}
- .auth-roles h2{font-size:22px}
+ .crafted-login[data-auth-stage]>.combined-brand-login{width:min(95px,35%,16vh)}
  .login-card .login-foot{margin-top:6px}
 }
 
@@ -373,6 +356,7 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 .account-identity-copy h3,.account-identity-copy p{margin:0}
 .account-identity-copy p{margin-top:3px}
 .account-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.account-actions:has(>button[hidden]){display:none}
 .account-actions .button,.account-sign-out,.account-tool-back{min-height:44px}
 #admin-account-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px}
 .account-tools h3{grid-column:1/-1;margin:0;font-size:14px;color:var(--muted)}
@@ -429,7 +413,6 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 .station-card-copy strong{font-size:1.2em}
 .login-mode .app-footer{display:none}
 #view-login .crafted-login{padding:var(--panel-padding)}
-.login-card #auth-back{margin-bottom:6px}
 .login-foot.official-brand-line{margin-top:8px;padding-top:6px}
 .desk-workspace,.desk-form-panel form{gap:var(--section-gap)}
 .desk-form-panel label{margin:0 0 3px}
@@ -461,11 +444,11 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 @media(min-width:960px){
  html:has(body.portal-layout:not(.login-mode)){scroll-padding-block-end:0}
  body.portal-layout:not(.login-mode) .portal-menu-toggle{display:inline-flex;min-height:44px;align-items:center}
- body.portal-layout:not(.login-mode) .app-shell{display:grid;grid-template-columns:176px minmax(0,1fr);column-gap:16px;grid-template-rows:auto auto auto 1fr auto}
- body.portal-layout:not(.login-mode) :is(.topbar,#notice,#update-banner){grid-column:1/-1}
- body.portal-layout:not(.login-mode) main{grid-area:4/2;min-width:0}
- body.portal-layout:not(.login-mode) .app-footer{grid-area:5/2}
- body.portal-layout:not(.login-mode) #main-nav{display:flex;flex-direction:column;grid-column:1;grid-row:4/6;align-self:start;top:12px;bottom:auto;padding:8px;border:1px solid var(--line);border-radius:12px}
+ body.portal-layout:not(.login-mode) .app-shell{display:grid;grid-template-columns:176px minmax(0,1fr);column-gap:16px;grid-template-rows:auto auto 1fr auto}
+ body.portal-layout:not(.login-mode) :is(.topbar,#notice){grid-column:1/-1}
+ body.portal-layout:not(.login-mode) main{grid-area:3/2;min-width:0}
+ body.portal-layout:not(.login-mode) .app-footer{grid-area:4/2}
+ body.portal-layout:not(.login-mode) #main-nav{display:flex;flex-direction:column;grid-column:1;grid-row:3/5;align-self:start;top:12px;bottom:auto;padding:8px;border:1px solid var(--line);border-radius:12px}
  body.portal-layout:not(.login-mode) #main-nav button{width:100%;max-width:none;flex:none;text-align:left;padding-inline:10px}
  body.portal-layout:not(.login-mode) #main-nav button span{display:inline-block;min-width:23px;margin:0 6px 0 0}
  body.portal-layout.portal-menu-collapsed:not(.login-mode) .app-shell{grid-template-columns:minmax(0,1fr)}
