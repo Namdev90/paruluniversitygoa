@@ -406,7 +406,7 @@ private fun BoxScope.ScannerSweep() {
     val transition = rememberInfiniteTransition(label = "Scanner sweep")
     val position by transition.animateFloat(
         .12f, .88f,
-        infiniteRepeatable(tween(1500, easing = EaseInOutSine), RepeatMode.Reverse),
+        infiniteRepeatable(tween(1800, easing = EaseInOutSine), RepeatMode.Reverse),
         label = "Sweep position",
     )
     val brush = remember {

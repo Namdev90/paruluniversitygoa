@@ -25,7 +25,21 @@ test('report tab keyboard navigation skips forbidden tabs',()=>{
  const t=layout(false);try{t.$('report-tab-downloads').dispatchEvent(new t.w.KeyboardEvent('keydown',{key:'Home',bubbles:true}));assert.equal(t.$('report-tab-overview').getAttribute('aria-selected'),'true');assert.equal(t.w.document.activeElement.id,'report-tab-overview')}finally{t.dom.window.close()}
 });
 test('rapid navigation commits synchronously and sensitive navigation cancels motion',()=>{
- const dom=new JSDOM('<main><section class="view"><article class="panel">Private</article></section></main>',{runScripts:'outside-only'}),w=dom.window;try{w.matchMedia=()=>({matches:false});w.eval(asset('presentation-motion.js'));let state='';w.NavrangMotion.navigate(()=>{state='first'},{sensitive:false});w.NavrangMotion.navigate(()=>{state='latest'},{sensitive:true});assert.equal(state,'latest');assert.equal(w.document.querySelectorAll('[data-motion-snapshot]').length,0)}finally{w.close()}
+ const dom=new JSDOM('<main><section class="view"><article class="panel">Private</article></section></main>',{runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
+ try{
+  let cancelled=0;
+  w.matchMedia=()=>({matches:false});
+  w.document.querySelector('.view').animate=()=>{
+   assert.equal(w.document.body.dataset.route,'account');
+   return {cancel:()=>cancelled++};
+  };
+  w.eval(asset('presentation-motion.js'));
+  w.NavrangMotion.navigate(()=>{w.document.body.dataset.route='account'});
+  w.NavrangMotion.navigate(()=>{w.document.body.dataset.route='login'},{sensitive:true});
+  assert.equal(w.document.body.dataset.route,'login');
+  assert.equal(cancelled,1);
+  assert.equal(w.document.querySelectorAll('[data-motion-snapshot]').length,0);
+ }finally{w.close()}
 });
 test('downloads expose each canonical format without intermediate steps',()=>{const t=layout();try{for(const kind of ['csv','xlsx','pdf']){const button=t.$('report-'+kind);t.$('view-reports').hidden=false;assert.ok(button);assert.equal(button.closest('[hidden]'),null)}assert.equal(t.$('report-download-next'),null)}finally{t.dom.window.close()}});
 

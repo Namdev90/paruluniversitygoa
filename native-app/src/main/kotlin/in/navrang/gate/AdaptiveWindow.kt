@@ -2,6 +2,7 @@ package `in`.navrang.gate
 
 import android.graphics.Color
 import android.graphics.Rect
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.view.RoundedCorner
 import android.view.View
@@ -47,7 +48,10 @@ internal fun largestUsablePane(width: Int, height: Int, edges: Insets, seams: Li
 
 internal fun ComponentActivity.fitNavrangWindow(view: View) {
     WindowCompat.setDecorFitsSystemWindows(window, false)
-    view.setBackgroundColor(Color.rgb(16, 13, 21))
+    view.background = GradientDrawable(
+        GradientDrawable.Orientation.TOP_BOTTOM,
+        intArrayOf(Color.rgb(42, 17, 34), Color.rgb(16, 13, 21), Color.rgb(29, 21, 33)),
+    )
     val bars = Type.systemBars() or Type.displayCutout()
     val ime = Type.ime()
     var edges = Insets.NONE

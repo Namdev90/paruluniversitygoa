@@ -17,7 +17,6 @@
  const controls=['report-csv','report-xlsx','report-pdf'];
  const enableDownloads=value=>{for(const id of controls)$(id).disabled=!value||!!pending;$('report-refresh').disabled=!!pending;};
  const select=$('report-kind');select.replaceChildren();for(const [key,label] of Object.entries(kinds)){const option=text('option',label);option.value=key;select.append(option);}
- const heading=document.querySelector('#view-reports .section-title h2');if(heading)heading.textContent='Faculty reports';
  function status(message,options){$('report-status').textContent=message;root.NavrangReportLayout?.setStatus(message,options);}
  function clear(){generation++;summary=null;loadedBy='';pending=null;$('report-stats').replaceChildren();$('report-caveat').textContent='';$('report-teachers').replaceChildren();$('report-manage').hidden=true;status('Sign in with an approved reporting account.');enableDownloads(false);}
  function checkedSummary(result){

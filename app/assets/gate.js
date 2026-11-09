@@ -5,7 +5,7 @@
  if(location.hash==='#desk')C.destination?.('desk');
  const pendingResults=new Map(),pendingAcknowledged=new Set();
  let model=emptyModel(),uiGeneration=0,pollRun=0,wasAdmin=false;function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
- const titles={home:'Navrang',entries:'Entry log',account:'Account',settings:'Settings',admin:'Admin console',login:'Navrang',desk:'Help Desk',station:'Choose your station',reports:'Teacher Reports'};
+ const titles={home:'Navrang',entries:'Entry log',account:'Account',settings:'Settings',admin:'Admin console',login:'Navrang',desk:'Help Desk',station:'Choose your station',reports:'Reports'};
  const initials=name=>(name||'NG').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
  const clockFormat=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
  const receiptFormat=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});

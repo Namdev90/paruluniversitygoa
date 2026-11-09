@@ -36,7 +36,7 @@ input,select{background:#17121b;border-color:#6f465c;border-radius:12px;color:va
 
 /* Sculpted original-brand surfaces: lighting is decorative; geometry stays stable. */
 :root{--line:#d8ac792a;--muted:#c8b3bf;--shadow-low:0 3px 0 #100a13,0 10px 24px #0005;--shadow-high:0 8px 0 #0e0911,0 24px 44px #0007}
-.app-shell{background:radial-gradient(ellipse at 13% 0,#8b365435,transparent 50%),radial-gradient(ellipse at 95% 60%,#57364225,transparent 65%)}
+.app-shell{background:radial-gradient(ellipse at 13% 0,#8b365435,transparent 54%),linear-gradient(165deg,#1e1220,#100d15 56%,#1d1521)}
 .topbar{position:relative;border-bottom-color:#e5be7d24;box-shadow:0 8px 18px -14px #000c}
 .panel,.scanner-panel,.station-card,.faculty-station,.crafted-login{background:radial-gradient(ellipse at 12% 0,#99546a25,transparent 62%),linear-gradient(145deg,#302332,#1b1521);border:1px solid #c18d6a3b;box-shadow:inset 0 1px 0 #ffe9c91c,inset 0 -1px 0 #0005,var(--shadow-low)}
 .stats article,.report-stat{background:linear-gradient(145deg,#382936,#211824);border:1px solid #d8ac7930;box-shadow:inset 0 1px #fff0d91c,0 4px 0 #110b15,0 10px 20px #0004}
@@ -48,13 +48,14 @@ input:focus,select:focus{border-color:var(--gold);box-shadow:inset 0 2px 5px #00
 .button:active{transform:translateY(2px);box-shadow:inset 0 1px #ffffff13,0 1px 0 #100b15,0 3px 6px #0003}
 .mobile-nav{position:sticky;bottom:env(safe-area-inset-bottom,0px);z-index:2;background:linear-gradient(#17111c,#1e1521);box-shadow:0 -12px 24px -20px #000d;border-top:1px solid #dbb08424}
 @supports not selector(html:has(body)){body:not(.login-mode) main :focus{scroll-margin-block-end:calc(max(80px,7rem) + env(safe-area-inset-bottom,0px))}}
-.mobile-nav button.selected,.admin-tabs button.selected{background:linear-gradient(145deg,#71354d,#3b2036);border-color:#d7a36d65;box-shadow:inset 0 1px #f5d7b12b,0 3px 0 #100b15;color:#ffe0aa}
-#main-nav>.nav-motion-marker{position:absolute;transform-origin:top left;pointer-events:none;border:1px solid #d7a36d65;border-radius:12px;background:linear-gradient(145deg,#71354d,#3b2036);box-shadow:inset 0 1px #f5d7b12b,0 3px 0 #100b15}
+:root{--selection:linear-gradient(145deg,#71354d,#3b2036);--selection-edge:#d7a36d65;--selection-ink:#ffe0aa;--selection-shadow:inset 0 1px #f5d7b12b,0 3px 0 #100b15}
+.mobile-nav button.selected{background:var(--selection);border-color:var(--selection-edge);box-shadow:var(--selection-shadow);color:var(--selection-ink)}
+#main-nav>.nav-motion-marker{position:absolute;transform-origin:top left;pointer-events:none;border:1px solid var(--selection-edge);border-radius:12px;background:var(--selection);box-shadow:var(--selection-shadow)}
 #main-nav[data-moving]>button{position:relative;z-index:1}
 #main-nav[data-moving]>button.selected{background:transparent;box-shadow:none}
 .mobile-nav button:focus-visible,.admin-tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 dialog{background:radial-gradient(ellipse at 0 0,#8d4a5e30,transparent 58%),linear-gradient(145deg,#302232,#1b1521);box-shadow:inset 0 1px #ffe9c92b,var(--shadow-high);border-color:#d7a36d80}
-dialog[open]{animation:dialog-enter 150ms cubic-bezier(.22,1,.36,1)}
+dialog[open]{animation:dialog-enter 225ms cubic-bezier(.2,.65,.3,1)}
 @keyframes dialog-enter{from{opacity:.86;translate:0 6px}to{opacity:1;translate:0 0}}
 dialog::backdrop{background:#08050bdf}
 /* Official vector marks already have alpha. Remove only their added UI backplates. */
@@ -75,8 +76,8 @@ dialog::backdrop{background:#08050bdf}
 .intro-content .intro-tagline,.intro-content p:not(.eyebrow){color:#ead0bb;font-size:14px;line-height:1.25}
 .intro-content .pill{color:#f5d4a3;background:#4e283754;border-color:#bd905652}
 .intro-dancers{grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:min(520px,100%);height:100%;min-height:0;justify-self:center;align-self:stretch;overflow:hidden;isolation:isolate}
-.intro .dancer-stage{position:relative;inset:auto;bottom:auto;left:auto;right:auto;width:100%;height:100%;min-height:0;max-height:none;animation:figure-arrive 420ms cubic-bezier(.22,1,.36,1) both;transform-origin:50% 95%}
-.intro .dancer-stage-right{animation-delay:40ms}
+.intro .dancer-stage{position:relative;inset:auto;bottom:auto;left:auto;right:auto;width:100%;height:100%;min-height:0;max-height:none;animation:figure-arrive 520ms cubic-bezier(.2,.65,.3,1) both;transform-origin:50% 95%}
+.intro .dancer-stage-right{animation-delay:55ms}
 .intro .dancer-stage>.dancer{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 8px 5px #0007);animation:none}
 .intro .intro-skip{grid-column:1;grid-row:3;position:relative;inset:auto;left:auto;right:auto;bottom:auto;transform:none;justify-self:center;min-width:180px;min-height:46px;margin:4px 0 0;background:linear-gradient(155deg,#ffe6b8,#d9aa6d);color:#281620;border-color:#ffe3a6;box-shadow:inset 0 1px #fff4d5,0 4px 0 #805134,0 10px 20px #0005}
 .intro .intro-skip:active{transform:translateY(2px)}
@@ -191,7 +192,7 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 /* Four equal, tactile admin tabs keep the original burgundy-and-gold character. */
 .admin-tabs{grid-template-columns:repeat(auto-fit,minmax(min(100%,4em),1fr));gap:6px;padding:0 0 3px;border:0;border-radius:12px;background:linear-gradient(180deg,#100b1590,#24172160);box-shadow:inset 0 2px 5px #09060d70}
 .admin-tabs button{min-height:44px;padding:6px 4px;overflow-wrap:anywhere;border:1px solid #ba8b6752;border-radius:10px;background:linear-gradient(155deg,#493040,#2c1c2d);color:#ead5bf;font-size:12px;font-weight:650;line-height:1.2;box-shadow:inset 0 1px #fbe0bc24,0 3px 0 #100a14,0 5px 9px #0003;transition:background .16s,transform .16s}
-.admin-tabs button.selected{background:linear-gradient(150deg,#853e59,#4a223b);border-color:#dcad777d;color:#ffe4af;box-shadow:inset 0 1px #ffe8bd47,inset 0 -1px #301125,0 3px 0 #240f21,0 6px 10px #0004}
+.admin-tabs button.selected,.desk-tabs button.selected,.report-tabs button[aria-selected=true]{background:var(--selection);border-color:var(--selection-edge);color:var(--selection-ink);box-shadow:var(--selection-shadow)}
 .admin-tabs button:active{transform:translateY(1px)}
 .admin-tabs button:focus-visible{outline:2px solid #f4cf91;outline-offset:-3px}
 @media(max-width:360px){.admin-tabs button{padding-inline:3px}}
@@ -222,8 +223,7 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 #view-reports>.section-title .eyebrow,#view-reports>.section-title .micro-note{display:none}
 #view-reports>.section-title h2{font-size:24px;margin:0}
 .report-tabs{display:flex;gap:6px;flex:none}
-.report-tabs button{flex:1;min-height:44px;font-size:12px;padding:6px}
-.report-tabs button[aria-selected=true]{background:linear-gradient(150deg,#95516a,#53253e);color:#ffe3b5}
+.report-tabs button{flex:1;min-height:44px;font-size:12px;padding:6px;background:#302332;border-color:#a2726b65;color:var(--ink)}
 #view-reports>.panel{flex:none;min-height:0;margin:0;padding:var(--panel-padding);display:flex;flex-direction:column;gap:var(--section-gap)}
 #view-reports>.panel[hidden]{display:none!important}
 #view-reports .panel-heading{margin:0;flex:none}
@@ -364,12 +364,11 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 .account-tool-row>span:last-child{color:var(--gold);font-size:24px;line-height:1}
 .account-sign-out{width:100%;margin:0}
 .account-tool-back{display:inline-flex;align-items:center;gap:6px;margin:0;color:var(--gold)}
-#view-reports>.report-context{display:flex;align-items:center;gap:4px;margin:0 0 4px}
-.report-context p{margin:0}
+#view-reports>.report-context{display:flex;align-items:center;gap:4px;margin:0}
 
 /* Shared grouped surfaces and touch controls across the station views. */
 .section-heading :is(h2,h3){margin:0}
-:where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account) .panel{background:linear-gradient(145deg,#2a1e2b,#1c1621);border-color:#a2726b4a;box-shadow:0 4px 15px #09060d42}
+:where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account,#view-settings) .panel{background:linear-gradient(145deg,#2a1e2b,#1c1621);border-color:#a2726b4a;box-shadow:0 4px 15px #09060d42}
 :where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account) .panel-heading{flex-wrap:wrap}
 :where(#view-home,#view-desk,#view-reports,#view-admin,#view-account) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-height:44px;font-size:max(16px,1rem)}
 :where(#view-desk,#view-admin,#view-reports) :is(.desk-tabs,.admin-tabs,.report-tabs) button{min-height:44px;line-height:1.25;word-break:normal}
@@ -382,6 +381,7 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 }
 #pull-to-scan .scan-launch{flex:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:2px 10px;min-height:64px;height:auto;padding:9px;text-align:left;align-content:center;justify-content:stretch;background:linear-gradient(155deg,#ffe0a9,#dcb071);border-color:#ffe0a9;color:#281620}
 #pull-to-scan .scan-launch .scan-emblem{grid-row:1/span 2;display:grid;place-items:center;width:44px;height:44px;border-radius:11px;margin:0;align-self:center}
+#pull-to-scan .scan-emblem,.namu-avatar{background:#4b2940;color:var(--selection-ink);border-color:var(--selection-edge)}
 #pull-to-scan{flex:none;min-height:0}
 #pull-to-scan .scan-emblem svg{width:32px;height:32px}
 #pull-to-scan .scan-line{--sweep:20px}
@@ -435,6 +435,13 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 #admin-console{gap:var(--section-gap)}
 #admin-console .namu-guide{margin:0}
 #admin-console .admin-stats{margin-block:0}
+.admin-tab:has(>.empty:not([hidden]))>.rows-scroll,
+#view-entries .table-panel:has(>.empty:not([hidden]))>.rows-scroll{display:none}
+#admin-console .admin-tab>.empty,#view-entries .table-panel>.empty{padding:12px 0}
+#admin-console #checker-list:not(:has(.checker-row:nth-child(2))){min-height:0;flex:none}
+#admin-console>#admin-checkers:not([hidden]):not(:has(#checker-list .checker-row:nth-child(2))){grid-template-rows:auto auto auto auto}
+#admin-checkers:has(>#staff-empty:not([hidden]))>#staff-count{display:none}
+.admin-registration-footer .button{min-height:44px}
 @media(min-width:520px){
  #desk-fields{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--section-gap)}
  #view-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));align-items:start}
@@ -470,6 +477,7 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
  --safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);
  --viewport-height:100vh;--screen-height:var(--viewport-height);--screen-width:100vw;
  --pane-right:calc(100vw - var(--screen-width));--pane-bottom:calc(var(--viewport-height) - var(--screen-height));
+ --tall-space:clamp(0px,calc((var(--screen-height) - 760px) / 4),48px);
 }
 @supports(height:100dvh){:root{--viewport-height:100dvh}}
 .app-shell{
@@ -481,6 +489,28 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 .brand.official-header{flex-wrap:wrap;row-gap:3px}
 .brand.official-header h1{overflow-wrap:anywhere}
 .input-action input{min-inline-size:0}
+@media(max-width:759px){
+ .view{gap:calc(var(--section-gap) + var(--tall-space) / 8)}
+ #view-home .stats article{padding-block:calc(6px + var(--tall-space) / 5)}
+ #pull-to-scan .scan-launch{min-height:calc(64px + 2 * var(--tall-space))}
+ #pull-to-scan .scan-launch .scan-emblem{width:calc(44px + var(--tall-space) / 2);height:calc(44px + var(--tall-space) / 2)}
+ #pull-to-scan .scan-emblem svg{width:calc(32px + var(--tall-space) / 3);height:calc(32px + var(--tall-space) / 3)}
+ .account-tool-row{min-height:calc(60px + var(--tall-space));padding-block:calc(8px + var(--tall-space) / 6)}
+ #view-account :is(.account-settings-row,.account-sign-out){min-height:calc(48px + var(--tall-space) / 4)}
+ #desk-fields{row-gap:calc(6px + var(--tall-space) / 5)}
+ #desk-form :is(input,button){min-height:calc(44px + var(--tall-space) / 4)}
+ #view-settings>.panel{padding-block:calc(var(--panel-padding) + var(--tall-space) / 6)}
+ #view-settings .button{min-height:calc(44px + var(--tall-space) / 4)}
+ #report-downloads .report-actions button{min-height:calc(44px + var(--tall-space) / 2)}
+}
+@media(max-width:519px) and (min-height:900px){
+ main:has(>:is(#view-home,#view-account,#view-reports):not([hidden])){display:flex;flex-direction:column}
+ main:has(>:is(#view-home,#view-account,#view-reports):not([hidden]))>#account-tool-back{align-self:start}
+ main>:is(#view-home,#view-account,#view-reports):not([hidden]){flex:1 0 auto;min-height:0}
+ #view-home>#pull-to-scan,#view-account>#admin-account-tools:not([hidden]),
+ #view-reports>.panel:not([hidden]){margin-block:auto}
+ #view-account:not(:has(#admin-account-tools:not([hidden])))>#signedin-panel{margin-bottom:auto}
+}
 @container(max-width:300px){
  #view-settings .panel-heading{flex-wrap:wrap}
 }

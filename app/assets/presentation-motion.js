@@ -1,6 +1,6 @@
 (function(root){
  'use strict';
- const running=new Map(),easing='cubic-bezier(.22,1,.36,1)';
+ const running=new Map(),easing='cubic-bezier(.2,.65,.3,1)';
  const media=root.matchMedia?.('(prefers-reduced-motion: reduce)');
  const reduced=()=>document.hidden||media?.matches||root.NavrangReducedMotion===true;
  const selected=()=>document.querySelector('#main-nav button[aria-current="page"]:not([hidden])');
@@ -23,7 +23,7 @@
 
  function enter(element,{x=0,y=6}={}){
   if(!element||element.closest('[hidden]'))return;
-  play(element,[{opacity:.86,transform:`translate3d(${x}px,${y}px,0)`},{opacity:1,transform:'none'}],160);
+  play(element,[{opacity:.86,transform:`translate3d(${x}px,${y}px,0)`},{opacity:1,transform:'none'}],225);
  }
 
  function morph(element,from,box=element.getBoundingClientRect(),cleanup){
@@ -31,7 +31,7 @@
   play(element,[
    {transformOrigin:'top left',transform:`translate3d(${from.left-box.left}px,${from.top-box.top}px,0) scale(${from.width/box.width},${from.height/box.height})`},
    {transformOrigin:'top left',transform:'none'},
-  ],185,cleanup);
+  ],260,cleanup);
  }
 
  function moveSelection(from,to){
@@ -64,7 +64,7 @@
 
  root.NavrangMotion={
   navigate,enter,morph,cancel,reduced,
-  dismiss(element,done){play(element,[{opacity:1},{opacity:0}],150,done)},
+  dismiss(element,done){play(element,[{opacity:1},{opacity:0}],200,done)},
   setReducedMotion(value){
    root.NavrangReducedMotion=value===true;
    document.body.dataset.reducedMotion=String(root.NavrangReducedMotion);

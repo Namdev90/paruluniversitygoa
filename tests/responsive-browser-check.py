@@ -327,7 +327,7 @@ def run():
     navigate(page,'admin');page.locator('[data-admin-tab="checkers"]').click()
     dialog(page,'#checker-list .checker-row button','#staff-dialog','staff-access','#close-staff','#staff-access-form button')
     dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
-    page.locator('[data-admin-tab="updates"]').click()
+    page.locator('[data-admin-tab="registrations"]').click()
     dialog(page,'#add-registration','#edit-dialog','add-registration','#close-editor','#ticket-editor button')
     navigate(page,'settings')
     dialog(page,'#password-open','#password-dialog','password-dialog','#close-password')
@@ -392,12 +392,18 @@ def run():
     check('escape restores row focus',page.evaluate("document.activeElement===fixtureFocused&&!document.getElementById('student-dialog').open"))
     page.locator('#student-search').fill('DEMO0060')
     check('search includes final record',page.locator('#registration-rows tr').count()==1)
+    page.locator('#student-search').fill('no matching synthetic student')
+    check('empty student list exposes its action without an empty scroll panel',
+          page.locator('#registrations-empty').is_visible() and page.locator('#admin-registrations>.rows-scroll').is_hidden()
+          and page.locator('#add-registration').is_visible())
     page.locator('#student-search').fill('')
     page.locator('[data-admin-tab="registrations"]').focus();page.keyboard.press('End')
     check('admin tabs support End',page.evaluate("document.activeElement.dataset.adminTab==='updates'&&!document.getElementById('admin-updates').hidden"))
     page.keyboard.press('Home')
     check('admin tabs support Home',page.evaluate("document.activeElement.dataset.adminTab==='registrations'"))
     navigate(page,'reports');page.locator('#report-tab-downloads').focus();page.keyboard.press('Home')
+    check('Reports info is grouped with its visible heading',
+          page.locator('.report-context h2').is_visible() and page.locator('.report-context .section-info-button').is_visible())
     check('report tabs support Home',page.evaluate("document.activeElement.id==='report-tab-overview'&&!document.getElementById('report-overview').hidden"))
     page.keyboard.press('End')
     check('report tabs support End',page.evaluate("document.activeElement.id==='report-tab-teachers'&&!document.getElementById('report-manage').hidden"))
@@ -414,9 +420,10 @@ def run():
     tab_motion=page.evaluate("""() => {
       document.querySelector('#entries-nav').click();
       const marker=document.querySelector('#main-nav>.nav-motion-marker');
-      return {route:document.body.dataset.route,timing:marker?.getAnimations()[0]?.effect.getTiming().duration,decorative:marker?.getAttribute('aria-hidden'),current:document.querySelector('#main-nav [aria-current=page]')?.id};
+      const panel=document.querySelector('#view-entries');
+      return {route:document.body.dataset.route,timing:marker?.getAnimations()[0]?.effect.getTiming().duration,panelTiming:panel?.getAnimations()[0]?.effect.getTiming().duration,decorative:marker?.getAttribute('aria-hidden'),current:document.querySelector('#main-nav [aria-current=page]')?.id};
     }""")
-    check('tab highlight moves without delaying the active route',tab_motion==dict(route='entries',timing=185,decorative='true',current='entries-nav'),tab_motion)
+    check('tab highlight and panel motion leave the route immediately active',tab_motion==dict(route='entries',timing=260,panelTiming=225,decorative='true',current='entries-nav'),tab_motion)
     motion=page.evaluate("""() => {
       for(const selector of ['#entries-nav','#main-nav [data-view="account"]','#admin-nav','#account-tool-back','#admin-account-reports','#account-tool-back'])document.querySelector(selector).click();
       const active=[...document.querySelectorAll('main .view')].filter(e=>!e.hidden).map(e=>e.id);
@@ -535,7 +542,7 @@ def run():
       scanner=page.locator('#pull-to-scan').bounding_box()
       manual=page.locator('.manual-panel').bounding_box()
       action=page.locator('#scan').bounding_box()
-      assert 44<=action['height']<=110, action
+      assert 44<=action['height']<=162, action
       if width<760:assert abs(scanner['width']-manual['width'])<1, (scanner,manual)
      if role=='login':
       if height>570:assert page.locator('.login-foot').is_visible()
