@@ -1,15 +1,15 @@
 {
   "approvedBy": "owner",
-  "approvedAt": "2026-11-09T17:57:38.549241+00:00",
+  "approvedAt": "2026-11-09T23:27:38.549241+05:30",
   "instruction": "Owner requested release of Navrang 0.9.0 with the improved design and removal of Location & audio and event notification features. Owner asked that their physical phone be excluded from testing in this release round.",
   "versionName": "0.9.0",
   "versionCode": 19,
-  "verifiedSourceCommit": "9914009c24e81a22d031f7ff029277a0e1e7e2a9",
-  "approvedSourceCommit": "9914009c24e81a22d031f7ff029277a0e1e7e2a9",
+  "verifiedSourceCommit": "885cf33d587a78ba5040109a8e0d7e3a665046b1",
+  "approvedSourceCommit": "885cf33d587a78ba5040109a8e0d7e3a665046b1",
   "releaseApproved": true,
-  "signedApkSha256": "24f8705db9e8207af420ae5f56e57c34fcb0ad6ecc8f06006f749eb4853c7183",
+  "signedApkSha256": "548686ed0c0c02e0066f41beab1356169e331431218600e2d05fed10e34b652a",
   "deviceAcceptance": "VERIFIED",
-  "deviceEvidence": "The exact original-key-signed candidate upgraded the published 0.8.0/code 18 APK to 0.9.0/code 19 on the dedicated Android API 37 emulator. The app ID, app data directory and original install time were retained and the app launched. This round excluded the owner’s physical phone.",
-  "publicationInstruction": "Publish the improved 0.9.0 with deferred communications removed.",
-  "publicationRequestedAt": "2026-11-09T17:57:38.549241+00:00"
+  "deviceEvidence": "The original-key-signed release APK upgraded the published 0.8.0 (code 18) to 0.9.0 (code 19) on the dedicated Android API 37 emulator. The app ID, app data directory and original install time were retained. Both versions launched. The owner excluded their physical phone from testing.",
+  "publicationInstruction": "Publish the compact 0.9.0 design with location sharing, voice and event alerts removed.",
+  "publicationRequestedAt": "2026-11-09T23:27:38.549241+05:30"
 }
