@@ -253,7 +253,6 @@
  });
  $('account').onclick=()=>setView('account');
  const scanAction=$('scan'),canStartTicketCheck=()=>!held&&canScan()&&!needsName(C.profile());
- $('scan-action-mode').textContent=C.native?'CONTINUOUS QR SCANNER':'MANUAL TICKET ENTRY';
  $('scan-action-badge').hidden=!C.native;
  $('scan-action-title').textContent=C.native?'Start scanning':'Enter ticket ID';
  $('scan-action-copy').textContent=C.native?'Tap or swipe down ↓':'Use the eight-character Transaction ID';

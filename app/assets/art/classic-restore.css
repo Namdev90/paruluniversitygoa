@@ -402,6 +402,7 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 #pull-to-scan .scan-emblem svg{width:32px;height:32px}
 #pull-to-scan .scan-line{--sweep:20px}
 #scan-action-title,#scan-action-copy{grid-column:2;overflow-wrap:anywhere}
+#scan-action-title{font-size:1.125rem;line-height:1.2}
 #scan-action-copy{color:#4e2c2c;font-size:12px;line-height:1.35}
 .scan-safety{margin-top:6px}
 #view-entries .table-link,#admin-console .table-link{line-height:1.35;white-space:normal;overflow-wrap:anywhere}
