@@ -1,4 +1,4 @@
-import {createEdgeVoiceForwarder} from '../../cloudflare-platform/edge-forwarder.mjs';
+import {configuredVoiceControlOrigin,createEdgeVoiceForwarder} from '../../cloudflare-platform/edge-forwarder.mjs';
 import {isCommunicationAction} from './communications-contract.mjs';
 import {isLocatorAction} from './locator-contract.mjs';
 import {createHandler} from './handler.mjs';
@@ -33,5 +33,5 @@ const handler=createHandler({
   return google;
  }
 });
-const forwardVoice=createEdgeVoiceForwarder({origin:undefined});
+const forwardVoice=createEdgeVoiceForwarder({origin:configuredVoiceControlOrigin(Deno.env.get('NAVRANG_VOICE_CONTROL_ORIGIN'))});
 Deno.serve(request=>forwardVoice(request,handler));

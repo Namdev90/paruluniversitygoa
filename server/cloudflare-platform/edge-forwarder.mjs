@@ -1,4 +1,8 @@
 import {validateCommunication} from '../functions/navrang-gate/communications-contract.mjs';
+const controlOrigin='https://navrang-voice-control.navrang-gate.workers.dev';
+export function configuredVoiceControlOrigin(value){
+ return value===controlOrigin?value:undefined;
+}
 const actions=new Set(['duty-join','duty-heartbeat','duty-leave','voice-join','voice-floor','voice-renew','voice-release','voice-broadcast-start','voice-broadcast-end','voice-invite']);
 const fail=()=>new Response(JSON.stringify({ok:false,error:'Voice unavailable'}),{status:503,headers:{'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}});
 /** Only existing validated voice intent and the raw existing bearer cross this boundary. */
