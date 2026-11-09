@@ -47,7 +47,7 @@ class AdaptiveWindowTest {
             largestUsablePane(310, 800, Insets.of(14, 24, 16, 30), listOf(hinge)))
     }
 
-    @Test fun keyboardResizeClearsPaddingWhenItCloses() {
+    @Test fun keyboardInsetsDoNotTurnSideGesturesIntoDisplayMargins() {
         val controller = Robolectric.buildActivity(ComponentActivity::class.java).create()
         try {
             val activity = controller.get()
@@ -63,11 +63,16 @@ class AdaptiveWindowTest {
                 .setInsets(Type.ime(), Insets.of(0, 0, 0, 290)).build()
             val forwarded = ViewCompat.dispatchApplyWindowInsets(root, keyboard)
             assertEquals(Insets.NONE, forwarded.getInsets(Type.ime()))
-            assertEquals(18, root.paddingLeft)
-            assertEquals(24, root.paddingRight)
+            assertEquals(Insets.of(18, 0, 24, 16), forwarded.getInsets(Type.systemGestures()))
+            assertEquals(0, root.paddingLeft)
+            assertEquals(0, root.paddingRight)
             assertEquals(290, root.paddingBottom)
             ViewCompat.dispatchApplyWindowInsets(root, normal)
             assertEquals(32, root.paddingBottom)
+            val sideCutout = WindowInsetsCompat.Builder(normal)
+                .setInsets(Type.displayCutout(), Insets.of(26, 0, 0, 0)).build()
+            ViewCompat.dispatchApplyWindowInsets(root, sideCutout)
+            assertEquals(26, root.paddingLeft)
         } finally {
             controller.destroy()
         }

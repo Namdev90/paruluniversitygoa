@@ -71,7 +71,6 @@ internal fun ComponentActivity.fitNavrangWindow(view: View) {
     }
 
     ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
-        val gestures = insets.getInsets(Type.systemGestures())
         val waterfall = insets.displayCutout?.waterfallInsets ?: Insets.NONE
         val safe = Insets.max(insets.getInsets(bars or ime), waterfall)
         val corners = if (Build.VERSION.SDK_INT >= 31) insets.toWindowInsets() else null
@@ -85,13 +84,13 @@ internal fun ComponentActivity.fitNavrangWindow(view: View) {
             corners.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT)?.radius ?: 0,
             corners.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_RIGHT)?.radius ?: 0,
         ) else safe.bottom
-        edges = Insets.of(maxOf(safe.left, gestures.left), top, maxOf(safe.right, gestures.right), bottom)
+        // Back-gesture zones still draw normally and must not narrow the entire app.
+        edges = Insets.of(safe.left, top, safe.right, bottom)
         place()
         // The host has reserved these pixels. Forward zero values so WebView clears stale insets.
         WindowInsetsCompat.Builder(insets)
             .setInsets(bars or ime, Insets.NONE)
             .setInsetsIgnoringVisibility(bars, Insets.NONE)
-            .setInsets(Type.systemGestures(), Insets.of(0, gestures.top, 0, gestures.bottom))
             .setDisplayCutout(null)
             .build()
     }
