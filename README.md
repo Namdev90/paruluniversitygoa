@@ -5,13 +5,13 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.9.1.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.9.0.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
 [Current status](docs/CURRENT-STATUS.md) · [Development setup](docs/GETTING-STARTED.md) · [Architecture](docs/ARCHITECTURE.md) · [Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Accessibility](ACCESSIBILITY.md)
 
 </div>
 
-> **Release status** · **0.9.1 · Android code 20** brings direct sign-in, faster transitions and adaptive layouts for curved screens, cutouts and separating folds. The original-key APK passed an in-place upgrade from 0.9.0. See the [current status and test scope](docs/CURRENT-STATUS.md).
+> **Release status** · **0.9.0 · Android code 19** brings the refined Account, Admin, Reports, and scanner designs with swipe navigation and app lock. The final original-key-signed APK passed an in-place emulator upgrade; the owner’s physical phone was excluded. Location sharing, voice and event alerts are not included. See [the release record](docs/RESTORATION-RELEASE-0.9.0.md) and [current status](docs/CURRENT-STATUS.md).
 
 
 ## Original Navrang interface
@@ -111,4 +111,4 @@ The project code and documentation are provided under the existing [MIT License]
 
 ## Next upgrade
 
-Use [current status](docs/CURRENT-STATUS.md) for the published release scope and remaining decisions. The [acceptance checklist](docs/NEXT-STEPS.md) also preserves the earlier 0.7.9 interface requirements as history. Future changes must be demonstrated in their own candidate and pass independent review before a new signed release is advertised here.
+Use [current status](docs/CURRENT-STATUS.md) for the published 0.9.0 scope and remaining decisions. The [acceptance checklist](docs/NEXT-STEPS.md) also preserves the earlier 0.7.9 interface requirements as history. Future changes must be demonstrated in their own candidate and pass independent review before a new signed release is advertised here.
