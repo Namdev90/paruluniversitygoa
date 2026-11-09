@@ -11,9 +11,12 @@ public final class GateRuntime {
  public final GateDb db; public final GateSession sessions; public final GateApi api;
  private final ScheduledExecutorService sync=Executors.newSingleThreadScheduledExecutor();
  private final ExecutorService entries=Executors.newSingleThreadExecutor();
+ private final ExecutorService revocations=Executors.newSingleThreadExecutor();
+ private final AtomicBoolean revoking=new AtomicBoolean();
  public final ExecutorService requests=Executors.newFixedThreadPool(2);
  private final CopyOnWriteArrayList<Listener> listeners=new CopyOnWriteArrayList<>();
  private final AtomicBoolean draining=new AtomicBoolean();
+ private final LogoutRevocation logoutRevocation;
  private volatile java.util.function.BooleanSupplier privateAccess=()->true;
  public void setPrivateAccess(java.util.function.BooleanSupplier allowed){privateAccess=allowed==null?()->false:allowed;}
  public boolean privateAccessAllowed(){try{return privateAccess.getAsBoolean();}catch(Exception unavailable){return false;}}
@@ -25,7 +28,13 @@ public final class GateRuntime {
  private static String scope(JSONObject session){JSONObject p=session==null?null:session.optJSONObject("profile");if(p==null)return "";return GateSession.actor(session)+"|"+p.optString("role")+"|"+p.optBoolean("active")+"|"+p.optBoolean("scanner")+"|"+p.optBoolean("helpdesk")+"|"+p.optString("station")+"|"+p.optString("accessExpiresAt")+"|"+p.optBoolean("nameConfirmed",true);}
  private boolean prepareReconciliation(long generation){synchronized(sessions){if(generation!=sessions.generation())return false;String owner=generation+":"+scope(sessions.read());synchronized(reconciliation){if(!owner.equals(reconcileOwner)){reconcileOwner=owner;reconciliation.reset();}}return true;}}
  private void failed(int kind,long claim){reconciliation.failure(kind,claim,clock(),ThreadLocalRandom.current().nextLong());}
- private GateRuntime(Context c)throws Exception{app=c.getApplicationContext();db=new GateDb(c);sessions=new GateSession(c);api=new GateApi(c,sessions,this::renewalAllowed);sync.scheduleWithFixedDelay(()->tick(),500,2000,TimeUnit.MILLISECONDS);}
+ private GateRuntime(Context c)throws Exception{app=c.getApplicationContext();db=new GateDb(c);sessions=new GateSession(c);api=new GateApi(c,sessions,this::renewalAllowed);logoutRevocation=new LogoutRevocation(sessions,(payload,token)->api.call("logout",payload,token),this::clock,this::revocationAllowed);sync.scheduleWithFixedDelay(()->tick(),500,2000,TimeUnit.MILLISECONDS);}
+ private synchronized boolean revocationAllowed(){return foreground>0;}
+ private void retryRevocations(){
+  if(!revoking.compareAndSet(false,true))return;
+  try{revocations.execute(()->{try{if(revocationAllowed())logoutRevocation.tick();}catch(Exception unavailable){/* Retry on a later foreground tick. */}finally{revoking.set(false);}});}
+  catch(RejectedExecutionException stopped){revoking.set(false);}
+ }
  private synchronized boolean renewalAllowed(){return foreground>0&&privateAccessAllowed();}
  public synchronized boolean foregroundAdministrator(){return foreground>0&&privateAccessAllowed()&&GateSession.canSync(sessions.read())&&"admin".equals(GateSession.actor(sessions.read()));}
  public static synchronized GateRuntime get(Context c)throws Exception{if(instance==null)instance=new GateRuntime(c.getApplicationContext());return instance;}
@@ -34,7 +43,7 @@ public final class GateRuntime {
  private void clearInactiveIfCurrent(long generation,String token){synchronized(sessions){if(sessions.isCurrent(generation,token)&&!GateSession.canSync(sessions.read()))db.clearTemporary();}}
  private boolean expireIfCurrent(long generation,String token){synchronized(sessions){if(!sessions.clearIfCurrent(generation,token))return false;db.clearTemporary();emit("auth",new JSONObject());return true;}}
  public void emit(String type,JSONObject data){try{JSONObject e=new JSONObject().put("type",type).put("data",data);for(Listener l:listeners)l.event(e);}catch(Exception ignored){}}
- private void tick(){synchronized(this){if(foreground<=0||!privateAccessAllowed())return;}try{
+ private void tick(){synchronized(this){if(foreground<=0)return;}try{retryRevocations();if(!privateAccessAllowed())return;
   GateUpdater.check(app,false,false);
   long generation=sessions.generation();JSONObject session=sessions.read();if(session==null)return;String token=session.optString("token");if(!sessions.isCurrent(generation,token))return;
   if(!prepareReconciliation(generation))return;

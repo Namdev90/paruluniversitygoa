@@ -22,7 +22,8 @@ public final class SessionRenewal {
  }
  public Result call(String action,JSONObject payload,String captured)throws Exception{
   if("session-refresh".equals(action)||"session-revoke".equals(action))throw new IllegalArgumentException("Session renewal is native only.");
-  if("logout".equals(action)&&payload.has("refreshToken"))return transport.call(action,new JSONObject(payload.toString()).put("installationId",installationId),captured);
+  // Revocation never substitutes another identity's access token or attempts renewal.
+  if("logout".equals(action))return transport.call(action,payload.has("refreshToken")?new JSONObject(payload.toString()).put("installationId",installationId):payload,captured);
   if("login".equals(action)||"checker-login".equals(action)||"google-login".equals(action)){
    JSONObject login=new JSONObject(payload.toString()).put("authProtocol",1).put("installationId",installationId);
    return transport.call(action,login,"");

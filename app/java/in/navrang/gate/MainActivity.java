@@ -19,7 +19,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  private final ReportSaveCoordinator documentSaves=new ReportSaveCoordinator(this::reserveDocumentRequestCode);
  private WebView web;
  private GateRuntime runtime;
- private String pendingLogoutToken,pendingLogoutRefresh;private boolean clearingSignOut;
+ private boolean clearingSignOut;
  protected Class<? extends Activity> scannerActivity(){return ScanActivity.class;}
  protected void clearCredentialProvider(){}
  protected void nativeHostReady(){}
@@ -197,14 +197,12 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  private synchronized void durableSignOut(String id){
   if(clearingSignOut){apiResponse(id,409,new JSONObject());return;}
   clearingSignOut=true;nativeIdentityChanging();
-  JSONObject auth=runtime.sessions.read();if(pendingLogoutToken==null&&auth!=null){pendingLogoutToken=auth.optString("token","");pendingLogoutRefresh=auth.optString("refreshToken","");}
-  runtime.sessions.beginChange();runtime.db.clearTemporary();runOnUiThread(()->{clearExport();clearReport();});
+  runtime.sessions.beginSignOut();runtime.db.clearTemporary();runOnUiThread(()->{clearExport();clearReport();});
   runtime.requests.execute(()->{
-   final String token,refresh;
    try{
-    if(!runtime.sessions.clearDurably())throw new IOException("Could not persist sign-out.");
+    if(!runtime.sessions.finishSignOut())throw new IOException("Could not persist sign-out.");
     getSharedPreferences("navrang-pkce",MODE_PRIVATE).edit().clear().commit();clearCredentialProvider();
-    synchronized(MainActivity.this){token=pendingLogoutToken;refresh=pendingLogoutRefresh;pendingLogoutToken=pendingLogoutRefresh=null;clearingSignOut=false;}
+    synchronized(MainActivity.this){clearingSignOut=false;}
    }catch(Exception failure){
     synchronized(MainActivity.this){clearingSignOut=false;}
     try{apiResponse(id,0,new JSONObject().put("ok",false).put("error","Sign-out could not be saved. Private access is blocked. Retry sign out."));}catch(Exception ignored){}
@@ -212,8 +210,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    }
    try{apiResponse(id,200,new JSONObject().put("ok",true).put("signedOut",true));}catch(Exception ignored){}
    runtime.emit("auth",new JSONObject());
-   // Revoking the captured old token must not block a later identity's local sign-out.
-   if(token!=null&&!token.isEmpty())try{JSONObject revoke=new JSONObject();if(refresh!=null&&!refresh.isEmpty())revoke.put("refreshToken",refresh);runtime.api.call("logout",revoke,token);}catch(Exception ignored){}
+   runtime.refresh();
   });
  }
  private String documentReply(boolean ok,String message){try{return new JSONObject().put("ok",ok).put("error",message).toString();}catch(Exception ignored){return "{\"ok\":false,\"error\":\"Document save unavailable.\"}";}}
