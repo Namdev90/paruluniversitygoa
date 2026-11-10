@@ -417,7 +417,10 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 .section-title{padding-block:0}
 .view .panel{padding:var(--panel-padding)}
 .stats article{padding:6px 9px}
-.stats strong,.report-stat strong{font-variant-numeric:tabular-nums}
+.stats strong,.report-stat strong,#cache-count,#pending-count,#desk-quantity,#desk-bill{font-variant-numeric:tabular-nums}
+/* Keep compact visuals without shrinking the controls that receive a tap. */
+.top-actions .avatar{width:44px;min-width:44px;height:44px;min-height:44px;flex-shrink:0}
+.switch-row{min-height:44px;padding-block:10px}
 #view-home .device-strip{margin:0}
 .station-options{gap:var(--section-gap)}
 .station-card,.faculty-station{min-height:0;align-content:start;padding:var(--panel-padding);gap:var(--section-gap)}
