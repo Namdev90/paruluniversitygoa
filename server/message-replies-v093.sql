@@ -45,7 +45,8 @@ begin
   'actor',session_actor->>'principal','title',left(staff_name||' replied',100),
   'body',existing||' — '||item.title,'destination','notifications',
   'audience',jsonb_build_object('type','roles','roles',jsonb_build_array('administrator')),
-  'payload','{}'::jsonb),array['admin']);
+  'template',jsonb_build_object('type','announcement','urgency',
+   case when existing='Need help' then 'urgent' else 'normal' end)),array['admin']);
  perform navrang_private.notification_rpc('notifications-read',jsonb_build_object('id',item.id),p_token);
  return jsonb_build_object('reply',existing);
 end;

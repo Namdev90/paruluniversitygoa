@@ -21,6 +21,7 @@ begin
  result:=public.navrang_message_reply('notifications-reply',jsonb_build_object('id',message_id,'reply','Acknowledged'),repeat('9',64));
  assert result->>'status'='409';
  assert (select count(*) from navrang_private.notification_events where event_key='reply:'||message_id||':10000000-0000-4000-8000-000000000093')=1;
+ assert (select payload#>>'{template,urgency}' from navrang_private.notification_events where event_key='reply:'||message_id||':10000000-0000-4000-8000-000000000093')='urgent';
  assert not has_function_privilege('anon','public.navrang_message_reply(text,jsonb,text)','execute');
 end $$;
 rollback;
