@@ -151,10 +151,11 @@ import org.json.JSONObject;import java.net.*;import android.app.job.*;import jav
 public class NativeUpdaterPendingCheck {
  static int checks;static final List<String> failures=new ArrayList<>();
  static volatile String manifest="",conditional="",downloadedTarget="";static volatile int metadataRequests,apkRequests,metadataStatus=200;
+ static GateUpdater.UpdateCancellation cancelDuringApk;
  static void fakeNetwork(){URL.setURLStreamHandlerFactory(protocol->new URLStreamHandler(){protected URLConnection openConnection(URL url)throws IOException {
   boolean allowed=url.toString().equals(UpdatePolicy.MANIFEST)||url.toString().equals(UpdatePolicy.apkUrl("1.0.1",null));for(String abi:UpdatePolicy.ABIS)allowed|=url.toString().equals(UpdatePolicy.apkUrl("1.0.1",abi));if(!allowed)throw new AssertionError("Unexpected network target: "+url);
   boolean metadata=url.toString().equals(UpdatePolicy.MANIFEST);if(metadata)metadataRequests++;else{apkRequests++;downloadedTarget=url.toString();}
-  return new HttpURLConnection(url){public void connect(){}public void disconnect(){}public boolean usingProxy(){return false;}public int getResponseCode(){return metadata?metadataStatus:200;}public void setRequestProperty(String key,String value){if(metadata&&"If-None-Match".equals(key))conditional=value;super.setRequestProperty(key,value);}public String getHeaderField(String key){return metadata&&"ETag".equals(key)?"\"fixture-release\"":null;}public InputStream getInputStream(){if(metadata&&metadataStatus==304)throw new AssertionError("304 must not read/download a body");return new ByteArrayInputStream(metadata?manifest.getBytes(java.nio.charset.StandardCharsets.UTF_8):new byte[100000]);}};
+  return new HttpURLConnection(url){public void connect(){}public void disconnect(){}public boolean usingProxy(){return false;}public int getResponseCode(){return metadata?metadataStatus:200;}public void setRequestProperty(String key,String value){if(metadata&&"If-None-Match".equals(key))conditional=value;super.setRequestProperty(key,value);}public String getHeaderField(String key){return metadata&&"ETag".equals(key)?"\"fixture-release\"":null;}public InputStream getInputStream(){if(metadata&&metadataStatus==304)throw new AssertionError("304 must not read/download a body");return new ByteArrayInputStream(metadata?manifest.getBytes(java.nio.charset.StandardCharsets.UTF_8):new byte[100000]){public synchronized int read(byte[] b,int off,int len){int n=super.read(b,off,len);if(!metadata&&cancelDuringApk!=null)cancelDuringApk.cancel();return n;}};}};
  }});}
  static void check(boolean ok,String reason){checks++;if(!ok)failures.add(reason);}
  static Field field(String name)throws Exception{Field f=GateUpdater.class.getDeclaredField(name);f.setAccessible(true);return f;}
@@ -230,6 +231,12 @@ public class NativeUpdaterPendingCheck {
   a=fixture();new File(a.files,"navrang-update.apk").delete();for(int n=0;n<20;n++)GateUpdater.invalidate(a,3);settle();
   check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"burst release hints coalesce into one verified update download");
   GateUpdater.invalidate(a,1);GateUpdater.invalidate(a,2);GateUpdater.invalidate(a,-1);settle();check(metadataRequests==1,"old, already-cached and invalid release hints do nothing");
+  a=fixture();new File(a.files,"navrang-update.apk").delete();cancelDuringApk=new GateUpdater.UpdateCancellation();
+  GateUpdater.background(a,cancelDuringApk);cancelDuringApk=null;
+  check(apkRequests==1&&!GateUpdater.status(a).optBoolean("ready")&&!new File(a.files,"navrang-update.part.apk").exists(),"stopped background transfers discard partial APKs");
+  check(!((java.util.concurrent.atomic.AtomicBoolean)field("running").get(null)).get(),"cancelled background transfer releases the shared updater");
+  GateUpdater.UpdateCancellation alreadyStopped=new GateUpdater.UpdateCancellation();alreadyStopped.cancel();
+  int previousRequests=metadataRequests;GateUpdater.background(a,alreadyStopped);check(metadataRequests==previousRequests,"already stopped jobs do no network work");
   a=fixture();metadataStatus=503;GateUpdater.check(a,true,false);settle();for(int n=0;n<10;n++)GateUpdater.check(a,true,false);settle();check(metadataRequests==1&&apkRequests==0,"manual retries respect bounded failure backoff");
   a=fixture();settings=a.getSharedPreferences("navrang-updates",0);settings.edit().putLong("attempt",System.currentTimeMillis()+86400000).putLong("retry",System.currentTimeMillis()+86400000).apply();for(int n=0;n<10;n++)GateUpdater.check(a,true,false);settle();check(metadataRequests==0,"wall-clock rollback clamps a future schedule without a request storm");
   a=fixture();settings=a.getSharedPreferences("navrang-updates",0);String trusted=manifest;manifest=new JSONObject(manifest).put("sha256","b".repeat(64)).toString();GateUpdater.check(a,true,true);settle();

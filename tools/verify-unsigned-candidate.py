@@ -115,7 +115,8 @@ def main():
         'signed': False, 'publishable': False, 'requiredSignerSha256': SIGNER_SHA256,
         'purpose': 'SOURCE_QA_ONLY' if args.source_check else 'UNPUBLISHED_CANDIDATE',
         'pendingGate': 'FRESH_SOURCE_ACCEPTANCE_ORIGINAL_KEY_SIGNING_AND_PUBLIC_DOWNLOAD_VERIFICATION',
-        'communications': 'EXCLUDED', 'physicalDeviceChecks': 'NOT_RUN',
+        'communications': 'IN_APP_MESSAGING', 'voiceLocationAndBackgroundDelivery': 'EXCLUDED',
+        'physicalDeviceChecks': 'NOT_RUN',
         'assetIntegrity': 'PASS',
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

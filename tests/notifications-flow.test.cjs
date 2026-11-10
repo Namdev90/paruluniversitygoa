@@ -23,6 +23,29 @@ function fixture(profile=admin,options={}){
 }
 function compose(f){f.$('notifications-compose-toggle').click();f.$('notification-title').value='Synthetic meeting';f.$('notification-title').dispatchEvent(new f.w.Event('input',{bubbles:true}));f.$('notification-body').value='Fixture-only message';f.$('notification-body').dispatchEvent(new f.w.Event('input',{bubbles:true}));}
 
+test('a stale feed cannot undo an acknowledged reply',async()=>{
+ const f=fixture(faculty),old=deferred();
+ try{
+  f.setHandler(()=>feed([1]));await f.api.refresh();
+  f.setHandler(action=>action==='notifications-feed'?old.promise:{reply:'Need help',revision:2});
+  const pending=f.api.refresh();
+  f.w.document.querySelector('[id^="notification-reply-"][id$="Need-help"]').click();await settle();
+  old.resolve(feed([1]));await pending;
+  assert.equal(f.w.document.querySelectorAll('[id^="notification-reply-"]').length,0);
+  assert.equal(f.$('notifications-items').firstElementChild.dataset.read,'true');
+ }finally{f.close();}
+});
+
+test('urgent pinned broadcasts open once without an inbox item',async()=>{
+ const f=fixture(faculty);
+ try{
+  f.setHandler(()=>feed([],1,{revision:1,generatedAt:stamp,status:'live',totals:{},hidden:false,
+   announcement:{id:id(1),title:'Gate message',body:'Please respond',at:stamp,templateType:'live-broadcast',urgency:'urgent'}}));
+  await f.api.refresh();assert.equal(f.$('notifications-center').hasAttribute('open'),true);
+  f.api.close();await f.api.refresh();assert.equal(f.$('notifications-center').hasAttribute('open'),false);
+ }finally{f.close();}
+});
+
 test('urgent staff messages open once and a selectable reply is sent to the server',async()=>{
  const f=fixture(faculty);
  try{

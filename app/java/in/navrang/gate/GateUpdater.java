@@ -64,11 +64,32 @@ public final class GateUpdater {
  }
  private static void failed(Context c){SharedPreferences p=prefs(c);int failures=Math.min(12,p.getInt("failures",0)+1);p.edit().putInt("failures",failures).putLong("retry",System.currentTimeMillis()+UpdateCheckPolicy.backoff(failures,java.util.concurrent.ThreadLocalRandom.current().nextLong())).apply();}
  public static void check(Context context,boolean force,boolean download){final Context c=context.getApplicationContext();int plan=claim(c,force,download);if(plan==0){if(force)publish(c);return;}work.execute(()->{try{perform(c,true,plan==1);}catch(Exception e){failed(c);message="Update check interrupted. Your current app keeps working.";}finally{running.set(false);downloading=false;publish(c);}});}
- public static void background(Context c){int plan=claim(c,false,false);if(plan==0)return;try{perform(c,true,true);}catch(Exception e){failed(c);message="Update check will retry when connected.";}finally{running.set(false);downloading=false;publish(c);}}
+ public static final class UpdateCancellation {
+  private volatile boolean cancelled;
+  private volatile HttpURLConnection connection;
+  public boolean isCancelled(){return cancelled;}
+  public void cancel(){cancelled=true;HttpURLConnection active=connection;if(active!=null)active.disconnect();}
+  private void check()throws IOException{if(cancelled)throw new IOException("Update job stopped.");}
+  private HttpURLConnection track(HttpURLConnection active)throws IOException{
+   connection=active;if(cancelled){active.disconnect();check();}return active;
+  }
+ }
+ public static void background(Context c){background(c,new UpdateCancellation());}
+ public static void background(Context c,UpdateCancellation cancellation){
+  if(cancellation.isCancelled())return;
+  int plan=claim(c,false,false);if(plan==0)return;
+  try{perform(c,true,true,cancellation);}
+  catch(Exception e){if(!cancellation.isCancelled())failed(c);message="Update check will retry when connected.";}
+  finally{running.set(false);downloading=false;publish(c);}
+ }
  /** A hint triggers verification; only signed release metadata authorizes a download. */
  public static void invalidate(Context c,int versionCode){if(versionCode<=current(c)||versionCode<=release(c).optInt("versionCode"))return;synchronized(GateUpdater.class){SharedPreferences p=prefs(c);if(versionCode>p.getInt("hintCode",0))p.edit().putInt("hintCode",versionCode).apply();}check(c,false,false);}
  private static HttpURLConnection connection(String url)throws Exception{HttpURLConnection h=(HttpURLConnection)new URL(url).openConnection();h.setInstanceFollowRedirects(false);h.setConnectTimeout(7000);h.setReadTimeout(20000);h.setRequestProperty("Cache-Control","no-cache");h.setRequestProperty("Accept","application/octet-stream, application/json");return h;}
- private static HttpURLConnection connect(String url)throws Exception{HttpURLConnection h=connection(url);if(h.getResponseCode()!=200){h.disconnect();throw new IOException("Update unavailable.");}return h;}
+ private static HttpURLConnection connect(String url,UpdateCancellation cancellation)throws Exception{
+  HttpURLConnection h=cancellation.track(connection(url));
+  try{if(h.getResponseCode()!=200)throw new IOException("Update unavailable.");cancellation.check();return h;}
+  catch(Exception failure){h.disconnect();throw failure;}
+ }
  private static void validate(JSONObject r)throws Exception{if(!UpdatePolicy.APP_ID.equals(r.optString("packageName")))throw new IOException("Wrong app.");UpdatePolicy.validate(r.getInt("versionCode"),r.getString("versionName"),r.getString("apkUrl"),r.getLong("size"),r.getString("sha256"));}
  private static void validateMetadata(Context c,JSONObject r)throws Exception{
   validate(r);String proof=r.optString("signature");if(!proof.matches("[A-Za-z0-9+/]{40,3000}={0,2}"))throw new IOException("Release metadata signature missing.");
@@ -89,9 +110,13 @@ public final class GateUpdater {
   return selected;
  }
  private static void perform(Context c,boolean requestedDownload,boolean fetchMetadata)throws Exception{
+  perform(c,requestedDownload,fetchMetadata,new UpdateCancellation());
+ }
+ private static void perform(Context c,boolean requestedDownload,boolean fetchMetadata,UpdateCancellation cancellation)throws Exception{
+  cancellation.check();
   JSONObject r=release(c);HttpURLConnection h;
   if(fetchMetadata){
-   h=connection(UpdatePolicy.MANIFEST);String etag=prefs(c).getString("etag","");if(etag.matches("[\\x21-\\x7E]{1,200}"))h.setRequestProperty("If-None-Match",etag);
+   h=cancellation.track(connection(UpdatePolicy.MANIFEST));String etag=prefs(c).getString("etag","");if(etag.matches("[\\x21-\\x7E]{1,200}"))h.setRequestProperty("If-None-Match",etag);
    try{int response=h.getResponseCode();if(response==200){try(InputStream in=h.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1){if(out.size()+n>32768)throw new IOException("Update metadata too large.");out.write(b,0,n);}r=selectArtifact(c,new JSONObject(out.toString("UTF-8")));}}else if(response!=304)throw new IOException("Update unavailable.");
     validateMetadata(c,r);JSONObject previous=release(c);if(previous.optInt("versionCode")>r.getInt("versionCode")){boolean trusted=false;try{validateMetadata(c,previous);trusted=true;}catch(Exception invalid){}if(trusted)throw new IOException("Older release metadata rejected.");}
     String received=h.getHeaderField("ETag");SharedPreferences p=prefs(c);SharedPreferences.Editor state=p.edit().putString("release",r.toString()).putLong("checked",System.currentTimeMillis());
@@ -102,10 +127,10 @@ public final class GateUpdater {
     state.apply();
    }finally{h.disconnect();}
   }
-  validateMetadata(c,r);message="";if(r.getInt("versionCode")<=current(c))return;
+  cancellation.check();validateMetadata(c,r);message="";if(r.getInt("versionCode")<=current(c))return;
   if(status(c).optBoolean("ready")){notifyReady(c);return;}publish(c);if(!requestedDownload||scanActive)return;
-  downloading=true;progress=0;message="Downloading app update…";publish(c);File part=new File(c.getFilesDir(),"navrang-update.part.apk");h=connect(r.getString("apkUrl"));
-  try{long total=0,next=0;try(InputStream in=h.getInputStream();FileOutputStream out=new FileOutputStream(part)){byte[] b=new byte[32768];int n;while((n=in.read(b))!=-1){if(scanActive)throw new IOException("Scanner has priority.");total+=n;if(total>r.getLong("size")||total>UpdatePolicy.MAX_APK)throw new IOException("Wrong update size.");out.write(b,0,n);progress=(int)(100*total/r.getLong("size"));if(System.currentTimeMillis()>next){publish(c);next=System.currentTimeMillis()+750;}}out.getFD().sync();}if(total!=r.getLong("size"))throw new IOException("Incomplete update.");verify(c,part,r);if(!part.renameTo(file(c)))throw new IOException("Could not save verified update.");prefs(c).edit().putInt("readyCode",r.getInt("versionCode")).apply();message="Update ready. Install when your station is idle.";notifyReady(c);}finally{h.disconnect();if(part.exists())part.delete();}
+  downloading=true;progress=0;message="Downloading app update…";publish(c);File part=new File(c.getFilesDir(),"navrang-update.part.apk");h=connect(r.getString("apkUrl"),cancellation);
+  try{long total=0,next=0;try(InputStream in=h.getInputStream();FileOutputStream out=new FileOutputStream(part)){byte[] b=new byte[32768];int n;while((n=in.read(b))!=-1){cancellation.check();if(scanActive)throw new IOException("Scanner has priority.");total+=n;if(total>r.getLong("size")||total>UpdatePolicy.MAX_APK)throw new IOException("Wrong update size.");out.write(b,0,n);progress=(int)(100*total/r.getLong("size"));if(System.currentTimeMillis()>next){publish(c);next=System.currentTimeMillis()+750;}}out.getFD().sync();}if(total!=r.getLong("size"))throw new IOException("Incomplete update.");verify(c,part,r);cancellation.check();if(!part.renameTo(file(c)))throw new IOException("Could not save verified update.");prefs(c).edit().putInt("readyCode",r.getInt("versionCode")).apply();message="Update ready. Install when your station is idle.";notifyReady(c);}finally{h.disconnect();if(part.exists())part.delete();}
  }
  private static android.content.pm.Signature[] signatures(PackageInfo p){return Build.VERSION.SDK_INT>=28&&p.signingInfo!=null?p.signingInfo.getApkContentsSigners():p.signatures;}
  private static void verify(Context c,File apk,JSONObject r)throws Exception{validateMetadata(c,r);if(!UpdatePolicy.hash(apk).equals(r.getString("sha256")))throw new IOException("Update checksum mismatch.");int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;PackageManager pm=c.getPackageManager();PackageInfo remote=pm.getPackageArchiveInfo(apk.getPath(),flags),installed=pm.getPackageInfo(c.getPackageName(),flags);if(remote==null||!c.getPackageName().equals(remote.packageName)||remote.versionCode!=r.getInt("versionCode")||remote.versionCode<=installed.versionCode)throw new IOException("Unexpected app update.");android.content.pm.Signature[] a=signatures(remote),b=signatures(installed);if(a==null||b==null||a.length!=1||b.length!=1||!Arrays.equals(a[0].toByteArray(),b[0].toByteArray()))throw new IOException("Update signing certificate differs.");}

@@ -16,6 +16,7 @@ begin
  assert result ? 'error';
  result:=public.navrang_message_reply('notifications-reply',jsonb_build_object('id',message_id,'reply','Need help'),repeat('9',64));
  assert result->>'reply'='Need help',result::text;
+ assert (result->>'revision')::bigint>0;
  result:=public.navrang_message_reply('notifications-reply',jsonb_build_object('id',message_id,'reply','Need help'),repeat('9',64));
  assert result->>'reply'='Need help';
  result:=public.navrang_message_reply('notifications-reply',jsonb_build_object('id',message_id,'reply','Acknowledged'),repeat('9',64));

@@ -15,6 +15,7 @@ declare
  item navrang_private.notification_events%rowtype;
  existing text;
  staff_name text;
+ acknowledged jsonb;
 begin
  if session_actor ? 'error' then return session_actor;end if;
  if not exists(select 1 from navrang_private.notification_config where singleton and center_enabled) then
@@ -47,8 +48,8 @@ begin
   'audience',jsonb_build_object('type','roles','roles',jsonb_build_array('administrator')),
   'template',jsonb_build_object('type','announcement','urgency',
    case when existing='Need help' then 'urgent' else 'normal' end)),array['admin']);
- perform navrang_private.notification_rpc('notifications-read',jsonb_build_object('id',item.id),p_token);
- return jsonb_build_object('reply',existing);
+ acknowledged:=navrang_private.notification_rpc('notifications-read',jsonb_build_object('id',item.id),p_token);
+ return jsonb_build_object('reply',existing,'revision',acknowledged->'revision');
 end;
 $$;
 revoke all on function public.navrang_message_reply(text,jsonb,text) from public,anon,authenticated;

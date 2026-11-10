@@ -181,7 +181,7 @@
    }
    return{revision:value.revision,serverTime:value.serverTime,items:activeIds.map(id=>updated.get(id)),dashboard:nextDashboard};
   }
-  function applyFeed(result){const candidate=result?.feed||result;if(Number.isSafeInteger(candidate?.revision)&&candidate.revision<revision)return false;const value=checkedFeed(result);revision=value.revision;feedRevision=value.revision;items=value.items;dashboard=value.dashboard;serverTime=value.serverTime;receivedAt=now();stale=false;render();const urgent=items.find(item=>!item.read&&['urgent','emergency'].includes(item.urgency)&&!presented.has(item.id));if(urgent&&!doc.querySelector('dialog[open]')){presented.add(urgent.id);open();}return true;}
+  function applyFeed(result){const candidate=result?.feed||result;if(Number.isSafeInteger(candidate?.revision)&&candidate.revision<revision)return false;const value=checkedFeed(result);revision=value.revision;feedRevision=value.revision;items=value.items;dashboard=value.dashboard;serverTime=value.serverTime;receivedAt=now();stale=false;render();const popupItems=dashboard?.announcement?[...items,{...dashboard.announcement,read:false}]:items;const urgent=popupItems.find(item=>!item.read&&['urgent','emergency'].includes(item.urgency)&&!presented.has(item.id));if(urgent&&!doc.querySelector('dialog[open]')){presented.add(urgent.id);open();}return true;}
   function advanceAcknowledgedRevision(result){if(Number.isSafeInteger(result?.revision)&&result.revision>revision)revision=result.revision;}
   function accessFailure(error){if(![401,403].includes(error?.status))return false;clearState();identity='';render();status.textContent='Notification access changed. Refresh your account before retrying.';return true;}
   async function refresh(fromInvalidation=false){
@@ -195,8 +195,9 @@
    if(readBusy.has(id)||!identity||identity!==profileKey())return;
    const version=epoch,who=identity;readBusy.add(id);render();
    try{
-    await C.api('notifications-reply',{id,reply});
+    const result=await C.api('notifications-reply',{id,reply});
     if(!current(version,who))return;
+    advanceAcknowledgedRevision(result);
     items=items.map(item=>item.id===id?{...item,read:true}:item);
     status.textContent='Reply sent: '+reply;
    }catch(error){if(current(version,who)&&!accessFailure(error))status.textContent=errorMessage(error);}
