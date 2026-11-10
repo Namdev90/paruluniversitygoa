@@ -1,6 +1,7 @@
 package `in`.navrang.gate
 
 import java.io.ByteArrayInputStream
+import java.nio.ByteBuffer
 import java.util.zip.ZipInputStream
 import org.junit.Assert.*
 import org.junit.Test
@@ -95,6 +96,22 @@ class NativeDomainTest {
                 "{\"ticketId\":\"TEST0001\"}",
                 "TEST00010",
             )) assertNull(GateQr.ticket(s))
+    }
+
+    @Test
+    fun scannerLuminanceCopiesOnlyVisiblePixelsWithoutMovingThePlane() {
+        for ((rowStride, pixelStride) in listOf(3 to 1, 5 to 1, 7 to 2)) {
+            val base = 2
+            val plane = ByteBuffer.allocateDirect(base + rowStride + 2 * pixelStride + 1)
+            plane.position(base)
+            for (y in 0..1) for (x in 0..2) {
+                plane.put(base + y * rowStride + x * pixelStride, (1 + y * 3 + x).toByte())
+            }
+            val output = ByteArray(6)
+            ScannerQrReader.copyLuminance(plane, 3, 2, rowStride, pixelStride, output)
+            assertArrayEquals(byteArrayOf(1, 2, 3, 4, 5, 6), output)
+            assertEquals(base, plane.position())
+        }
     }
 
     @Test

@@ -19,9 +19,18 @@
  function closeReview(){reviewGeneration++;const d=$('desk-review-dialog');if(d.close)d.close();else d.removeAttribute('open');selected=null;for(const id of ['desk-review-name','desk-review-details','desk-review-message'])$(id).textContent='';$('desk-confirm-existing').checked=false;$('desk-approve').disabled=$('desk-reject').disabled=false;}
  function showReview(){const d=$('desk-review-dialog');if(d.showModal)d.showModal();else d.setAttribute('open','')}
  const feedback=kind=>C.feedback?.(kind,true);
- const when=at=>new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(at));
+ const dateFormat=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+ const when=at=>dateFormat.format(new Date(at));
  function message(text){$('desk-form-message').textContent=text;}
- function showPanel(list){$('view-desk').classList.toggle('desk-list-mode',list);$('desk-form-panel').hidden=list;$('desk-list-panel').hidden=!list;$('desk-new').classList.toggle('selected',!list);$('desk-saved').classList.toggle('selected',list);if(list)refresh(true);}
+ function showPanel(list,animate=true){
+  const panel=$(list?'desk-list-panel':'desk-form-panel'),changed=panel.hidden;
+  $('view-desk').classList.toggle('desk-list-mode',list);$('desk-form-panel').hidden=list;$('desk-list-panel').hidden=!list;
+  $('desk-new').classList.toggle('selected',!list);$('desk-saved').classList.toggle('selected',list);
+  $('desk-new').setAttribute('aria-pressed',String(!list));$('desk-saved').setAttribute('aria-pressed',String(list));
+  if(!changed)return;
+  if(animate){globalThis.NavrangMotion?.cancel();globalThis.NavrangMotion?.enter(panel)}
+  if(list)refresh(true);
+ }
  function paintForm(){
   $('desk-fields').disabled=locked||!!pending;$('desk-submit').hidden=locked;$('desk-close-record').hidden=!editing;
   $('desk-form').dataset.pending=String(!!pending);for(const id of ['desk-new','desk-saved','desk-close-record'])$(id).disabled=!!pending;
@@ -97,7 +106,7 @@
  function clear(){
   generation++;accessScope=scope();loading=false;refreshQueued=false;queuedSource='auto';cancelPoll();failures=0;lastSuccessAt=-Infinity;retryNotBefore=0;clearTimeout(searchTimer);reset();closeReview();
   $('desk-search').value='';$('desk-filter').selectedIndex=0;$('desk-total').textContent='0';$('desk-list-stats').textContent='';resetRecords();$('desk-list-status').textContent='';
-  $('view-desk').classList.remove('desk-list-mode');$('desk-form-panel').hidden=false;$('desk-list-panel').hidden=true;$('desk-new').classList.add('selected');$('desk-saved').classList.remove('selected');$('desk-submit').disabled=$('desk-export').disabled=false;
+  showPanel(false,false);$('desk-submit').disabled=$('desk-export').disabled=false;
  }
  function openReview(record){
   if(!admin())return;reviewGeneration++;selected=record;$('desk-review-name').textContent=record.details.name;
@@ -112,7 +121,7 @@
   catch(e){if(current(requestGeneration,who,true)&&reviewVersion===reviewGeneration)$('desk-review-message').textContent=e.message;}
   finally{if(requestGeneration===generation&&reviewVersion===reviewGeneration)$('desk-approve').disabled=$('desk-reject').disabled=false;}
  }
- $('desk-new').onclick=()=>{if(pending){showPanel(false);return}reset();showPanel(false)};$('desk-saved').onclick=()=>showPanel(true);
+ $('desk-new').onclick=()=>{if(editing&&!pending)reset();showPanel(false)};$('desk-saved').onclick=()=>showPanel(true);
  $('desk-close-record').onclick=()=>{reset();showPanel(true)};
  $('desk-quantity-down').onclick=()=>{if(locked||pending)return;$('desk-quantity').value=Math.max(1,(Number($('desk-quantity').value)||1)-1);paintForm()};
  $('desk-quantity-up').onclick=()=>{if(locked||pending)return;$('desk-quantity').value=Math.min(20,(Number($('desk-quantity').value)||1)+1);paintForm()};$('desk-quantity').oninput=paintForm;

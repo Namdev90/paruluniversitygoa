@@ -15,9 +15,8 @@
  const identity=()=>{const p=C.profile();return [p?.role||'',p?.checkerId||'',p?.reports===true,p?.active===true].join(':');};
  const text=(tag,value,cls)=>{const n=document.createElement(tag);n.textContent=String(value);if(cls)n.className=cls;return n;};
  const controls=['report-csv','report-xlsx','report-pdf'];
- const enableDownloads=value=>{for(const id of controls)$(id).disabled=!value||!!pending;};
+ const enableDownloads=value=>{for(const id of controls)$(id).disabled=!value||!!pending;$('report-refresh').disabled=!!pending;};
  const select=$('report-kind');select.replaceChildren();for(const [key,label] of Object.entries(kinds)){const option=text('option',label);option.value=key;select.append(option);}
- const heading=document.querySelector('#view-reports .section-title h2');if(heading)heading.textContent='Faculty reports';
  function status(message,options){$('report-status').textContent=message;root.NavrangReportLayout?.setStatus(message,options);}
  function clear(){generation++;summary=null;loadedBy='';pending=null;$('report-stats').replaceChildren();$('report-caveat').textContent='';$('report-teachers').replaceChildren();$('report-manage').hidden=true;status('Sign in with an approved reporting account.');enableDownloads(false);}
  function checkedSummary(result){
@@ -52,7 +51,9 @@
  }
  async function refresh(){
   if(!permitted()){clear();return;}
-  const seq=++generation,who=identity();loadedBy=who;summary=null;$('report-stats').replaceChildren();$('report-caveat').textContent='';status('Loading the latest server totals…');enableDownloads(false);$('report-manage').hidden=true;
+  const who=identity();
+  if(pending&&loadedBy===who)return;
+  const seq=++generation;loadedBy=who;summary=null;$('report-stats').replaceChildren();$('report-caveat').textContent='';status('Loading the latest server totals…');enableDownloads(false);$('report-manage').hidden=true;
   try{const r=await C.api('reports-summary');if(seq!==generation||who!==identity()||!permitted())return;summary=checkedSummary(r);renderSummary(summary);status('Live report ready. Select a dataset to download.');if(C.profile().role==='admin'){
    try{await loadMembers(seq,who);}
    catch(err){if(seq===generation&&who===identity()&&C.profile()?.role==='admin'){
@@ -95,7 +96,7 @@
     await savePrepared('Navrang-'+kind+'-'+date+'.'+format,mime,bytes,(result.count?result.count+' records prepared':'No records match this dataset. Column headers prepared')+' in '+format.toUpperCase()+'.');
    }
   }catch(err){if(seq===generation){if(err.status===401||err.status===403)clear();status(err.message,{error:true});}}
-  finally{if(pending===operation){pending=null;if(permitted()&&summary)enableDownloads(true);}}
+  finally{if(pending===operation){pending=null;enableDownloads(permitted()&&!!summary);}}
  }
  $('report-refresh').onclick=refresh;for(const format of ['csv','xlsx','pdf'])$('report-'+format).onclick=()=>download(format);
  C.on(e=>{if((e.type==='auth'||e.type==='profile')&&loadedBy&&loadedBy!==identity())clear();});

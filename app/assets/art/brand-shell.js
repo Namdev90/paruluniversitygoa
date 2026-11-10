@@ -59,9 +59,6 @@
   finally{if(version===requestGeneration){requestBusy=false;faculty.disabled=false;}}
  }
  faculty.onclick=accountReports.onclick=openFaculty;
- const title=$('page-title');
- function paintPageTitle(){/* Original page titles are retained. */}
- if(title&&root.MutationObserver)new MutationObserver(paintPageTitle).observe(title,{childList:true,characterData:true,subtree:true});
  const docVisibility=()=>document.body.classList.toggle('motion-paused',document.hidden);
  document.addEventListener('visibilitychange',docVisibility);docVisibility();
  C.on(e=>{if(['auth','profile','sync'].includes(e.type)){
@@ -69,6 +66,6 @@
   paint();
  }});
  // Copy-only changes never rebuild scanner rows or reset gate/session state.
- paint();paintPageTitle();
+ paint();
  root.NavrangBrand={eventMark,paint};
 })(globalThis);

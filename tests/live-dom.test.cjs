@@ -33,7 +33,7 @@ test('live UI auth, local conversion and durable offline admission recovery',{sk
    $('apply-local').click();await until(()=>$('cache-count').textContent==='997','offline cache');
   });
   await t.test('checker login grants its named station and forbids shared file updates',async()=>{
-   $('sign-out').click();$('confirm-signout').click();await until(()=>$('signin-panel').hidden===false,'sign-out');$('checker-code').value=staff.codeA;$('checker-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+   $('sign-out').click();await until(()=>$('signin-panel').hidden===false,'sign-out');$('checker-code').value=staff.codeA;$('checker-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
    await until(()=>$('checker-name').textContent==='Synthetic Checker A'&&$('scan').disabled===false,'checker sign-in');assert.equal($('apply-shared').disabled,true);
   });
   let pendingId,session;

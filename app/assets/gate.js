@@ -5,13 +5,16 @@
  if(location.hash==='#desk')C.destination?.('desk');
  const pendingResults=new Map(),pendingAcknowledged=new Set();
  let model=emptyModel(),uiGeneration=0,pollRun=0,wasAdmin=false;function emptyModel(){return{dataRevision:-1,cursor:0,records:{},entries:{},stats:{},checkers:[]}}
- const titles={home:'Navrang',entries:'Entry log',account:'Account',settings:'Settings',admin:'Admin console',login:'Navrang',desk:'Help Desk',station:'Choose your station',reports:'Teacher Reports'};
+ const titles={home:'Navrang',entries:'Entry log',account:'Account',settings:'Settings',admin:'Admin console',login:'Navrang',desk:'Help Desk',station:'Choose your station',reports:'Reports'};
  const initials=name=>(name||'NG').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
- const when=at=>at?new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(at)):'—';
- const money=amount=>amount==null?'Review':'₹'+Number(amount).toLocaleString('en-IN',{maximumFractionDigits:2});
+ const clockFormat=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+ const receiptFormat=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+ const moneyFormat=new Intl.NumberFormat('en-IN',{maximumFractionDigits:2});
+ const when=at=>at?clockFormat.format(new Date(at)):'—';
+ const money=amount=>amount==null?'Review':'₹'+moneyFormat.format(amount);
  const exactId=raw=>/^[A-Za-z0-9]{8}$/.test(raw.trim())?raw.trim().toUpperCase():null;
  const hasValue=value=>value!==null&&value!==undefined&&String(value).trim()!=='';
- const fullWhen=at=>at&&Number.isFinite(Date.parse(at))?new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(at))+' IST':hasValue(at)?String(at):'';
+ const fullWhen=at=>at&&Number.isFinite(Date.parse(at))?receiptFormat.format(new Date(at))+' IST':hasValue(at)?String(at):'';
  function paymentDetails(record){if(!record)return[];return[['Amount',hasValue(record.amount)?money(record.amount):''],['Quantity',record.quantity],['Refund',hasValue(record.refund)?money(record.refund):''],['Payment status',record.description],['Payment date and time',fullWhen(record.paymentAt)],['Payment method',record.paymentMethod],['Payment reference',record.paymentReference],['Eligibility issue',record.eligible===false?record.reason:'']].filter(([,value])=>hasValue(value))}
  function receiptDetails(entry){if(!entry||!['checker','checkerId','at','actualAdmittedAt','observedScanAt','source','seq','note','admissionBasis'].some(key=>hasValue(entry[key])))return[];const correction=entry.admissionBasis==='organizer_confirmed';return[['Entry basis',correction?'Organizer-confirmed attendance':'Server-confirmed entry'],[correction?'Recorded by':'Checked by',entry.checker],[correction?'Correction recorded':'Confirmed entry',fullWhen(correction?entry.at:entry.actualAdmittedAt||entry.at)],['Observed scan',correction?fullWhen(entry.observedScanAt):''],['Physical entry',correction?fullWhen(entry.actualAdmittedAt):''],['Checker ID',entry.checkerId],['Receipt source',entry.source],['Receipt number',entry.seq],['Entry note',entry.note]].filter(([,value])=>hasValue(value))}
 
@@ -21,6 +24,8 @@
  const canScan=()=>!!C.profile()?.active&&!expired(C.profile())&&(isAdmin()||station()==='checker'&&C.profile()?.scanner!==false);
  const canDesk=()=>!!C.profile()?.active&&!expired(C.profile())&&(isAdmin()||station()==='helpdesk'&&C.profile()?.helpdesk===true);
  const canReports=()=>{const p=C.profile();return isAdmin()||p?.role==='checker'&&p.active===true&&!expired(p)&&p.reports===true;};
+ const canEditName=p=>p?.role==='checker'&&p.method==='google'&&!expired(p);
+ const hasSettings=(p=C.profile())=>!!p&&(C.native||isAdmin()||canEditName(p));
  const inAccountTool=(next=view)=>next==='settings'||isAdmin()&&(next==='admin'||next==='reports');
  const assignedView=()=>isAdmin()?'account':needsName(C.profile())?'station':canScan()?'home':canDesk()?'desk':canReports()?'reports':'station';
  const listViews=new Map(); // Only already-authorized RAM records enter the searchable lists.
@@ -41,15 +46,20 @@
   $('home-stats').classList.toggle('staff-stats',!admin);$('home-total-label').textContent=admin?'Registered':'My scans';$('home-entered-label').textContent=admin?'Entered':'Total entries';$('home-remaining-card').hidden=!admin;$('device-strip').hidden=!admin;$('desk-staff-stats').hidden=admin||!p?.active;
   $('account-initials').textContent=$('account').textContent=initials(p?.name);$('welcome').textContent=p?'Welcome, '+p.name.split(' ')[0]+'.':'Ready to welcome.';
   if(p){$('checker-name').textContent=p.name;$('checker-access').textContent=admin?'Administrator · all stations':p.active?[(p.scanner!==false?'Checker':''),(p.helpdesk?'Help Desk':''),(p.reports?'Teacher Reports':'')].filter(Boolean).join(' + ')+' · '+(p.method==='google'?'Google verified':'assigned staff code'):'Waiting for Namdev to assign access.';}
-  $('change-name').hidden=p?.role!=='checker'||p.method!=='google';$('admin-role-message').textContent=p&&!admin?'Administrator credentials are required here.':'';
+  $('account-settings').hidden=!hasSettings(p);$('profile-settings').hidden=!canEditName(p);$('admin-security').hidden=!admin;
+  $('readiness-panel').hidden=!C.native||!canScan();
   if(!p&&view!=='login')setView('login');
+  if(p&&view==='settings'&&!hasSettings(p))setView('account',{sensitive:true});
   if(p&&(['admin','entries'].includes(view)&&!admin||['home','entries'].includes(view)&&(!canScan()||needsName(p))||view==='desk'&&(!canDesk()||needsName(p))||view==='reports'&&(lostAdmin||!canReports())||view==='station'&&!admin&&!needsName(p)&&(canScan()||canDesk()||canReports())))setView(assignedView(),{sensitive:true});
   paintStations();
   if(needsName(p)&&introEnded&&!$('name-dialog').open){$('real-name').value=p.name==='Checker'?'':p.name;show('name-dialog')}
  }
- function setView(next,{sensitive=false}={}){const commit=()=>commitView(next);return globalThis.NavrangMotion?globalThis.NavrangMotion.navigate(commit,{sensitive:sensitive||!C.profile()||next==='login'}):commit();}
- function commitView(next){
-  if(!titles[next])next='home';if(!C.profile())next='login';if(C.profile()&&!isAdmin()&&(next==='admin'||next==='entries'||next==='station'&&(station()||canReports())&&(canScan()||canDesk()||canReports())))next=assignedView();if(C.profile()&&((next==='home'&&!canScan())||(next==='desk'&&!canDesk())||(next==='reports'&&!canReports())||needsName(C.profile())&&!['account','settings'].includes(next)))next=assignedView();if(next!==view&&$('section-info').open)closeSectionInfo();view=next;document.body.dataset.route=next;
+ function setView(next,{sensitive=false}={}){const commit=()=>commitView(next,sensitive);return globalThis.NavrangMotion?globalThis.NavrangMotion.navigate(commit,{sensitive:sensitive||!C.profile()||next==='login'}):commit();}
+ function commitView(next,force){
+  if(!titles[next])next='home';if(!C.profile())next='login';if(C.profile()&&!isAdmin()&&(next==='admin'||next==='entries'||next==='station'&&(station()||canReports())&&(canScan()||canDesk()||canReports())))next=assignedView();if(C.profile()&&((next==='home'&&!canScan())||(next==='desk'&&!canDesk())||(next==='reports'&&!canReports())||needsName(C.profile())&&!['account','settings'].includes(next)))next=assignedView();
+  if(next==='settings'&&!hasSettings())next='account';
+  if(!force&&next===view&&document.body.dataset.route===next)return;
+  if(next!==view&&$('section-info').open)closeSectionInfo();view=next;document.body.dataset.route=next;
   for(const name of Object.keys(titles))$('view-'+name).hidden=name!==next;
   const primary=inAccountTool(next)?'account':next;
   for(const b of document.querySelectorAll('[data-view]')){const active=b.dataset.view===(b.closest('#main-nav')?primary:next);b.classList.toggle('selected',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')}document.querySelector('main').scrollTop=0;if(document.scrollingElement)document.scrollingElement.scrollTop=0;
@@ -62,7 +72,7 @@
  async function chooseStation(role){const button=$('station-'+role);await busy(button,async()=>{if(needsName(C.profile()))return;if(!isAdmin()){if(station()){if(station()!==role){notice('Only Namdev can change your saved station.');return}}else{await C.api('staff-request',{station:role});await C.api('me')}}const allowed=role==='checker'?canScan():canDesk();if(!allowed){setView(assignedView());paintStations();feedback('pending');return}C.destination?.(role==='checker'?'home':'desk');setView(role==='checker'?'home':'desk');feedback('transition');if(role==='checker'&&C.native)C.scan()});paintStations()}
  $('station-checker').onclick=()=>chooseStation('checker');$('station-helpdesk').onclick=()=>chooseStation('helpdesk');$('switch-station').onclick=()=>{if(isAdmin())setView('station')};
  function afterSignIn(){globalThis.NavrangAuth?.reset();uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;clearAdminView();renderAuth();setView(assignedView());globalThis.NavrangDesk?.refresh();poll(true)}
- function setAdminTab(next){adminTab=next;for(const b of document.querySelectorAll('[data-admin-tab]')){const yes=b.dataset.adminTab===next;b.classList.toggle('selected',yes);b.setAttribute('aria-selected',String(yes));b.tabIndex=yes?0:-1;$('admin-'+b.dataset.adminTab).hidden=!yes}}
+ function setAdminTab(next){const changed=adminTab!==next;adminTab=next;for(const b of document.querySelectorAll('[data-admin-tab]')){const yes=b.dataset.adminTab===next;b.classList.toggle('selected',yes);b.setAttribute('aria-selected',String(yes));b.tabIndex=yes?0:-1;$('admin-'+b.dataset.adminTab).hidden=!yes}if(changed){globalThis.NavrangMotion?.cancel();globalThis.NavrangMotion?.enter($('admin-'+next))}}
  for(const tab of document.querySelectorAll('[data-admin-tab]'))tab.addEventListener('keydown',e=>{const tabs=[...document.querySelectorAll('[data-admin-tab]')],index=tabs.indexOf(tab);let target;if(e.key==='ArrowRight')target=tabs[(index+1)%tabs.length];else if(e.key==='ArrowLeft')target=tabs[(index-1+tabs.length)%tabs.length];else if(e.key==='Home')target=tabs[0];else if(e.key==='End')target=tabs.at(-1);if(target){e.preventDefault();setAdminTab(target.dataset.adminTab);target.focus()}});setAdminTab(adminTab);
  // Search and render only the already-authorized RAM collection. No hidden pages.
  function updateList(target,items,options){
@@ -139,7 +149,14 @@
  }
  function filteredRecords(){const m=data(),q=$('student-search').value.trim().toLowerCase(),filter=$('payment-filter').value;return searchIndex('students',m.records,(a,b)=>a.name.localeCompare(b.name),r=>r.name+' '+r.id).filter(({row:r,text})=>(!q||text.includes(q))&&(filter==='all'||filter==='eligible'&&r.eligible||filter==='blocked'&&!r.eligible||filter==='entered'&&m.entries[r.id])).map(item=>item.row)}
  function registrationRow(r){const tr=node('tr'),name=node('td'),open=node('button',r.name,'table-link');open.type='button';open.onclick=()=>showStudent(r.id);name.append(open,node('span',r.id,'cell-secondary'));const pay=node('td');pay.append(node('span',r.eligible?'Paid':'Issue','badge '+(r.eligible?'green':'red')));const status=node('td');status.append(node('span',data().entries[r.id]?'In':'—','badge '+(data().entries[r.id]?'green':'')));const action=node('td'),edit=node('button','Edit','table-link');edit.onclick=()=>editTicket(r);action.append(edit);const amount=node('td',money(r.amount));pay.dataset.label='Paid';amount.dataset.label='Amount';status.dataset.label='Entry';action.dataset.label='Manage';tr.append(name,pay,amount,status,action);return tr}
- function renderRegistrations(){if(!isAdmin())return;const records=filteredRecords();updateList('registration-rows',records,{query:JSON.stringify([$('student-search').value.trim().toLowerCase(),$('payment-filter').value]),key:r=>r.id,signature:r=>JSON.stringify([r,!!data().entries[r.id]]),draw:registrationRow,status:'registration-count',summary:records.length+' results · '+Object.keys(model.records).length+' loaded · '+(model.stats.total??'unknown')+' server total'});$('registrations-empty').hidden=!!records.length}
+ function renderRegistrations(){
+  if(!isAdmin())return;
+  const records=filteredRecords(),loaded=Object.keys(model.records).length,total=model.stats.total;
+  const empty=$('registrations-empty');
+  empty.hidden=!!records.length;
+  empty.textContent=loaded?'No students match this view.':total===0?'No registrations yet.':'No registrations loaded.';
+  updateList('registration-rows',records,{query:JSON.stringify([$('student-search').value.trim().toLowerCase(),$('payment-filter').value]),key:r=>r.id,signature:r=>JSON.stringify([r,!!data().entries[r.id]]),draw:registrationRow,status:'registration-count',summary:!loaded&&total===0?'':records.length+' results · '+loaded+' loaded · '+(total??'unknown')+' server total'});
+ }
  function showStudent(id){if(!isAdmin())return;$('edit-student').hidden=false;const r=data().records[id];if(!r)return;selected=id;const e=data().entries[id];$('dialog-name').textContent=r.name;const dl=$('dialog-details');dl.replaceChildren();const details=[['Ticket',id],['Eligibility',r.eligible===true?'Eligible':r.eligible===false?r.reason||'Blocked':''],...paymentDetails(r),['Entry',e?'Entered · no re-entry':'Not entered'],...receiptDetails(e),['Registration source',r.source],['Current registration dataset',data().source]].filter(([,value])=>hasValue(value));for(const [label,value]of details)dl.append(node('dt',label),node('dd',value));show('student-dialog')}
  function editTicket(r){if(!isAdmin())return;$('edit-id').value=r.id;$('edit-name').value=r.name;$('edit-amount').value=r.amount??'';$('edit-quantity').value=r.quantity??'';$('edit-refund').value=r.refund??'';const status=$('edit-status');for(const o of [...status.options])if(o.dataset.custom)o.remove();if(![...status.options].some(o=>o.value===r.description)){const o=node('option',r.description||'Unknown');o.value=r.description;o.dataset.custom='true';status.append(o)}status.value=r.description;show('edit-dialog')}
  let adminPaint='';
@@ -260,7 +277,6 @@
  scanAction.setAttribute('aria-label',C.native?'Open continuous QR scanner':'Enter ticket ID manually');
  scanAction.onclick=()=>{if(!canStartTicketCheck())return;if(C.native)C.scan();else $('ticket-id').focus()};
  $('show-admin-login').onclick=()=>{$('signin-panel').hidden=true;$('admin-signin').hidden=false};$('show-checker-login').onclick=()=>{$('admin-signin').hidden=true;$('signin-panel').hidden=false};
- $('google-browser-signin').hidden=!C.native;$('google-browser-signin').onclick=()=>busy($('google-browser-signin'),()=>C.googleBrowserLogin());
  $('google-signin').onclick=()=>busy($('google-signin'),()=>C.googleLogin());$('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
  function clearSessionView(){
   uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;model=emptyModel();adminPaint='';selected=staffSelected=null;clearLists();queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);
@@ -281,9 +297,27 @@
   catch(e){if(C.native&&pending){message.textContent='Sign-out could not be saved. Private access is blocked. Retry before signing in again.';retry.hidden=false;}else notice(e.message||'Sign-out could not complete.');}
  }
  if($('classic-signout-retry'))$('classic-signout-retry').onclick=signOut;
- const confirmSignOut=()=>{if(C.profile())show('signout-confirm')};$('sign-out').onclick=confirmSignOut;$('name-signout').onclick=confirmSignOut;
+ async function unfinishedWork(){
+  if(!C.profile())return '';
+  try{
+   const {pending}=await C.local('snapshot');
+   if(C.native&&!Number.isInteger(pending))return 'Navrang could not check for unconfirmed scans.';
+   if(pending>0)return pending+(pending===1?' scan is':' scans are')+' still awaiting confirmation. Keep Navrang open until confirmation arrives.';
+  }catch{return 'Navrang could not check for unconfirmed scans.'}
+  return globalThis.NavrangDesk?.hasDraft()?'Your Help Desk form has unsaved details. Save it before leaving.':'';
+ }
+ const requestSignOut=()=>{
+  if(!C.profile())return;
+  return busy($('sign-out'),async()=>{
+   const generation=uiGeneration,warning=await unfinishedWork();
+   if(generation!==uiGeneration||!C.profile())return;
+   if(!warning){await signOut();return}
+   $('signout-warning').textContent=warning;show('signout-confirm');
+  });
+ };
+ $('sign-out').onclick=$('name-signout').onclick=requestSignOut;
  $('cancel-signout').onclick=()=>close('signout-confirm');$('confirm-signout').onclick=()=>{close('signout-confirm');busy($('sign-out'),signOut)};
- $('change-name').onclick=()=>{$('real-name').value=C.profile()?.name||'';show('name-dialog')};$('name-dialog').addEventListener('cancel',e=>{if(needsName(C.profile()))e.preventDefault()});
+ $('change-name').onclick=()=>{const p=C.profile();if(canEditName(p)){$('real-name').value=p.name;show('name-dialog')}};$('name-dialog').addEventListener('cancel',e=>{if(needsName(C.profile()))e.preventDefault()});
  $('name-form').onsubmit=e=>{e.preventDefault();busy(e.submitter||$('name-form').querySelector('button'),async()=>{const name=$('real-name').value.trim().replace(/\s+/g,' ');if(!/^[\p{L}\p{M}][\p{L}\p{M} .'-]{0,39}$/u.test(name))throw Error('Enter your real name using letters, up to 40 characters.');await C.api('checker-profile',{name});await C.api('me');close('name-dialog');renderAuth();setView(assignedView());feedback('success');poll(true)})};
  $('manual-form').onsubmit=e=>{e.preventDefault();if(held||!canScan()||needsName(C.profile()))return;const id=exactId($('ticket-id').value);if(!id){result({code:'invalid',id,message:'Use the exact eight-character Transaction ID from the ticket email.'});return}busy($('manual-submit'),async()=>{await C.submit(id)})};
  $('close-result').onclick=releaseResult;$('result-popup').addEventListener('cancel',e=>{e.preventDefault()});
@@ -299,12 +333,28 @@
  $('close-staff').onclick=()=>close('staff-dialog');$('staff-access-form').onsubmit=e=>{e.preventDefault();if(!isAdmin()||!staffSelected)return;busy(e.submitter||$('staff-access-form').querySelector('button'),async()=>{const generation=uiGeneration,role=$('staff-role').value,active=$('staff-active').checked,name=$('staff-name').value.trim().replace(/\s+/g,' ');if(active&&role==='none')throw Error('Assign a station or disable access.');await C.api('staff-update',{id:staffSelected.id,name,active,scanner:['checker','both'].includes(role),helpdesk:['helpdesk','both'].includes(role)});if(generation!==uiGeneration||!isAdmin())return;close('staff-dialog');await poll(true);if(generation!==uiGeneration||!isAdmin())return;notice(name+' · access saved on server.');feedback('success')})};
  $('password-open').onclick=()=>{if(isAdmin())show('password-dialog')};$('close-password').onclick=()=>close('password-dialog');$('change-password-form').onsubmit=e=>{e.preventDefault();if(!isAdmin())return;busy(e.submitter||$('change-password-form').querySelector('button'),async()=>{const generation=uiGeneration;await C.api('admin-password',{password:$('new-admin-password').value});if(generation!==uiGeneration||!isAdmin())return;$('new-admin-password').value='';close('password-dialog');notice('Admin password changed. Other admin sessions were signed out.')})};
 
- function renderReadiness(action='status'){const state=C.readiness?.(action)||{};globalThis.NavrangReducedMotion=state.reducedMotion===true;globalThis.NavrangMotion?.setReducedMotion(globalThis.NavrangReducedMotion);$('readiness-panel').hidden=!C.native;$('readiness-status').textContent=[state.camera?'Camera ready':'Camera: optional, requested when scanning',state.notifications?'Update alerts ready':'Update alerts: optional',state.fullVolume?'Full media volume':'Volume limited by device',state.vibration?'Strong scan vibration':'No vibration hardware',state.adaptiveBrightness?'Adaptive brightness':'System brightness'].join(' · ');}
- $('readiness-permissions').onclick=()=>renderReadiness('permissions');$('readiness-settings').onclick=()=>renderReadiness('settings');$('readiness-volume').onclick=()=>renderReadiness('volume');renderReadiness();
-  let updateState={};
- function renderUpdate(state){updateState=state||{};$('app-version').textContent=C.native?'Version '+(state.currentVersion||'0.7.8'):'Android app updates';$('update-message').textContent=state.downloading?'Downloading update · '+(state.progress||0)+'%':state.message||'Your app is up to date.';$('automatic-updates').textContent=!C.native?'Automatic updates are available in the Android app.':state.automatic?'Automatic checks: on. Choose Download when an update is available.':'Automatic updates are unavailable in this build.';$('check-update').hidden=!C.native;$('update-notifications').hidden=state.notifications||!C.native;$('install-update').hidden=!state.installing&&(!state.available||state.downloading);$('install-update').textContent=state.installing?'Finish app update':state.ready?'Install '+state.versionName:'Download '+state.versionName;$('update-banner').hidden=!state.available&&!state.installing;$('update-banner-text').textContent=state.installing?'Android app update unfinished':state.downloading?'Updating download · '+(state.progress||0)+'%':state.ready?'Version '+state.versionName+' ready':'New version '+state.versionName;}
+ function renderReadiness(action='status'){
+  if(!C.native)return;
+  const state=C.readiness?.(action)||{};
+  globalThis.NavrangReducedMotion=state.reducedMotion===true;globalThis.NavrangMotion?.setReducedMotion(globalThis.NavrangReducedMotion);
+  $('readiness-status').textContent=state.camera?'Camera ready':'Camera permission is requested when you open the scanner.';
+  $('readiness-volume').hidden=state.fullVolume===true;
+ }
+ $('readiness-settings').onclick=()=>renderReadiness('settings');$('readiness-volume').onclick=()=>renderReadiness('volume');renderReadiness();
+ let updateState={};
+ function renderUpdate(state){
+  if(!C.native)return;
+  updateState=state=state||{};
+  $('app-version').textContent=state.currentVersion?'Version '+state.currentVersion:'App updates';
+  $('update-message').textContent=state.downloading?'Downloading update · '+(state.progress||0)+'%':state.message||'Your app is up to date.';
+  $('update-notifications').hidden=state.notifications===true;
+  $('install-update').hidden=!state.installing&&(!state.available||state.downloading);
+  $('install-update').textContent=state.installing?'Finish app update':state.ready?'Install '+state.versionName:'Download '+state.versionName;
+ }
  function updateAction(action,value=true){if(typeof C.update==='function')renderUpdate(C.update(action,value));}
- $('check-update').onclick=()=>{if(C.native)updateAction('check')};$('install-update').onclick=()=>updateAction(updateState.installing||updateState.ready?'install':'download');$('update-notifications').onclick=()=>updateAction('notifications');$('app-updates').hidden=false;$('automatic-updates').hidden=!C.native;$('open-update').onclick=()=>setView('settings');updateAction('status');setInterval(()=>{if(!document.hidden)updateAction('background')},300000);
+ $('check-update').onclick=()=>{if(C.native)updateAction('check')};$('install-update').onclick=()=>updateAction(updateState.installing||updateState.ready?'install':'download');$('update-notifications').onclick=()=>updateAction('notifications');
+ $('app-updates').hidden=!C.native;
+ if(C.native){updateAction('status');setInterval(()=>{if(!document.hidden)updateAction('background')},300000)}
  C.on(e=>{if(e.type==='result'){result(e.data)}else if(e.type==='error'||e.type==='notice')notice(e.data.message);else if(e.type==='sync'){renderAuth();renderLocal();if(C.native){if(isAdmin())poll();else connection(true)}}else if(e.type==='registrations-imported'){if(isAdmin())poll(true)}else if(e.type==='connection')connection(false,e.data.status===403?'Access blocked':'Offline');else if(e.type==='update'){renderUpdate(e.data)}else if(e.type==='readiness'){renderReadiness()}else if(e.type==='profile'){if(C.profile()&&view==='login'&&!expired(C.profile()))afterSignIn();else renderAuth();globalThis.NavrangDesk?.refresh()}else if(e.type==='auth'){if(C.profile()){afterSignIn();feedback('success')}else clearSessionView()}});
 
  if(C.native){
@@ -313,14 +363,40 @@
   pull.addEventListener('touchend',e=>{if(startY!==null){const dy=e.changedTouches[0].clientY-startY,dx=e.changedTouches[0].clientX-startX;if(dy>70&&dy>Math.abs(dx)*2&&canStartTicketCheck())C.scan()}startY=null},{passive:true});
  }
 
- globalThis.onBackRequested=async()=>{if(held||$('result-popup').open)return;const dialog=[...document.querySelectorAll('dialog[open]')].find(d=>d.id!=='name-dialog'&&d.id!=='exit-dialog');if(dialog){if(dialog.id==='section-info')closeSectionInfo();else close(dialog.id);return;}if(view==='login'&&globalThis.NavrangAuth?.back())return;if($('exit-dialog').open)return;if(inAccountTool()){setView('account');return;}const snapshot=await C.local('snapshot').catch(()=>({pending:0})),draft=globalThis.NavrangDesk?.hasDraft();$('exit-message').textContent=snapshot.pending?String(snapshot.pending)+' scan(s) are still awaiting server confirmation. Keep the app open until they finish.':draft?'Your Help Desk form has unsaved details. Save it before closing. Confirmed entries are already stored on the server.':'Confirmed entries are safely stored on the server. Your station will be ready when you return.';show('exit-dialog');feedback('close')};
- $('exit-keep').onclick=()=>close('exit-dialog');$('exit-confirm').onclick=()=>{feedback('close');$('exit-dialog').classList.add('closing');setTimeout(()=>{if(C.native&&typeof Native.exit==='function')Native.exit();else{close('exit-dialog');$('exit-dialog').classList.remove('closing')}},220)};
- function endIntro(){if(introEnded)return;introEnded=true;feedback('stop-intro');$('intro').classList.add('leaving');setTimeout(()=>{$('intro').hidden=true;renderAuth();renderReadiness('startup')},globalThis.NavrangReducedMotion?0:550)}$('skip-intro').onclick=endIntro;feedback('intro');setTimeout(endIntro,(globalThis.NavrangReducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches)?100:6200);
- (async()=>{try{await C.finishGoogle()}catch(e){notice(e.message)}renderAuth();setView(C.profile()?assignedView():'login');await renderLocal();try{const cfg=await C.api('config');$('google-status').textContent=cfg.googleEnabled?'Google is available. Save your name, then choose an approved station.':'Google sign-in is unavailable. Ask Namdev for an assigned code.';$('provider-note').textContent='Manage names, approve requests and assign Checker, Help Desk or both. Only admin can change access.'}catch{connection(false)}if(C.profile()){try{if(C.native)await C.local('refresh');else await C.api('me');renderAuth()}catch(e){notice(e.message)}await poll(true)}else connection(false,'Sign in')})().catch(e=>notice(e.message));
+ function leaveApp(){
+  feedback('close');
+  if(C.native&&typeof globalThis.Native?.exit==='function')globalThis.Native.exit();
+  else close('exit-dialog');
+ }
+ globalThis.onBackRequested=async()=>{
+  if(held||$('result-popup').open)return;
+  const dialog=[...document.querySelectorAll('dialog[open]')].find(d=>d.id!=='name-dialog'&&d.id!=='exit-dialog');
+  if(dialog){if(dialog.id==='section-info')closeSectionInfo();else close(dialog.id);return}
+  if(view==='login'&&globalThis.NavrangAuth?.back())return;
+  if($('exit-dialog').open)return;
+  if(inAccountTool()){setView('account');return}
+  const route=view,generation=uiGeneration,warning=await unfinishedWork();
+  if(route!==view||generation!==uiGeneration)return;
+  if(!warning){leaveApp();return}
+  $('exit-message').textContent=warning;show('exit-dialog');
+ };
+ $('exit-keep').onclick=()=>close('exit-dialog');$('exit-confirm').onclick=leaveApp;
+ const intro=$('intro'),introMotion=globalThis.NavrangMotion;
+ function endIntro(){
+  if(introEnded)return;
+  introEnded=true;clearTimeout(introTimer);feedback('stop-intro');intro.inert=true;intro.classList.add('leaving');
+  const finish=()=>{intro.hidden=true;renderAuth()};
+  if(introMotion&&!quietIntro)introMotion.dismiss(intro,finish);else finish();
+ }
+ $('skip-intro').onclick=endIntro;
+ const quietIntro=C.profile()||(introMotion?.reduced()??globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+ if(!quietIntro)feedback('intro');
+ const introTimer=setTimeout(endIntro,quietIntro?0:950);
+ (async()=>{try{await C.finishGoogle()}catch(e){notice(e.message)}renderAuth();setView(C.profile()?assignedView():'login');await renderLocal();try{const cfg=await C.api('config');if(cfg.googleEnabled===false)$('google-status').textContent='Google sign-in is unavailable. Ask Namdev for a staff code.';$('provider-note').textContent='Manage names, approve requests and assign Checker, Help Desk or both. Only admin can change access.'}catch{connection(false)}if(C.profile()){try{if(C.native)await C.local('refresh');else await C.api('me');renderAuth()}catch(e){notice(e.message)}await poll(true)}else connection(false,'Sign in')})().catch(e=>notice(e.message));
  let expiryBlocked=false;setInterval(()=>{
   if(document.hidden)return;const p=C.profile(),blocked=expired(p);
   if(blocked&&!expiryBlocked){expiryBlocked=true;clearSessionView();if(p){setView('account',{sensitive:true});notice('Your saved sign-in needs server verification. Connect to continue; it has not been removed.');connection(false,'Verifying sign-in');}}
   else if(!blocked&&expiryBlocked){expiryBlocked=false;if(p){renderAuth();setView(assignedView(),{sensitive:true});}}
  },100);
- setInterval(()=>{if(!document.hidden)poll()},30000);setInterval(()=>{if(!C.native&&!document.hidden&&C.profile())C.api('me').then(()=>{renderAuth();globalThis.NavrangDesk?.refresh()}).catch(()=>{})},30000);window.addEventListener('resize',()=>{adminPaint='';renderLocal();if(isAdmin())renderAdmin()});
+ setInterval(()=>{if(!document.hidden)poll()},30000);setInterval(()=>{if(!C.native&&!document.hidden&&C.profile())C.api('me').then(()=>{renderAuth();globalThis.NavrangDesk?.refresh()}).catch(()=>{})},30000);
 })();

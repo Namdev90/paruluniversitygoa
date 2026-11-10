@@ -24,7 +24,7 @@ DESK_RECORDS = [dict(id=f'synthetic-case-{i}',ticket_id=f'DESK{i:04d}',status=st
 STATS = dict(total=60,eligible=60,admitted=40,remaining=20,blocked=0,lastMinute=0,lastFiveMinutes=0,duplicateAttempts=2,blockedAttempts=1)
 SUMMARY = dict(registered=12,eligible=12,blocked=0,attended=9,registeredAttended=8,organizerConfirmed=1,noShow=4,serverIssues=1,issueTickets=1,duplicateAttempts=2,pendingHelpDesk=0,generatedAt=STAMP)
 def run():
- parser=argparse.ArgumentParser();parser.add_argument('--output',default=str(ROOT/'.build/responsive-review'));parser.add_argument('--baseline',action='store_true');parser.add_argument('--report-stress',action='store_true');parser.add_argument('--interactions-only',action='store_true');parser.add_argument('--login-only',action='store_true');parser.add_argument('--sizes',default='320x640,360x800,390x844,768x1024,1024x768,1366x768,1920x1080,640x360');args=parser.parse_args()
+ parser=argparse.ArgumentParser();parser.add_argument('--output',default=str(ROOT/'.build/responsive-review'));parser.add_argument('--baseline',action='store_true');parser.add_argument('--report-stress',action='store_true');parser.add_argument('--interactions-only',action='store_true');parser.add_argument('--login-only',action='store_true');parser.add_argument('--adaptive-only',action='store_true');parser.add_argument('--sizes',default='320x640,360x800,390x844,768x1024,1024x768,1366x768,1920x1080,640x360');args=parser.parse_args()
  out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
  assets=ROOT/'app/assets'
  markup=(assets/'index.html').read_text()
@@ -53,7 +53,6 @@ def run():
       if(f.profile)storage.setItem('navrang-session',JSON.stringify({token:'a'.repeat(64),profile:f.profile}));
       const prop=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');
       Object.defineProperty(HTMLImageElement.prototype,'src',{get:prop.get,set(value){prop.set.call(this,f.images[value]||value);}});
-      const realTimeout=window.setTimeout.bind(window);window.setTimeout=(fn,ms,...args)=>fn?.name==='endIntro'?0:realTimeout(fn,ms,...args);
       window.AudioContext=undefined;window.webkitAudioContext=undefined;
       window.fixtureCalls=[];window.fixtureUnexpected=[];window.fixtureReportMode='normal';window.fixtureDeskPopulated=false;window.fixtureProfile=f.profile;window.fixtureAuthLost=false;
       window.fetch=async(url,options)=>{
@@ -100,7 +99,8 @@ def run():
         update(action){if(!['status','background'].includes(action))return blocked('update:'+action);return JSON.stringify({currentVersion:f.candidateVersion,available:false,ready:false,automatic:true,notifications:false,message:'Synthetic preview: no update is available.'});},
         destination(value){if(value)return blocked('destination');return f.role==='admin'?'admin':'login';},
         feedback(){},
-        googleLoginRequest(operationId){queueMicrotask(()=>window.onGateEvent(JSON.stringify({type:'credential',data:{operationId,phase:'cancelled',generation:1}})));},
+        googleLoginRequest(operationId){queueMicrotask(()=>window.onGateEvent(JSON.stringify({type:'credential',data:{operationId,phase:window.fixtureGoogleOutcome||'cancelled',generation:1}})));},
+        googleBrowserLoginRequest(operationId){window.fixtureGoogleBrowserOpened=(window.fixtureGoogleBrowserOpened||0)+1;queueMicrotask(()=>window.onGateEvent(JSON.stringify({type:'credential',data:{operationId,phase:'browser-opened',generation:2}})));},
         googleLogin(){return blocked('googleLogin');},googleBrowserLogin(){return blocked('googleBrowserLogin');},
         scan(){return blocked('scan');},submit(){return blocked('submit');},importRegistrations(){return blocked('importRegistrations');}
        };
@@ -118,7 +118,7 @@ def run():
    def measure(page,role,view,width,height):
     result=page.evaluate(r'''() => {
       const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'&&!e.closest('[hidden]');};
-      const over=[...document.querySelectorAll('button,input,select,.topbar,.brand,.top-actions,.login-role-picker,.panel-heading,.report-member,.mobile-nav')].filter(visible).map(e=>{const r=e.getBoundingClientRect();return {id:e.id||e.className,left:r.left,right:r.right};}).filter(r=>r.left < -1 || r.right > innerWidth+1);
+      const over=[...document.querySelectorAll('button,input,select,.topbar,.brand,.top-actions,.panel-heading,.report-member,.mobile-nav')].filter(visible).map(e=>{const r=e.getBoundingClientRect();return {id:e.id||e.className,left:r.left,right:r.right};}).filter(r=>r.left < -1 || r.right > innerWidth+1);
       const logos=[...document.querySelectorAll('.institution-wordmark,.header-logo,.crafted-login>.official-logo,.combined-brand-mark>img')].filter(visible);
       const distortedBrand=[...document.querySelectorAll('.combined-brand-mark>img')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return Math.abs(r.width/r.height-15/8)>.02||getComputedStyle(e).objectFit!=='contain'||e.naturalWidth!==2400||e.naturalHeight!==1280}).map(e=>e.className||e.parentElement.className);
       const luminance=c=>{const rgb=c.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722};
@@ -145,6 +145,66 @@ def run():
     reports.append(dict(control=label,**result))
     required_height=result['height']-.5 if minimum==0 else min(minimum,result['height'])
     if result['height']<minimum or result['visibleHeight']<required_height or result['visibleWidth']<min(43,result['width']) or not result['hitTarget']:failures.append(dict(unreachableControl=label,**result))
+   def adaptive_review():
+    # CDP reports genuine CSS safe-area and viewport-segment values.
+    screens=(
+     ('curved-edge',320,550,dict(left=34,right=28,top=19,bottom=24),None),
+     ('book-fold',1000,690,{},dict(orientation='vertical',offset=390,maskLength=24)),
+     ('tabletop-fold',760,740,{},dict(orientation='horizontal',offset=345,maskLength=40)),
+    )
+    for name,width,height,insets,fold in screens:
+     ctx=browser.new_context(viewport=dict(width=width,height=height),is_mobile=True,has_touch=True,reduced_motion='reduce')
+     try:
+      ctx.route('**/*',lambda route:route.abort())
+      page=ctx.new_page();page.set_default_timeout(5000);page.on('pageerror',lambda e:errors.append(str(e)))
+      page.route('https://fixture.invalid/',lambda route:route.fulfill(body='<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">',content_type='text/html'))
+      page.goto('https://fixture.invalid/')
+      cdp=ctx.new_cdp_session(page)
+      metrics=dict(width=width,height=height,screenWidth=width,screenHeight=height,deviceScaleFactor=1,mobile=True)
+      if fold:
+       # setDeviceMetricsOverride attaches the fold to the emulated mobile screen.
+       cdp.send('Emulation.setDeviceMetricsOverride',dict(metrics,displayFeature=fold))
+       axis='horizontal' if fold['orientation']=='vertical' else 'vertical'
+       page.wait_for_function("(axis)=>matchMedia('('+axis+'-viewport-segments:2)').matches",arg=axis)
+      else:cdp.send('Emulation.setSafeAreaInsetsOverride',dict(insets=insets))
+      open_source(page,'admin')
+      page.locator('#intro').wait_for(state='hidden')
+      navigate(page,'settings')
+      page.evaluate("""()=>{const visible=[...document.querySelectorAll('.topbar h1,#view-settings h3,#view-settings button,#main-nav button')];for(const [node,size]of visible.map(node=>[node,parseFloat(getComputedStyle(node).fontSize)]))node.style.fontSize=(size*2)+'px'}""")
+      safe=dict(left=insets.get('left',0),top=insets.get('top',0),right=width-insets.get('right',0),bottom=height-insets.get('bottom',0))
+      if fold:safe['right' if axis=='horizontal' else 'bottom']=fold['offset']
+      def check_bounds(selector):
+       bounds=page.locator(selector).bounding_box()
+       info=dict(screen=name,control=selector,bounds=bounds,safe=safe)
+       reports.append(info)
+       if not bounds or bounds['x']<safe['left']-1 or bounds['y']<safe['top']-1 or bounds['x']+bounds['width']>safe['right']+1 or bounds['y']+bounds['height']>safe['bottom']+1:
+        failures.append(info)
+      page.locator('#intro').evaluate("node=>{node.hidden=false;node.classList.remove('leaving')}")
+      check_bounds('.intro .combined-brand-hero')
+      check_bounds('#skip-intro')
+      page.locator('#intro').evaluate("node=>node.hidden=true")
+      check_bounds('.topbar')
+      check_bounds('#main-nav')
+      page.locator('#password-open').scroll_into_view_if_needed()
+      check_bounds('#password-open')
+      page.locator('#password-open').click()
+      check_bounds('#password-dialog')
+      capture=cdp.send('Page.captureScreenshot',dict(format='png',captureBeyondViewport=False))
+      (out/f'adaptive-{name}.png').write_bytes(base64.b64decode(capture['data']))
+      page.locator('#close-password').click()
+      if fold:
+       page.evaluate("document.body.classList.remove('portal-layout')")
+       host=page.locator('.app-shell').bounding_box()
+       reports.append(dict(screen=name,nativeHost=host))
+       if not host or host['width']<width-1:failures.append(dict(screen=name,nativeHostClipped=host))
+       page.evaluate("document.body.classList.add('portal-layout')")
+       cdp.send('Emulation.setDeviceMetricsOverride',metrics)
+       page.wait_for_function("(axis)=>matchMedia('('+axis+'-viewport-segments:1)').matches",arg=axis)
+       box=page.locator('.app-shell').bounding_box()
+       if not box or box['width']<width-1 or page.evaluate('document.body.dataset.route')!='settings':
+        failures.append(dict(screen=name,unfolded=box,route=page.evaluate('document.body.dataset.route')))
+      unexpected.extend(page.evaluate('fixtureUnexpected'))
+     finally:ctx.close()
    def measure_report_downloads(page):
     page.wait_for_function("!document.getElementById('report-csv').disabled")
     page.locator('#report-tab-downloads').click()
@@ -204,13 +264,11 @@ def run():
      if lower:shot(page,'admin',state+'-lower',lower)
      page.locator(close_id).click();page.locator(dialog_id).wait_for(state='hidden')
     ctx,page=fresh('login')
-    for role in ('helpdesk','faculty'):
-     page.locator('#auth-staff').click()
-     page.locator(f'[data-login-role="{role}"]').click()
-     shot(page,'login',role)
-     page.locator('#auth-back').click();page.locator('#auth-back').click()
+    shot(page,'login','google','#google-signin')
+    page.locator('#code-login summary').click();shot(page,'login','staff-code','#checker-code')
+    page.locator('#code-login summary').click()
     page.locator('#show-admin-login').click();shot(page,'login','administrator')
-    page.locator('#auth-back').click();finish(ctx,page)
+    page.locator('#show-checker-login').click();finish(ctx,page)
     ctx,page=fresh('admin')
     navigate(page,'admin')
     dialog(page,'#registration-rows .table-link','#student-dialog','registration-details','#close-student','#dialog-details dd:last-child')
@@ -258,9 +316,10 @@ def run():
     page.locator('#desk-close-record').click()
     navigate(page,'account');shot(page,'admin','account-tools','#admin-account-tools')
     navigate(page,'settings')
-    assert page.locator('#app-updates').is_visible()
+    assert page.locator('#app-updates').is_hidden()
+    assert page.locator('#admin-security').is_visible()
     assert page.locator('#settings-location-audio,#notifications-button').count()==0
-    shot(page,'admin','settings','#app-updates')
+    shot(page,'admin','settings','#admin-security')
     if width>=960:
      page.locator('#portal-menu-toggle').click()
      shot(page,'admin','portal-menu-collapsed')
@@ -269,8 +328,9 @@ def run():
     navigate(page,'admin');page.locator('[data-admin-tab="checkers"]').click()
     dialog(page,'#checker-list .checker-row button','#staff-dialog','staff-access','#close-staff','#staff-access-form button')
     dialog(page,'#open-code','#code-dialog','new-staff-code','#close-code','#create-checker-form button')
-    page.locator('[data-admin-tab="updates"]').click()
+    page.locator('[data-admin-tab="registrations"]').click()
     dialog(page,'#add-registration','#edit-dialog','add-registration','#close-editor','#ticket-editor button')
+    navigate(page,'settings')
     dialog(page,'#password-open','#password-dialog','password-dialog','#close-password')
     finish(ctx,page)
     ctx,page=fresh('faculty')
@@ -286,18 +346,19 @@ def run():
     ctx,page=fresh('admin',mocked_native=True)
     navigate(page,'settings')
     assert page.locator('#readiness-panel').is_visible()
+    assert page.locator('#app-updates').is_visible()
     shot(page,'mock-native-admin','account-readiness','#readiness-panel')
-    shot(page,'mock-native-admin','account-update-settings','#automatic-updates')
+    shot(page,'mock-native-admin','account-update-settings','#check-update')
     navigate(page,'admin');page.locator('[data-admin-tab="updates"]').click()
     assert page.locator('#import-registration').is_visible()
     shot(page,'mock-native-admin','import-controls','#import-registration')
     finish(ctx,page)
     ctx,page=fresh('login',mocked_native=True)
-    page.locator('#auth-staff').click();page.locator('[data-login-role=checker]').click()
-    assert not page.locator('#google-browser-signin').is_visible()
+    assert page.locator('#google-browser-signin').count()==0
+    page.evaluate("window.fixtureGoogleOutcome='failed'")
     page.locator('#google-signin').click()
-    page.locator('#google-browser-signin').wait_for(state='visible')
-    shot(page,'mock-native-login','browser-sign-in','#google-browser-signin')
+    page.wait_for_function("window.fixtureGoogleBrowserOpened===1 && !document.getElementById('google-signin').disabled")
+    shot(page,'mock-native-login','browser-sign-in','#google-signin')
     finish(ctx,page)
     for role in ('helpdesk','pending','newstaff'):
      ctx,page=fresh(role);shot(page,role,'initial')
@@ -333,12 +394,21 @@ def run():
     check('escape restores row focus',page.evaluate("document.activeElement===fixtureFocused&&!document.getElementById('student-dialog').open"))
     page.locator('#student-search').fill('DEMO0060')
     check('search includes final record',page.locator('#registration-rows tr').count()==1)
+    page.locator('#student-search').fill('no matching synthetic student')
+    check('empty student list exposes its action without an empty scroll panel',
+          page.locator('#registrations-empty').is_visible() and page.locator('#admin-registrations>.rows-scroll').is_hidden()
+          and page.locator('#add-registration').is_visible())
     page.locator('#student-search').fill('')
     page.locator('[data-admin-tab="registrations"]').focus();page.keyboard.press('End')
     check('admin tabs support End',page.evaluate("document.activeElement.dataset.adminTab==='updates'&&!document.getElementById('admin-updates').hidden"))
     page.keyboard.press('Home')
     check('admin tabs support Home',page.evaluate("document.activeElement.dataset.adminTab==='registrations'"))
     navigate(page,'reports');page.locator('#report-tab-downloads').focus();page.keyboard.press('Home')
+    check('Reports info is grouped with its visible heading',
+          page.locator('.report-context h2').is_visible() and page.locator('.report-context .section-info-button').is_visible())
+    tabs=page.locator('.report-tabs').bounding_box()
+    active_report=page.locator('#report-overview').bounding_box()
+    check('active report stays next to its tabs',0<=active_report['y']-tabs['y']-tabs['height']<=24)
     check('report tabs support Home',page.evaluate("document.activeElement.id==='report-tab-overview'&&!document.getElementById('report-overview').hidden"))
     page.keyboard.press('End')
     check('report tabs support End',page.evaluate("document.activeElement.id==='report-tab-teachers'&&!document.getElementById('report-manage').hidden"))
@@ -348,10 +418,24 @@ def run():
     page.locator('#account-tool-back').focus();page.keyboard.press('Enter')
     check('keyboard returns from admin Reports to Account tools',page.evaluate("document.body.dataset.route==='account'&&!document.getElementById('admin-account-tools').hidden&&document.querySelector('#main-nav [aria-current=page]')?.dataset.view==='account'"))
     check('admin bottom navigation omits Admin and Reports',page.locator('#main-nav [data-view="admin"]:visible,#main-nav [data-view="reports"]:visible').count()==0)
+    check('header leaves the logo on its own while retaining a screen reader title',
+          not page.locator('.topbar .brand').inner_text().strip() and page.locator('#page-title').get_attribute('class')=='sr-only')
+    info_button=page.locator('[data-section-info="account"]')
+    info_box=info_button.bounding_box()
+    info_glyph=info_button.locator('span').bounding_box()
+    check('compact information glyph keeps its full touch area',
+          info_box['width']>=44 and info_box['height']>=44 and info_glyph['width']<=17 and info_glyph['height']<=17)
     page.locator('[data-section-info="account"]').focus();page.keyboard.press('Enter')
     page.locator('#section-info').wait_for(state='visible');page.keyboard.press('Escape')
     check('Account information restores keyboard focus',page.evaluate("document.activeElement.dataset.sectionInfo==='account'&&!document.getElementById('section-info').open"))
     page.emulate_media(reduced_motion='no-preference')
+    tab_motion=page.evaluate("""() => {
+      document.querySelector('#entries-nav').click();
+      const marker=document.querySelector('#main-nav>.nav-motion-marker');
+      const panel=document.querySelector('#view-entries');
+      return {route:document.body.dataset.route,timing:marker?.getAnimations()[0]?.effect.getTiming().duration,panelTiming:panel?.getAnimations()[0]?.effect.getTiming().duration,decorative:marker?.getAttribute('aria-hidden'),current:document.querySelector('#main-nav [aria-current=page]')?.id};
+    }""")
+    check('tab highlight and panel motion leave the route immediately active',tab_motion==dict(route='entries',timing=260,panelTiming=225,decorative='true',current='entries-nav'),tab_motion)
     motion=page.evaluate("""() => {
       for(const selector of ['#entries-nav','#main-nav [data-view="account"]','#admin-nav','#account-tool-back','#admin-account-reports','#account-tool-back'])document.querySelector(selector).click();
       const active=[...document.querySelectorAll('main .view')].filter(e=>!e.hidden).map(e=>e.id);
@@ -360,7 +444,7 @@ def run():
     }""")
     check('rapid navigation leaves only latest authorized view',motion['route']=='account' and motion['active']==['view-account'] and motion['snapshots']==0,motion)
     page.emulate_media(reduced_motion='reduce');page.wait_for_timeout(50)
-    check('system reduced motion cancels transitions',page.evaluate("document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
+    check('system reduced motion cancels transitions',page.evaluate("!document.querySelector('.nav-motion-marker')&&document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
     page.emulate_media(reduced_motion='no-preference')
     navigate(page,'admin');check('native reduced motion cancels transitions',page.evaluate("NavrangMotion.setReducedMotion(true);document.getAnimations().filter(a=>a.effect?.target?.closest('main .view')&&a.playState==='running').length===0"))
     page.evaluate("NavrangMotion.setReducedMotion(false)")
@@ -383,6 +467,8 @@ def run():
     check('401 clears private rows and dialogs without an exit snapshot',auth['route']=='login' and auth['rows']==0 and auth['dialogs']==0 and auth['animations']==0,auth)
     page.screenshot(path=str(out/f'auth-loss-{width}x{height}.png'));unexpected.extend(page.evaluate('fixtureUnexpected'));ctx.close()
    sizes=[tuple(map(int,size.split('x'))) for size in args.sizes.split(',')]
+   if not args.login_only and not args.interactions_only:adaptive_review()
+   if args.adaptive_only:sizes=[]
    if args.login_only:
     for width,height in sizes:
      for scale in (1,1.6):
@@ -391,7 +477,7 @@ def run():
       page=ctx.new_page();page.set_default_timeout(5000);page.on('pageerror',lambda e:errors.append(str(e)))
       open_source(page,'login')
       page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()")
-      page.wait_for_timeout(650)
+      page.locator('#intro').wait_for(state='hidden')
       if scale!=1:
        # Synthetic text enlargement, not an Android OS font setting or actual IME.
        page.evaluate("scale=>{const items=[...document.querySelectorAll('#view-login *')].map(e=>[e,parseFloat(getComputedStyle(e).fontSize)]);for(const [e,size]of items)e.style.fontSize=(size*scale)+'px'}",scale)
@@ -416,14 +502,15 @@ def run():
        page.screenshot(path=str(out/filename))
        reports.append(dict(classicLogin=state,width=width,height=height,textScale=scale,details=data))
        review_shots.append(dict(file=filename,state=state,synthetic=True,renderer='Chromium production DOM/CSS/JS with fixture transport'))
-      login_shot('welcome','#auth-staff')
-      page.locator('#auth-staff').click();login_shot('roles','[data-login-role=checker]')
-      page.locator('[data-login-role=checker]').click();login_shot('google','#google-signin')
+      assert page.locator('[data-login-role]').count()==0
+      login_shot('google','#google-signin')
       page.locator('#code-login summary').click();page.locator('#checker-code').fill('SYNTHETIC');page.locator('#checker-code').focus()
       login_shot('staff-focused','#checker-code')
-      page.locator('#auth-back').click();page.locator('#auth-back').click();page.locator('#show-admin-login').click()
+      page.locator('#code-login summary').click();page.locator('#show-admin-login').click()
       page.locator('#admin-password').fill('SYNTHETIC');page.locator('#admin-password').focus()
       login_shot('admin-focused','#admin-password')
+      page.locator('#show-checker-login').click()
+      assert page.locator('#google-signin').is_visible()
       unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
     sizes=[]
    if args.interactions_only:
@@ -434,6 +521,7 @@ def run():
      ctx=browser.new_context(viewport=dict(width=width,height=height),reduced_motion='reduce')
      ctx.route('**/*',lambda route:route.abort())
      page=ctx.new_page();page.set_default_timeout(4000);page.on('pageerror',lambda e:errors.append(str(e)));open_source(page,role);
+     page.locator('#intro').wait_for(state='hidden')
      if role=='login':
       page.evaluate("const i=document.getElementById('intro');i.hidden=false;i.classList.remove('leaving')")
       launch=page.evaluate("""() => {
@@ -458,7 +546,7 @@ def run():
         if page.locator('#skip-intro').evaluate('e=>Number(getComputedStyle(e).opacity)')<1:failures.append(dict(hiddenLaunchActionAtMs=frame,width=width))
         page.screenshot(path=str(out/f'launch-{width}x{height}-motion-{frame}.png'))
        page.emulate_media(reduced_motion='reduce')
-     page.evaluate("if(!document.getElementById('intro').hidden)document.getElementById('skip-intro').click()");page.wait_for_timeout(650)
+      page.evaluate("document.getElementById('intro').hidden=true")
      view={'login':'login','admin':'admin','faculty':'reports','checker':'home'}[role]
      if role=='admin':navigate(page,'admin')
      measure(page,role,view,width,height)
@@ -466,8 +554,10 @@ def run():
       scanner=page.locator('#pull-to-scan').bounding_box()
       manual=page.locator('.manual-panel').bounding_box()
       action=page.locator('#scan').bounding_box()
-      assert 44<=action['height']<=110, action
-      if width<760:assert abs(scanner['width']-manual['width'])<1, (scanner,manual)
+      assert 44<=action['height']<=162, action
+      if width<760:
+       assert abs(scanner['width']-manual['width'])<1, (scanner,manual)
+       assert 0<=manual['y']-scanner['y']-scanner['height']<=24, (scanner,manual)
      if role=='login':
       if height>570:assert page.locator('.login-foot').is_visible()
       assert page.locator('.app-footer').is_hidden()
@@ -479,7 +569,7 @@ def run():
        page.evaluate("for(const [e,old]of fixtureTextStyles)e.style.fontSize=old;document.getElementById('notice').hidden=true;NavrangReportLayout.fit()")
      if role=='admin':measure_control(page,'#registration-count','Student list footer',minimum=0,scroll=True)
      if role=='login':
-      page.evaluate("document.getElementById('google-browser-signin').hidden=false")
+      page.evaluate("document.getElementById('google-status').textContent='Complete sign-in in your browser.'")
       measure(page,role,'login-native-browser-fallback',width,height)
      if width in (320,390,640,1366):
       page.screenshot(path=str(out/f'{role}-{width}.png'))
@@ -490,10 +580,15 @@ def run():
         navigate(page,'account');page.locator('#switch-station').click()
        else:navigate(page,target)
        page.wait_for_timeout(70);measure(page,role,target,width,height)
+       if target=='account':
+        tools=page.locator('#admin-account-tools').bounding_box()
+        preferences=page.locator('.account-preferences').bounding_box()
+        assert 0<=preferences['y']-tools['y']-tools['height']<=24, (tools,preferences)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
        if target=='settings':
         assert page.locator('#settings-location-audio,#notifications-button').count()==0
-        assert page.locator('#app-updates').is_visible()
+        assert page.locator('#app-updates').is_hidden()
+        measure_control(page,'#password-open','Change admin password')
         if width>=960:
          toggle=page.locator('#portal-menu-toggle')
          assert page.locator('#main-nav').bounding_box()['x'] < page.locator('main').bounding_box()['x']
@@ -544,7 +639,6 @@ def run():
        if tab=='checkers':
         measure_control(page,'#checker-list .checker-row button','Manage access')
         measure_control(page,'#staff-count','Staff list footer',minimum=0,scroll=True)
-       if tab=='updates':measure_control(page,'#password-open','Change admin password')
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-tab-{tab}-{width}.png'))
        if tab=='updates':
         # The Android bridge exposes this same control. Exercise its layout

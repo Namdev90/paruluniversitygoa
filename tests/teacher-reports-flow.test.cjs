@@ -46,6 +46,23 @@ test('server export failures remain errors and can be retried',async()=>{
 test('repeated clicks create a single export while a request is running',async()=>{
  const a=launch(),hold=deferred();try{await a.w.NavrangReports.refresh();a.setHandler(action=>action==='reports-export'?hold.promise:undefined);const job=a.$('report-csv').onclick();await settle();await a.$('report-xlsx').onclick();assert.equal(a.calls.filter(c=>c.action==='reports-export').length,1);hold.resolve({kind:'all',rows:[],count:0,generatedAt:stamp});await job;assert.equal(a.saves.length,1);}finally{a.close()}
 });
+test('returning to Reports preserves a pending export and refresh works again after save',async()=>{
+ const a=launch(),hold=deferred();try{
+  await a.w.NavrangReports.refresh();
+  a.setHandler(action=>action==='reports-export'?hold.promise:undefined);
+  const job=a.$('report-csv').onclick();
+  await settle();
+  assert.equal(a.$('report-refresh').disabled,true);
+  await a.w.NavrangReports.refresh();
+  hold.resolve({kind:'all',rows:[],count:0,generatedAt:stamp});
+  await job;
+  assert.equal(a.saves.length,1);
+  assert.equal(a.calls.filter(c=>c.action==='reports-summary').length,1);
+  assert.equal(a.$('report-refresh').disabled,false);
+  await a.$('report-refresh').onclick();
+  assert.equal(a.calls.filter(c=>c.action==='reports-summary').length,2);
+ }finally{a.close()}
+});
 test('empty datasets retain meaningful column headers in downloaded files',async()=>{
  const a=launch();try{await a.w.NavrangReports.refresh();a.setHandler((action,payload)=>action==='reports-export'?{kind:payload.kind,rows:[],count:0,generatedAt:stamp}:undefined);await a.$('report-csv').onclick();const csv=new TextDecoder().decode(a.saves[0].bytes);assert.match(csv,/Ticket ID/);assert.match(csv,/Report generated UTC/);assert.match(a.$('report-status').textContent,/No records/);}finally{a.close()}
 });

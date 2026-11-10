@@ -54,9 +54,12 @@ class ClassicHostTest {
         assertEquals(0, activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE)
         assertEquals(!BuildConfig.DEBUG, GateUpdater.automatic(activity))
         if (BuildConfig.DEBUG) {
-            MainActivity::class.java.getDeclaredMethod("browserGoogleLogin").apply {
+            ClassicActivity::class.java.getDeclaredMethod("browserGoogleLogin").apply {
                 isAccessible = true
             }.invoke(activity)
+            ClassicActivity::class.java.getDeclaredMethod("browserGoogleLoginForOperation", String::class.java).apply {
+                isAccessible = true
+            }.invoke(activity, "test-google-operation")
             assertNull(org.robolectric.Shadows.shadowOf(activity).nextStartedActivity)
         }
         controller.destroy()

@@ -40,10 +40,10 @@ class ClassicScannerActivity : FragmentActivity() {
             ClassicScannerTheme {
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     BackHandler { close() }
-                    Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
+                    Column(Modifier.fillMaxSize()) {
                         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Image(painterResource(R.drawable.app_icon), "Navrang", Modifier.size(36.dp))
-                            Text("Scan ticket", Modifier.weight(1f).padding(horizontal = 10.dp), style = MaterialTheme.typography.titleMedium)
+                            Image(painterResource(R.drawable.app_icon), "Navrang ticket scanner", Modifier.size(36.dp))
+                            Spacer(Modifier.weight(1f))
                             TextButton(onClick = close, enabled = state.held == null, modifier = Modifier.heightIn(min = 48.dp)) { Text("Close") }
                         }
                         HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = ScannerGold.copy(alpha = .3f))
@@ -75,6 +75,7 @@ class ClassicScannerActivity : FragmentActivity() {
                 }
             }
         }
+        fitNavrangWindow(findViewById(android.R.id.content))
         lockUi = NativeLockUi(this, { covered ->
             privateLocked = covered
             model.foreground(!covered)

@@ -1,39 +1,114 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{JSDOM}=require('jsdom');
 const asset=n=>fs.readFileSync(path.join(__dirname,'../app/assets',n),'utf8');
-function setup(){
+function setup({native=true,googleError,browserError}={}){
  const dom=new JSDOM(asset('index.html'),{url:'https://gate.test',runScripts:'outside-only'}),w=dom.window,calls=[],listeners=[];let profile=null;
- w.GateClient={native:true,profile:()=>profile,on:f=>{listeners.push(f);return()=>{}},googleLogin:op=>{calls.push(['google',op])},googleBrowserLogin:async()=>calls.push(['browser']),api:async()=>{throw Error('Role choice must not call the server')}};
+ w.GateClient={native,profile:()=>profile,on:f=>{listeners.push(f);return()=>{}},googleLogin:op=>{calls.push(['google',op]);if(googleError)throw Error(googleError)},googleBrowserLogin:async op=>{calls.push(['browser',op]);if(browserError)throw Error(browserError);return true},api:async()=>{throw Error('Opening a sign-in panel must not call the server')}};
  try{w.eval(asset('auth-flow.js'))}catch(e){dom.window.close();throw e}
  return{w,dom,calls,$:id=>w.document.getElementById(id),emit:e=>listeners.forEach(f=>f(e)),profile:p=>profile=p};
 }
-test('administrator and staff stages precede role-specific sign-in',()=>{
+test('Google and the staff code are available on the first screen',()=>{
  const t=setup();try{
-  assert.equal(t.w.NavrangAuth.stage(),'welcome');assert.equal(t.$('signin-panel').hidden,true);
-  t.$('auth-staff').click();assert.equal(t.w.NavrangAuth.stage(),'roles');
-  t.w.document.querySelector('[data-login-role="faculty"]').click();assert.equal(t.w.NavrangAuth.stage(),'signin');assert.equal(t.$('code-login').hidden,true);assert.equal(t.calls.length,0);
-  t.w.NavrangAuth.back();assert.equal(t.w.NavrangAuth.stage(),'roles');t.w.NavrangAuth.back();assert.equal(t.w.NavrangAuth.stage(),'welcome');t.$('show-admin-login').click();assert.equal(t.w.NavrangAuth.stage(),'admin');assert.equal(t.$('admin-signin').hidden,false);
+  assert.equal(t.w.NavrangAuth.stage(),'signin');
+  assert.equal(t.$('signin-panel').hidden,false);
+  assert.equal(t.$('google-signin').disabled,false);
+  assert.equal(t.$('code-login').hidden,false);
+  assert.equal(t.$('google-browser-signin'),null);
+  assert.equal(t.w.document.querySelector('[data-login-role]'),null);
+  assert.equal(t.calls.length,0);
+  t.$('google-signin').click();
+  assert.equal(t.calls[0][0],'google');
+  assert.equal(t.w.GateClient.profile(),null);
  }finally{t.dom.window.close()}
 });
-test('role intent persists on back without granting permissions',()=>{
- const t=setup();try{t.$('auth-staff').click();t.w.document.querySelector('[data-login-role="helpdesk"]').click();assert.equal(t.w.sessionStorage.getItem('navrang-login-intent'),'helpdesk');assert.equal(t.w.GateClient.profile(),null);t.w.NavrangAuth.back();assert.equal(t.w.document.querySelector('[data-login-role="helpdesk"]').getAttribute('aria-pressed'),'true');assert.equal(t.calls.length,0)}finally{t.dom.window.close()}
+test('administrator form and native back return directly to the same sign-in screen',()=>{
+ const t=setup();try{
+  t.$('show-admin-login').click();
+  assert.equal(t.$('admin-signin').hidden,false);
+  assert.equal(t.$('signin-panel').hidden,true);
+  assert.equal(t.w.document.activeElement,t.$('admin-signin-title'));
+  t.$('show-checker-login').click();
+  assert.equal(t.$('signin-panel').hidden,false);
+  assert.equal(t.w.document.activeElement,t.$('signin-title'));
+  t.$('code-login').open=true;
+  assert.equal(t.w.NavrangAuth.back(),true);
+  assert.equal(t.$('code-login').open,false);
+  assert.equal(t.w.document.activeElement,t.$('code-login').querySelector('summary'));
+  assert.equal(t.w.NavrangAuth.back(),false);
+  assert.equal(t.calls.length,0);
+ }finally{t.dom.window.close()}
 });
-test('native cancellation reveals fallback and ignores a stale operation',async()=>{
- const t=setup();try{t.$('auth-staff').click();t.w.document.querySelector('[data-login-role="checker"]').click();assert.equal(t.$('google-browser-signin').hidden,true);t.$('google-signin').click();await Promise.resolve();const op=t.calls[0][1];assert.equal(t.$('google-signin').disabled,true);
-  t.emit({type:'credential',data:{operationId:'old-operation',phase:'cancelled',generation:1}});assert.equal(t.$('google-signin').disabled,true);assert.equal(t.$('google-browser-signin').hidden,true);
-  t.emit({type:'credential',data:{operationId:op,phase:'cancelled',generation:1}});assert.equal(t.$('google-signin').disabled,false);assert.equal(t.$('google-browser-signin').hidden,false);assert.equal(t.calls.filter(c=>c[0]==='browser').length,0);
+test('native dismissal stays in the app until the user taps Google again',()=>{
+ const t=setup();try{
+  t.$('google-signin').click();const op=t.calls[0][1];
+  assert.equal(t.$('google-signin').disabled,true);
+  assert.equal(t.$('show-admin-login').disabled,true);
+  assert.equal(t.$('code-login').inert,true);
+  assert.equal(t.w.NavrangAuth.back(),true);
+  t.emit({type:'credential',data:{operationId:'old-operation',phase:'cancelled'}});
+  assert.equal(t.$('google-signin').disabled,true);
+  t.emit({type:'credential',data:{operationId:op,phase:'cancelled'}});
+  assert.equal(t.$('google-signin').disabled,false);
+  assert.equal(t.$('show-admin-login').disabled,false);
+  assert.equal(t.$('code-login').inert,false);
+  t.emit({type:'credential',data:{operationId:op,phase:'failed'}});
+  assert.equal(t.calls.length,1);
+  t.$('google-signin').click();const retry=t.calls[1][1];
+  assert.equal(t.calls[1][0],'browser');assert.notEqual(retry,op);
+  t.emit({type:'credential',data:{operationId:retry,phase:'browser-opened'}});
+  assert.equal(t.$('google-signin').disabled,false);
+ }finally{t.dom.window.close()}
+});
+test('native failure opens one browser and ignores duplicate or stale events',()=>{
+ const t=setup();try{
+  t.$('google-signin').click();const op=t.calls[0][1];
+  t.emit({type:'credential',data:{operationId:op,phase:'failed'}});
+  assert.deepEqual(t.calls,[['google',op],['browser',op]]);
+  t.emit({type:'credential',data:{operationId:op,phase:'failed'}});
+  t.emit({type:'credential',data:{operationId:op,phase:'cancelled'}});
+  t.$('google-signin').click();
+  assert.equal(t.calls.length,2);
+  assert.equal(t.$('google-signin').disabled,true);
+  t.emit({type:'credential',data:{operationId:'stale',phase:'browser-opened'}});
+  assert.equal(t.$('google-signin').disabled,true);
+  t.emit({type:'credential',data:{operationId:op,phase:'browser-opened'}});
+  assert.equal(t.$('google-signin').disabled,false);
+  assert.equal(t.$('google-status').textContent,'Complete sign-in in your browser.');
+  t.$('google-signin').click();const retry=t.calls[2][1];
+  assert.equal(t.calls[2][0],'browser');
+  t.emit({type:'credential',data:{operationId:op,phase:'browser-failed'}});
+  assert.equal(t.$('google-signin').disabled,true);
+  t.emit({type:'credential',data:{operationId:retry,phase:'browser-failed'}});
+  assert.equal(t.$('google-signin').disabled,false);
+  assert.match(t.$('google-status').textContent,/could not start/);
+ }finally{t.dom.window.close()}
+});
+test('native and browser startup errors keep the same Google action retryable',async()=>{
+ const t=setup({googleError:'Native provider unavailable.',browserError:'Install a browser.'});try{
+  await t.$('google-signin').onclick();
+  assert.deepEqual(t.calls.map(([method])=>method),['google','browser']);
+  assert.equal(t.$('google-signin').disabled,false);
+  assert.equal(t.$('google-status').textContent,'Install a browser.');
  }finally{t.dom.window.close()}
 });
 test('successful identity resets pending login and stale callbacks cannot restore it',()=>{
- const t=setup();try{t.$('auth-staff').click();t.w.document.querySelector('[data-login-role="checker"]').click();t.$('google-signin').click();const op=t.calls[0][1];t.profile({role:'checker',active:true});t.emit({type:'auth'});t.emit({type:'credential',data:{operationId:op,phase:'failed',generation:1}});assert.equal(t.$('google-browser-signin').hidden,true);assert.equal(t.$('google-signin').disabled,false)}finally{t.dom.window.close()}
+ const t=setup();try{t.$('google-signin').click();const op=t.calls[0][1];t.profile({role:'checker',active:true});t.emit({type:'auth'});t.emit({type:'credential',data:{operationId:op,phase:'failed',generation:1}});assert.equal(t.calls.length,1);assert.equal(t.$('google-signin').disabled,false)}finally{t.dom.window.close()}
 });
 test('native begin-login clearing the old session does not reset the active sign-in step',()=>{
- const t=setup();try{t.$('auth-staff').click();t.w.document.querySelector('[data-login-role="checker"]').click();t.$('google-signin').click();t.w.NavrangAuth.reset({preservePending:true});assert.equal(t.w.NavrangAuth.stage(),'signin');assert.equal(t.$('google-signin').disabled,true)}finally{t.dom.window.close()}
+ const t=setup();try{t.$('google-signin').click();t.w.NavrangAuth.reset({preservePending:true});assert.equal(t.w.NavrangAuth.stage(),'signin');assert.equal(t.$('google-signin').disabled,true)}finally{t.dom.window.close()}
 });
 test('unrelated native errors cannot unlock or replace an active credential operation',()=>{
- const t=setup();try{t.$('auth-staff').click();t.w.document.querySelector('[data-login-role="checker"]').click();t.$('google-signin').click();const op=t.calls[0][1];t.emit({type:'error',data:{message:'Unrelated background error'}});assert.equal(t.$('google-signin').disabled,true);t.$('google-signin').click();assert.equal(t.calls.length,1);t.emit({type:'credential',data:{operationId:op,phase:'failed',generation:1}});assert.equal(t.$('google-signin').disabled,false)}finally{t.dom.window.close()}
+ const t=setup();try{t.$('google-signin').click();const op=t.calls[0][1];t.emit({type:'error',data:{message:'Unrelated background error'}});assert.equal(t.$('google-signin').disabled,true);t.$('google-signin').click();assert.equal(t.calls.length,1);t.emit({type:'credential',data:{operationId:op,phase:'completed',generation:1}});assert.equal(t.$('google-signin').disabled,false)}finally{t.dom.window.close()}
 });
-test('approved static combined artwork precedes the active welcome stage',()=>{
- const t=setup();try{const card=t.w.document.querySelector('.login-card'),children=[...card.children];assert.ok(children.indexOf(card.querySelector('.combined-brand-login'))<children.indexOf(t.$('auth-welcome')));assert.equal(card.querySelectorAll('.combined-brand-login').length,1)}finally{t.dom.window.close()}
+test('browser sign-in errors are visible and leave the direct button retryable',()=>{
+ const t=setup({native:false,googleError:'Google sign-in needs HTTPS.'});try{
+  t.$('google-signin').click();
+  assert.equal(t.$('google-status').textContent,'Google sign-in needs HTTPS.');
+  assert.equal(t.$('google-signin').disabled,false);
+  assert.equal(t.calls.length,1);
+ }finally{t.dom.window.close()}
+});
+test('approved static combined artwork precedes the active sign-in panel',()=>{
+ const t=setup();try{const card=t.w.document.querySelector('.login-card'),children=[...card.children];assert.ok(children.indexOf(card.querySelector('.combined-brand-login'))<children.indexOf(t.$('signin-panel')));assert.equal(card.querySelectorAll('.combined-brand-login').length,1)}finally{t.dom.window.close()}
 });
 test('shipped Android launcher reaches the classic login stylesheet',()=>{
  const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
@@ -47,7 +122,6 @@ test('quiet classic login styling remains scoped and preserves secret fields',()
  const css=asset('art/classic-restore.css').split('/* Quiet sign-in forms only.')[1].split('@media(max-height:620px)')[0];
  assert.ok(css.includes('#view-login input{min-height:48px'));
  assert.ok(css.includes('#view-login :is(button,summary){min-height:48px}'));
- assert.ok(css.includes('#view-login #auth-back{min-height:48px}'));
  assert.ok(css.includes('#view-login .google-button{height:auto;min-height:48px;padding:12px;line-height:1.4}'));
  assert.ok(css.includes('#view-login h2{overflow-wrap:anywhere}'));
  assert.ok(css.includes('outline:2px solid #f6f2f5'));

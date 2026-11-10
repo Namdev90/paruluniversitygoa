@@ -1,6 +1,6 @@
 {
-  "versionCode": 19,
-  "versionName": "0.9.0",
-  "notes": "Refines Account, Admin, Reports, and ticket scanning. Adds swipe navigation, app lock, and a collapsible website menu.",
+  "versionCode": 20,
+  "versionName": "0.9.1",
+  "notes": "Direct sign-in, faster transitions, role-specific Settings, and smoother camera scanning. Help Desk drafts and report exports stay intact while navigating.",
   "interface": "original"
 }

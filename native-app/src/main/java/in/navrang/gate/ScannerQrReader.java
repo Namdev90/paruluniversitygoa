@@ -4,6 +4,7 @@ import com.google.zxing.*;
 import com.google.zxing.common.GlobalHistogramBinarizer;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /** Full-frame, local-only QR decoding. Finder bounds are hints, never entry authority. */
@@ -61,6 +62,26 @@ public final class ScannerQrReader {
                 && .5f + (safeMaxX - .5f) * factor <= .92f
                 && .5f + (safeMinY - .5f) * factor >= .08f
                 && .5f + (safeMaxY - .5f) * factor <= .92f;
+        }
+    }
+
+    static void copyLuminance(ByteBuffer plane, int width, int height, int rowStride, int pixelStride, byte[] output) {
+        int base = plane.position();
+        if (pixelStride == 1) {
+            ByteBuffer rows = plane.duplicate();
+            if (rowStride == width) {
+                rows.get(output, 0, width * height);
+                return;
+            }
+            for (int y = 0; y < height; y++) {
+                rows.position(base + y * rowStride);
+                rows.get(output, y * width, width);
+            }
+            return;
+        }
+        for (int y = 0; y < height; y++) {
+            int row = base + y * rowStride;
+            for (int x = 0; x < width; x++) output[y * width + x] = plane.get(row + x * pixelStride);
         }
     }
 

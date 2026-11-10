@@ -35,6 +35,9 @@ def validate_version(release, latest, source_check=False):
 def validate_assets(names):
     require(not ({'assets/' + name for name in DEFERRED_ASSETS} & names),
             'Deferred communications assets must stay excluded from the release package.')
+    unused = {'assets/app.js', 'assets/art/event-poster.jpg', 'assets/art/ASSET-NOTES.md'}
+    require(names.isdisjoint(unused) and not any(name.startswith('assets/vendor/') for name in names),
+            'Unused legacy interface assets entered the release APK.')
     require({'assets/index.html', 'assets/core.js', 'assets/client.js', 'assets/gate.js',
              'assets/desk.js', 'assets/reports.js'} <= names, 'Required shipping client assets are missing.')
 

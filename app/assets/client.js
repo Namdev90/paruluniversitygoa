@@ -192,15 +192,22 @@
  }
  async function signOut(){const request=api('logout');resetMemory();if(native){nativeProfileLoaded=true;nativeProfile=null;}else sessionStorage.removeItem('navrang-session');emit('auth',profile());await request;}
  async function googleLogin(operationId){
-  if(native){if(operationId&&typeof Native.googleLoginRequest==='function')Native.googleLoginRequest(operationId);else Native.googleLogin();return}
+  if(native){
+   if(operationId&&typeof Native.googleLoginRequest==='function'){Native.googleLoginRequest(operationId);return true}
+   Native.googleLogin();return false
+  }
   const cfg=await api('config');if(!cfg.googleEnabled)throw fail('Google sign-in awaits provider setup. Ask the admin for an assigned checker code.');
   if(location.protocol!=='https:')throw fail('Google sign-in needs the hosted HTTPS app or Android APK.');
   const verifier=L.uuid()+L.uuid(),bytes=new TextEncoder().encode(verifier),digest=await crypto.subtle.digest('SHA-256',bytes),challenge=btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   sessionStorage.setItem('navrang-pkce',verifier);const redirect=location.origin+location.pathname;
   location.assign(config.project+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(redirect)+'&code_challenge='+challenge+'&code_challenge_method=s256');
  }
- async function googleBrowserLogin(){
-  if(native){if(typeof Native.googleBrowserLogin!=='function')throw fail('Update the Android app to use browser sign-in.');Native.googleBrowserLogin();return}
+ async function googleBrowserLogin(operationId){
+  if(native){
+   if(operationId&&typeof Native.googleBrowserLoginRequest==='function'){Native.googleBrowserLoginRequest(operationId);return true}
+   if(typeof Native.googleBrowserLogin!=='function')throw fail('Update the Android app to use browser sign-in.');
+   Native.googleBrowserLogin();return false
+  }
   return googleLogin();
  }
  async function finishGoogle(){

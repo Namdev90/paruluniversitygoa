@@ -29,10 +29,10 @@ test('failed durable sign-out blocks new sign-in until retry succeeds in the res
  const dom=new JSDOM(read('app/assets/index.html'),{runScripts:'outside-only',url:'https://fixture.invalid/'});
  const w=dom.window;
  let profile={role:'checker',checkerId:'synthetic',name:'Synthetic Checker',active:true,scanner:true,station:'checker',nameConfirmed:true};
- let listener,attempts=0;
+ let listener,attempts=0,pending=1;
  w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
  w.GateClient={native:true,profile:()=>profile,on:f=>listener=f,finishGoogle:async()=>{},feedback(){},
-  destination:()=> 'home',local:async()=>({entries:[],stats:{},pending:0,localCount:0}),
+  destination:()=> 'home',local:async()=>({entries:[],stats:{},pending,localCount:0}),
   update:()=>({}),readiness:()=>({native:true}),sync:async()=>({staffSummary:true,stats:{},entries:[],records:[]}),
   api:async action=>action==='config'?{googleEnabled:true}:profile,
   signOut:async()=>{profile=null;listener?.({type:'auth',data:null});if(++attempts===1)throw Error('Synthetic durable storage failure');},
@@ -41,14 +41,16 @@ test('failed durable sign-out blocks new sign-in until retry succeeds in the res
  try{
  await new Promise(r=>setTimeout(r,10));
  w.document.getElementById('sign-out').click();
+ await new Promise(r=>setTimeout(r,0));
  assert.equal(w.document.getElementById('signout-confirm').open,true);
+ assert.match(w.document.getElementById('signout-warning').textContent,/1 scan is still awaiting/);
  assert.equal(attempts,0);
  w.document.getElementById('cancel-signout').click();
  assert.equal(attempts,0);
  assert.equal(w.GateClient.profile(),profile);
- w.document.getElementById('sign-out').click();
- w.document.getElementById('confirm-signout').click();
+ pending=0;w.document.getElementById('sign-out').click();
  await new Promise(r=>setTimeout(r,10));
+ assert.equal(w.document.getElementById('signout-confirm').open,false);
  assert.equal(w.document.getElementById('classic-signout-pending').hidden,false);
  assert.equal(w.document.getElementById('classic-signout-retry').hidden,false);
  assert.match(w.document.getElementById('classic-signout-message').textContent,/Private access is blocked/);
@@ -95,10 +97,18 @@ test('packaged launcher verification rejects substituted artwork despite a corre
  require('node:child_process').execFileSync('python3',['tests/restoration-artwork-check.py'],{cwd:root,stdio:'pipe',timeout:15000});
 });
 
-test('browser fallback client invokes the native PKCE bridge without invoking Credential Manager',async()=>{
- const dom=new JSDOM('',{runScripts:'outside-only',url:'https://fixture.invalid/'});let browser=0;const w=dom.window;
+test('browser fallback client forwards the operation to the native PKCE bridge',async()=>{
+ const dom=new JSDOM('',{runScripts:'outside-only',url:'https://fixture.invalid/'});let browser=0,operation;const w=dom.window;
  w.Native={local:()=>JSON.stringify({ok:true,data:{profile:null}}),googleBrowserLogin:()=>browser++,googleLogin:()=>{throw Error('Credential Manager must not run')}};
- try{for(const name of ['live-core.js','config.js','client.js'])w.eval(read('app/assets/'+name));await w.GateClient.googleBrowserLogin();assert.equal(browser,1)}finally{dom.window.close()}
+ try{
+  for(const name of ['live-core.js','config.js','client.js'])w.eval(read('app/assets/'+name));
+  assert.equal(await w.GateClient.googleBrowserLogin(),false);
+  assert.equal(browser,1);
+  w.Native.googleBrowserLoginRequest=id=>{operation=id};
+  assert.equal(await w.GateClient.googleBrowserLogin('test-browser-op'),true);
+  assert.equal(operation,'test-browser-op');
+  assert.equal(browser,1);
+ }finally{dom.window.close()}
 });
 
 test('approved combined branding is available before scripts without duplicate university marks',()=>{
