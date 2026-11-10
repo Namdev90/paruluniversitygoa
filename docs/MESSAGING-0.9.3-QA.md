@@ -10,9 +10,10 @@ Updates download automatically after metadata verification while the scanner is
 idle. Installation uses Android's existing confirmation flow. Code and resource
 shrinking are enabled, with the existing Java bridge and reflection keep rules.
 
-Before enabling messaging on the hosted service, apply
-`server/message-replies-v093.sql`, deploy the matching Edge Function, and enable
-`notification_config.center_enabled`. This candidate does not enable background
+The hosted service has `server/message-replies-v093.sql`, Edge Function version 11
+and `notification_config.center_enabled` enabled for candidate testing.
+Anonymous clients have no direct reply-function access.
+This candidate does not enable background
 message delivery. That requires the owner Firebase Android configuration and
 verification of device registration, the delivery worker and notification
 permission. The existing published 0.9.2 channel remains the release baseline.
