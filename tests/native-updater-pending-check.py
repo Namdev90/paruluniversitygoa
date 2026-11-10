@@ -208,7 +208,7 @@ public class NativeUpdaterPendingCheck {
   GateUpdater.init(a);settle();
   check(settings.getBoolean("automatic",false),"release initialization migrates the old opt-out preference");
   check("preserve".equals(settings.getString("unrelated","")),"update initialization must not alter unrelated settings");
-  check(metadataRequests==1&&apkRequests==0&&!GateUpdater.status(a).optBoolean("ready")&&GateUpdater.status(a).optBoolean("available"),"initialization checks metadata only; no automatic executable download");
+  check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready")&&GateUpdater.status(a).optBoolean("available"),"initialization downloads and verifies an available signed update");
   GateUpdater.check(a,true,true);settle();
   check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"explicit download reuses fresh validated metadata without a duplicate check");
   check(a.packages.installer.created==0&&a.launched.isEmpty(),"automatic download must not initiate Android installation");
@@ -219,7 +219,7 @@ public class NativeUpdaterPendingCheck {
   restart(a);GateUpdater.init(a);settle();check(GateUpdater.automatic(a)&&a.jobs.pending.size()==1&&a.jobs.pending.get(3404).persisted,"restart must preserve automatic policy and a single persisted job");
   check(metadataRequests==1,"restart must preserve the shared metadata check throttle");
   a=fixture();a.getSharedPreferences("navrang-updates",0).edit().putBoolean("automatic",false).apply();new File(a.files,"navrang-update.apk").delete();restart(a);GateUpdater.background(a);settle();
-  check(metadataRequests==1&&apkRequests==0&&!GateUpdater.status(a).optBoolean("ready"),"a persisted-job wake checks metadata without downloading code");
+  check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"a persisted-job wake downloads and verifies an available signed update");
   check(a.packages.installer.created==0,"background checks/downloads never silently create an installer session");
   GateUpdater.background(a);settle();check(metadataRequests==1,"a duplicate job shares the persisted last attempt");
   a=fixture();settings=a.getSharedPreferences("navrang-updates",0);long old=System.currentTimeMillis()-300001;settings.edit().putLong("attempt",old).putLong("checked",old).apply();GateRuntime.activeAdministrator=true;
@@ -228,7 +228,7 @@ public class NativeUpdaterPendingCheck {
   old=System.currentTimeMillis()-1800001;settings.edit().putLong("attempt",old).putLong("checked",old).apply();metadataStatus=304;GateUpdater.background(a);settle();
   check(metadataRequests==2&&apkRequests==0&&"\"fixture-release\"".equals(conditional),"conditional 304 preserves validated cache and reads no body");
   a=fixture();new File(a.files,"navrang-update.apk").delete();for(int n=0;n<20;n++)GateUpdater.invalidate(a,3);settle();
-  check(metadataRequests==1&&apkRequests==0,"burst release hints coalesce and never download executable code");
+  check(metadataRequests==1&&apkRequests==1&&GateUpdater.status(a).optBoolean("ready"),"burst release hints coalesce into one verified update download");
   GateUpdater.invalidate(a,1);GateUpdater.invalidate(a,2);GateUpdater.invalidate(a,-1);settle();check(metadataRequests==1,"old, already-cached and invalid release hints do nothing");
   a=fixture();metadataStatus=503;GateUpdater.check(a,true,false);settle();for(int n=0;n<10;n++)GateUpdater.check(a,true,false);settle();check(metadataRequests==1&&apkRequests==0,"manual retries respect bounded failure backoff");
   a=fixture();settings=a.getSharedPreferences("navrang-updates",0);settings.edit().putLong("attempt",System.currentTimeMillis()+86400000).putLong("retry",System.currentTimeMillis()+86400000).apply();for(int n=0;n<10;n++)GateUpdater.check(a,true,false);settle();check(metadataRequests==0,"wall-clock rollback clamps a future schedule without a request storm");
