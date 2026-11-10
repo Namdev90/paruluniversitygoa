@@ -19,7 +19,7 @@ verification of device registration, the delivery worker and notification
 permission. The existing published 0.9.2 channel remains the release baseline.
 
 Local verification includes the complete source suite, 212 browser checks,
-173 checks of the actual native updater, and transactional PostgreSQL reply
+176 checks of the actual native updater, and transactional PostgreSQL reply
 tests using synthetic accounts. The original-key APK upgraded 0.9.2 on the
 dedicated emulator while retaining its app ID, data directory and install time.
 The owner requested publication on 10 November 2026 after the test-build report.

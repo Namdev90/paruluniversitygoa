@@ -2,7 +2,7 @@
 
 ## Operational update · 10 November 2026
 
-The 0.9.3 release uses Android code 22 and an 8,444,753-byte APK. It restores
+The 0.9.3 release uses Android code 22 and an 8,448,849-byte APK. It restores
 in-app messaging with named recipients, quick replies and urgent popups, and
 downloads verified updates automatically while the scanner is idle. The
 original signing identity and the 0.9.2-to-0.9.3 emulator upgrade were verified.
