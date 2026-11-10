@@ -2,6 +2,16 @@
 
 ## Operational update · 10 November 2026
 
+The 0.9.3 release uses Android code 22 and an 8,444,753-byte APK. It restores
+in-app messaging with named recipients, quick replies and urgent popups, and
+downloads verified updates automatically while the scanner is idle. The
+original signing identity and the 0.9.2-to-0.9.3 emulator upgrade were verified.
+Closed-app message delivery is disabled. Physical-phone verification remains
+outstanding. See [0.9.3 verification](MESSAGING-0.9.3-QA.md) and
+[release PR #30](https://github.com/Namdev90/paruluniversitygoa/pull/30).
+
+### Previous 0.9.2 release
+
 **Navrang Gate 0.9.2, Android code 21** includes the touch-target and numeric display improvements from PR #28, blends the Android screen edges and removes four unused legacy interface assets. The [updater manifest](../updates/latest.json) identifies the APK, SHA-256 and signature. [Merged interface polish](https://github.com/Namdev90/paruluniversitygoa/pull/28) · [0.9.2 release changes](https://github.com/Namdev90/paruluniversitygoa/pull/29)
 
 The final original-key APK passed the in-place upgrade from published 0.9.1 on the dedicated Android API 37 emulator. The app ID, data directory and original installation time carried over, and both versions launched. This release replaces Google sign-in in the clients with a staff PIN and on-screen keypad. [Portal](https://navrang-gate-admin.namubhai.chatgpt.site/)

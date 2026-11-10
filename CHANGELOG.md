@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased 0.9.3 · Android code 22
+## 0.9.3 · Android code 22
 
 - Restore the message centre with unread counts, named staff selection and quick replies.
 - Show urgent messages in the app with selectable responses.
