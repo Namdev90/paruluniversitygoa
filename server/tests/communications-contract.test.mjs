@@ -8,6 +8,11 @@ catch { contract = {}; }
 const id = '12345678-1234-4234-9234-123456789abc';
 const other = '22345678-1234-4234-9234-123456789abc';
 const hash = 'a'.repeat(64);
+test('message replies accept only the offered response and an exact message identifier',()=>{
+ assert.deepEqual(contract.validateCommunication('notifications-reply',{id,reply:'Need help'}),{id,reply:'Need help'});
+ assert.throws(()=>contract.validateCommunication('notifications-reply',{id,reply:'Grant admin access'}));
+ assert.throws(()=>contract.validateCommunication('notifications-reply',{id,reply:'Acknowledged',principal:'admin'}));
+});
 const template = {type:'announcement',title:'Gate update',body:'Please use the north gate.'};
 const audience = {type:'everyone'};
 const samples = {

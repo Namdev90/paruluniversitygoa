@@ -1,7 +1,7 @@
 // This module validates shape only. The database resolves every recipient and
 // permission from the current Navrang session; a valid payload grants no access.
 export const COMMUNICATION_ACTIONS = Object.freeze([
-  'notifications-feed','notifications-read','notifications-dashboard',
+  'notifications-feed','notifications-read','notifications-reply','notifications-dashboard',
   'notifications-preview','notifications-send','notifications-end',
   'notifications-device','notifications-unregister',
   'duty-join','duty-heartbeat','duty-leave',
@@ -159,6 +159,10 @@ export function validateCommunication(action,payload) {
 
   const shape = (allowed,required=allowed) => object(payload,allowed,required,'communication payload');
   switch (action) {
+    case 'notifications-reply':
+      shape(['id','reply']);
+      if(!['Acknowledged','On my way','Need help'].includes(payload.reply))invalid('message reply');
+      return {id:id(payload.id,'message'),reply:payload.reply};
     case 'notifications-feed': {
       shape(['afterRevision'],[]);
       const afterRevision = own(payload,'afterRevision') ? payload.afterRevision : 0;

@@ -316,7 +316,7 @@ def run():
     navigate(page,'settings')
     assert page.locator('#app-updates').is_hidden()
     assert page.locator('#admin-security').is_visible()
-    assert page.locator('#settings-location-audio,#notifications-button').count()==0
+    assert page.locator('#settings-location-audio').count()==0
     shot(page,'admin','settings','#admin-security')
     if width>=960:
      page.locator('#portal-menu-toggle').click()
@@ -580,7 +580,7 @@ def run():
         assert 0<=preferences['y']-tools['y']-tools['height']<=24, (tools,preferences)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
        if target=='settings':
-        assert page.locator('#settings-location-audio,#notifications-button').count()==0
+        assert page.locator('#settings-location-audio').count()==0
         assert page.locator('#app-updates').is_hidden()
         measure_control(page,'#password-open','Change admin password')
         if width>=960:

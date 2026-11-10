@@ -20,7 +20,7 @@ def require(value, message):
         raise SystemExit(message)
 
 
-DEFERRED_ASSETS = {'notifications.js', 'notifications.css', 'voice.js', 'locator.js', 'locator.css'}
+DEFERRED_ASSETS = {'voice.js', 'locator.js', 'locator.css'}
 
 
 def validate_version(release, latest, source_check=False):
@@ -115,7 +115,8 @@ def main():
         'signed': False, 'publishable': False, 'requiredSignerSha256': SIGNER_SHA256,
         'purpose': 'SOURCE_QA_ONLY' if args.source_check else 'UNPUBLISHED_CANDIDATE',
         'pendingGate': 'FRESH_SOURCE_ACCEPTANCE_ORIGINAL_KEY_SIGNING_AND_PUBLIC_DOWNLOAD_VERIFICATION',
-        'communications': 'EXCLUDED', 'physicalDeviceChecks': 'NOT_RUN',
+        'communications': 'IN_APP_MESSAGING', 'voiceLocationAndBackgroundDelivery': 'EXCLUDED',
+        'physicalDeviceChecks': 'NOT_RUN',
         'assetIntegrity': 'PASS',
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

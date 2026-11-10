@@ -15,7 +15,7 @@ val relayOrigin = providers.gradleProperty("navrangRelayOrigin").orNull.orEmpty(
 val referenceAdvancePpm = providers.gradleProperty("navrangRelayReferenceAdvancePpm").orNull?.toLongOrNull()
 val clockEvidence = providers.gradleProperty("navrangRelayClockEvidenceAccepted").orNull == "true"
 // Candidate-only switches. Enable for acceptance before changing release defaults.
-val optimizedRelease = providers.gradleProperty("navrangOptimizedRelease").orNull == "true"
+val optimizedRelease = providers.gradleProperty("navrangOptimizedRelease").orNull != "false"
 val abiDelivery = providers.gradleProperty("navrangAbiSplits").orNull == "true"
 // Optional source-built encoder. Toolchain installation/license acceptance is external.
 val bundledOpusIncluded = providers.gradleProperty("navrangBundledOpusIncluded").orNull == "true"
@@ -48,7 +48,7 @@ val prepareNativeAssets = tasks.register<Exec>("prepareNativeAssets") {
 }
 val copyNativeAssets = tasks.register<Sync>("copyNativeAssets") {
     from(rootProject.file("app/assets")) {
-        exclude("legacy.html", "notifications.js", "notifications.css", "voice.js", "locator.js", "locator.css")
+        exclude("legacy.html", "voice.js", "locator.js", "locator.css")
         exclude("app.js", "vendor/**", "art/event-poster.jpg", "art/ASSET-NOTES.md",
             "legacy-style.css", "package.js", "store.js", "workbook.js")
     }

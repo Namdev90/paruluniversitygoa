@@ -1,11 +1,11 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 21,
-  "versionName": "0.9.2",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.2.apk",
-  "size": 24000545,
-  "sha256": "f911c2ac9937a9edf192758e7d2b6b963c384314bb9b07a2ca319f816ef41ba3",
-  "notes": "A redesigned four-digit staff PIN keypad, one-time device setup, improved touch targets, and blended Android screen edges.",
-  "publishedAt": "2026-11-10T08:13:58.242935+00:00",
-  "signature": "dXDIdML/T0EA8q6OsduXmy5IX8bPGHFJP5fhyqQOJPngR6ipPXyNQhJswbxunMeERFnjxWWsXLOOqRgEKYNUwA/I09Zjg9Jttt0JoRSyo5dJy7oHHdmjzWdH3Z982+cg1zCsfFOh/STFgjQfNC/MI078Q4tck39JU5hcz4lnnBiY5BFR7QCgdjkpbZSD/VRVLA46c8qiF0CbdIwKVw5OeUsS8WxoQPslB+LMX2qjvX+XUrAubzP4GCGFah0Ko0PR0bNj8jIC+kLfE07/0DkItqKu0GwEv8hml23JkgJJujlNdW2ywYFGDR//AIKJAWisea2sk0j9ZOL0n3AbN2r4AQ=="
+  "versionCode": 22,
+  "versionName": "0.9.3",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.3.apk",
+  "size": 8448849,
+  "sha256": "6f221c681479522d73dfd3fd0ce2ef43bd5e37e7dcbb0b515a3bb6343ebec1b3",
+  "notes": "Staff messages with quick replies, urgent popups, automatic update downloads and a smaller app.",
+  "publishedAt": "2026-11-10T15:26:10.425427+00:00",
+  "signature": "2k4tGuQnK8gl2+GlFE79Q1f/WRdIOGZcn0zWj3jGot0hyZgft5Y+yhD84R9KKtutNwwFDbMxlQCn4QqPE7Lg7+lM5VkgsyKc22Cq76AB5jdyzpFK0tRgm8o5KXwahT0grOmiEyL8T06jNiJ5gSntWV9sHkaNCXska5RzhlRyHgG0ejArUvu2oLjfTifzMuU2FIjhDECaCdwzejwCrOSy5u56tkbFCVfzszb2rw/YbyXJPAkMWR8awUwH0Q9ZmqpzNrKF1Kp6qShOPtM6bFVDBaBwJABr5RQBx/iIm6mUC1IxBc3i6iTJPdgRunJjzc9guRKSzKsomcE/Csinv3xPug=="
 }

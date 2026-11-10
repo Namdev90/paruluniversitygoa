@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.3 · Android code 22
+
+- Restore the message centre with unread counts, named staff selection and quick replies.
+- Show urgent messages in the app with selectable responses.
+- Download verified updates automatically while scanning is idle.
+- Enable code and resource shrinking for the Android release.
+
 ## 0.9.2 · Android code 21
 
 - Redesigned the opening page with a four-digit staff PIN and on-screen keypad.
