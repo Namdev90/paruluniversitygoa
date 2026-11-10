@@ -46,6 +46,16 @@ test('urgent pinned broadcasts open once without an inbox item',async()=>{
  }finally{f.close();}
 });
 
+test('a hidden pinned card does not open an empty urgent popup',async()=>{
+ const f=fixture(faculty);
+ try{
+  f.setHandler(()=>feed([],1,{revision:1,generatedAt:stamp,status:'live',totals:{},hidden:true,
+   announcement:{id:id(1),title:'Gate message',body:'Please respond',at:stamp,templateType:'live-broadcast',urgency:'urgent'}}));
+  await f.api.refresh();assert.equal(f.$('notifications-center').hasAttribute('open'),false);
+  assert.equal(f.$('notifications-live').hidden,true);
+ }finally{f.close();}
+});
+
 test('urgent staff messages open once and a selectable reply is sent to the server',async()=>{
  const f=fixture(faculty);
  try{
