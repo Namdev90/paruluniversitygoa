@@ -2,6 +2,19 @@
 
 ## Operational update · 10 November 2026
 
+Navrang 0.9.4 uses Android code 23 and an 8,448,849-byte APK. It adds a shared
+visual hierarchy for page and section headings, labels, supporting text and
+primary actions across the Android host and portal. Native scanner typography
+uses matching levels. The message bell is hidden before sign-in.
+
+The original-key APK upgraded 0.9.3 in place on the dedicated emulator.
+All 515 browser layout cases passed. Three source checks that timed out during
+parallel builds passed when rerun separately. Android unit tests and release
+lint passed. Physical-phone acceptance remains outstanding, and closed-app
+message delivery remains disabled.
+
+### Previous 0.9.3 release
+
 The 0.9.3 release uses Android code 22 and an 8,448,849-byte APK. It restores
 in-app messaging with named recipients, quick replies and urgent popups, and
 downloads verified updates automatically while the scanner is idle. The
