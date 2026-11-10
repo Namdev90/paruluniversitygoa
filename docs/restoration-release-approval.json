@@ -1,15 +1,15 @@
 {
   "approvedBy": "owner",
-  "approvedAt": "2026-11-09T23:27:38.549241+05:30",
-  "instruction": "Owner requested release of Navrang 0.9.0 with the improved design and removal of Location & audio and event notification features. Owner asked that their physical phone be excluded from testing in this release round.",
-  "versionName": "0.9.0",
-  "versionCode": 19,
-  "verifiedSourceCommit": "885cf33d587a78ba5040109a8e0d7e3a665046b1",
-  "approvedSourceCommit": "885cf33d587a78ba5040109a8e0d7e3a665046b1",
+  "approvedAt": "2026-11-10T05:36:06.7791332+05:30",
+  "instruction": "The owner requested an audit across Navrang history and completion of the remaining work, including the follow-up Android release and website update.",
+  "versionName": "0.9.1",
+  "versionCode": 20,
+  "verifiedSourceCommit": "c9704116dcbe9d39da661b69178d326b1dfd15e8",
+  "approvedSourceCommit": "c9704116dcbe9d39da661b69178d326b1dfd15e8",
   "releaseApproved": true,
-  "signedApkSha256": "548686ed0c0c02e0066f41beab1356169e331431218600e2d05fed10e34b652a",
+  "signedApkSha256": "7f9eec917dfad38af56ee73efc71b206b644791ff0b7a2a66a4e945a36d73c26",
   "deviceAcceptance": "VERIFIED",
-  "deviceEvidence": "The original-key-signed release APK upgraded the published 0.8.0 (code 18) to 0.9.0 (code 19) on the dedicated Android API 37 emulator. The app ID, app data directory and original install time were retained. Both versions launched. The owner excluded their physical phone from testing.",
-  "publicationInstruction": "Publish the compact 0.9.0 design with location sharing, voice and event alerts removed.",
-  "publicationRequestedAt": "2026-11-09T23:27:38.549241+05:30"
+  "deviceEvidence": "The original-key-signed 0.9.1 APK upgraded published 0.9.0 in place on the dedicated Android API 37 emulator, retaining the app ID, app data directory and original install time. Both versions launched. The same final APK also installed on the physical Android 16 phone and retained its app data. Android opened Navrang. The curved display used its full 1,260-pixel width while clearing the camera cutout and bottom corners.",
+  "publicationInstruction": "Publish Navrang 0.9.1 using the existing release channel and original signing identity.",
+  "publicationRequestedAt": "2026-11-10T05:36:06.7791332+05:30"
 }
