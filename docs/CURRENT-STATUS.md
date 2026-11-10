@@ -1,5 +1,15 @@
 # Current project status
 
+## Operational update · 10 November 2026
+
+The public Android channel serves **0.9.1, Android code 20**. PR #28 merged the touch-target and numeric display improvements after that release. Its changes are included in the signed 0.9.2 test candidate, which also blends the Android screen edges and removes four unused legacy interface assets. [Published APK](https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.9.1) · [Merged interface polish](https://github.com/Namdev90/paruluniversitygoa/pull/28) · [0.9.2 draft](https://github.com/Namdev90/paruluniversitygoa/pull/29)
+
+The original-key 0.9.2 candidate passed the in-place upgrade from 0.9.1 on the dedicated emulator. The X100 Pro screen and real Google account round trip are pending. The updated portal is live separately from the Android update channel. [Portal](https://navrang-gate-admin.namubhai.chatgpt.site/)
+
+The legacy raw-Java build opens the external Google flow directly. The client now accepts its matching browser acknowledgement and the historical packager includes the scripts referenced by the login shell. The raw-Java APK was outside this verification. The AndroidX APK remains the supported release path.
+
+## Historical 0.9.0 snapshot
+
 This is a source-and-publication snapshot checked on **9 November 2026 (UTC)** against `main` commit [`b21798702fe2a99e1d419e15b8d31011f2fc7fa6`](https://github.com/Namdev90/paruluniversitygoa/commit/b21798702fe2a99e1d419e15b8d31011f2fc7fa6). Recheck the manifest and Releases before using this as a future release decision.
 
 ## Published Android version
