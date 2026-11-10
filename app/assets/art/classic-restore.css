@@ -589,3 +589,17 @@ dialog[open]{
  body.portal-layout .intro .intro-skip{grid-column:1/-1;grid-row:2}
  body.portal-layout #result-popup[open]:not([data-modal=true]){--result-offset:0px;top:var(--safe-top);margin:auto}
 }
+
+/* Shared hierarchy for the Android host and portal. */
+:root{--type-page:clamp(1.5rem,1.25rem + 1vw,1.875rem);--type-section:1.125rem;--type-detail:.8125rem}
+:is(#view-home,#view-desk,#view-entries,#view-account,#view-settings,#view-station) h2,
+#admin-console>.panel-heading h2,#view-reports>.section-title h2{
+ font-size:var(--type-page);font-weight:750;line-height:1.18;letter-spacing:-.025em;text-wrap:balance
+}
+dialog h2,.notification-center h2{font-size:1.375rem;font-weight:750;line-height:1.25;letter-spacing:-.015em}
+.panel>.panel-heading h3,.scanner-panel h3,.notification-heading h3{font-size:var(--type-section);font-weight:650;line-height:1.3}
+:is(.micro-note,.list-status,.notification-item time,.notification-kind){font-size:var(--type-detail);line-height:1.45}
+.eyebrow{font-size:.6875rem;font-weight:700;letter-spacing:.1em}
+:is(.view,dialog) label{font-weight:600}
+.button.primary:not(:disabled){font-weight:750}
+.button.secondary{font-weight:600}

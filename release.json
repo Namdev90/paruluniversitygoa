@@ -1,6 +1,6 @@
 {
   "versionCode": 23,
   "versionName": "0.9.4",
-  "notes": "Hides the message bell until sign-in. Includes quick replies, urgent in-app messages, automatic update downloads and the smaller APK.",
+  "notes": "Clearer visual hierarchy across the app and portal, and a message bell shown after sign-in. Includes quick replies, urgent in-app messages, automatic update downloads and the smaller APK.",
   "interface": "original"
 }

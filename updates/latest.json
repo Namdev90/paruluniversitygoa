@@ -1,11 +1,11 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 23,
-  "versionName": "0.9.4",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.4.apk",
+  "versionCode": 22,
+  "versionName": "0.9.3",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.3.apk",
   "size": 8448849,
-  "sha256": "f4b74b68a701256ea8f6e68578bb2841a5e9beda8182daf539fffb2e596ca9d3",
-  "notes": "Hides the message bell until sign-in. Includes quick replies, urgent in-app messages, automatic update downloads and the smaller APK.",
-  "publishedAt": "2026-11-10T15:56:01.772500+00:00",
-  "signature": "cQtXtlw/Swxg+RD8FO5qJ+web53RFzkEQ+yJgmV2tSbAw5dZnztZTJ3GyNgzGzc3EukjvY6hnn7vGKHx+AmVzuZsirGqtjbA/uCY08xcuxi1UfiPlxYqmcOfdzDmuTFCF0bzclEu5vLVBh6r9nrylQv8GYtNx4WhdB/+m1GIq9JNY0qGlGAG8JIqdp/N1WUbVbulTJjeZPSJc7tOvHWC2sXBs0vTKlYUV6xFlIdiqW1jw/WNJBR3HqbQFn8DEm8wMN7RUbtu3cqWbKhLgPzBDe1qENreHDaFJ+v2yXLrincgRNCzrdIN3Ivhh7EKVO8ppqYkxdJqndz04sq0d7ZK1A=="
+  "sha256": "6f221c681479522d73dfd3fd0ce2ef43bd5e37e7dcbb0b515a3bb6343ebec1b3",
+  "notes": "Staff messages with quick replies, urgent popups, automatic update downloads and a smaller app.",
+  "publishedAt": "2026-11-10T15:26:10.425427+00:00",
+  "signature": "2k4tGuQnK8gl2+GlFE79Q1f/WRdIOGZcn0zWj3jGot0hyZgft5Y+yhD84R9KKtutNwwFDbMxlQCn4QqPE7Lg7+lM5VkgsyKc22Cq76AB5jdyzpFK0tRgm8o5KXwahT0grOmiEyL8T06jNiJ5gSntWV9sHkaNCXska5RzhlRyHgG0ejArUvu2oLjfTifzMuU2FIjhDECaCdwzejwCrOSy5u56tkbFCVfzszb2rw/YbyXJPAkMWR8awUwH0Q9ZmqpzNrKF1Kp6qShOPtM6bFVDBaBwJABr5RQBx/iIm6mUC1IxBc3i6iTJPdgRunJjzc9guRKSzKsomcE/Csinv3xPug=="
 }
