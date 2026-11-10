@@ -57,6 +57,13 @@ export function createHandler({rpc,googleUser,googleEnabled,voiceService,renewal
    }
    if(action==='checker-login'){
     if(!await budget('checker'))return json({ok:false,error:'Too many sign-in attempts. Try again in five minutes.'},429);
+    if(p.deviceSecret){
+     const deviceHash=await sha256('navrang-device:'+p.deviceSecret),pinProof=await sha256('navrang-pin:'+p.deviceSecret+':'+p.code);
+     const inviteHash=p.setupCode?await sha256('navrang-invite:'+p.setupCode):'';
+     const device=await rpc('staff-device-login',{deviceHash,pinProof,inviteHash},'');
+     if(device.error||!device.checkerId)return json({ok:false,error:device.error||'Device verification unavailable.'},device.status||503);
+     return session('checker',device.checkerId);
+    }
     const checker=await rpc('checker-credentials',{hash:await sha256((p.code||'').trim().toUpperCase())},'');
     if(!checker.id||!checker.active)return json({ok:false,error:'Checker code is invalid or suspended. Ask the admin.'},401);
     return session('checker',checker.id);
@@ -87,6 +94,12 @@ export function createHandler({rpc,googleUser,googleEnabled,voiceService,renewal
     return json({ok:true,signedOut:true});
    }
    if(!hash)return json({ok:false,error:'Sign in first.'},401);
+   if(action==='staff-device-issue'){
+    const setupCode=token();
+    const result=await rpc(action,{checkerId:p.checkerId,inviteHash:await sha256('navrang-invite:'+setupCode)},hash);
+    if(!result.issued)return json({ok:false,error:result.error||'Device setup unavailable.'},result.status||503);
+    return json({ok:true,setupCode});
+   }
    if(voiceService?.supports?.(action)){
     const result=await voiceService.handle(action,p,hash,{signal:req.signal});
     return result.error?json({ok:false,error:result.error},result.status||400):json({ok:true,...result});

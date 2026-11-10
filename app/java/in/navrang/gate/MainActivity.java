@@ -261,6 +261,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
      case "lookup":r=runtime.db.lookup(p.getString("id"));break;
      case "session":synchronized(runtime.sessions){JSONObject a=runtime.privateAccessAllowed()?runtime.sessions.read():null;r=new JSONObject().put("generation",runtime.sessions.generation()).put("profile",a==null?JSONObject.NULL:a.getJSONObject("profile")).put("validatedAtWall",a==null?0:runtime.sessions.validatedAtWall()).put("validationAgeMs",a==null?Long.MAX_VALUE:runtime.sessions.validationAgeMillis());}break;
      case "config":r=runtime.api.config;break;
+     case "staff-device-secret":r=new JSONObject().put("secret",runtime.sessions.staffDeviceSecret());break;
      default:throw new IllegalArgumentException("Unsupported local operation.");
     }return new JSONObject().put("ok",true).put("data",r).toString();
    }catch(Exception e){try{return new JSONObject().put("ok",false).put("error","Device storage is unavailable. Keep app data and retry.").toString();}catch(Exception ignored){return "{\"ok\":false}";}}

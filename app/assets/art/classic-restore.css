@@ -214,6 +214,10 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 .login-card .login-foot,.creator-credit{font-size:11px;color:#cdbec9;text-align:center}
 .staff-keypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:#18131c;box-shadow:inset 0 2px 7px #0009}
 .staff-keypad>.button{min-width:0;padding:5px 2px;white-space:normal;overflow-wrap:anywhere}
+#staff-device-setup{margin-top:10px}
+#staff-device-setup summary{cursor:pointer}
+#staff-device-code,#new-checker-code{display:block;overflow-wrap:anywhere}
+#staff-device-code:empty{display:none}
 #signin-panel>.eyebrow{display:block;margin-bottom:8px;color:var(--gold)}
 #signin-panel>h2{font-size:clamp(24px,5.5vw,34px);line-height:1.12;margin:0}
 #signin-panel>.micro-note{margin:8px 0;color:var(--muted)}

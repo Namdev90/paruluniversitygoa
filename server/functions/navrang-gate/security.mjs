@@ -8,9 +8,18 @@ export async function passwordHash(password,salt){const key=await crypto.subtle.
 export async function passwordMatches(password,stored){const hash=await passwordHash(password,stored.salt||'0'.repeat(32));const expected=stored.hash||'0'.repeat(64);let diff=hash.length^expected.length;for(let i=0;i<hash.length;i++)diff|=hash.charCodeAt(i)^(expected.charCodeAt(i)||0);return diff===0;}
 const actions=new Set(['config','login','checker-login','google-login','checker-profile','me','logout','sync','checkin','import','upsert','staff-create','staff-update','staff-request','admin-password','helpdesk-save','helpdesk-list','helpdesk-edit','helpdesk-review','helpdesk-export','reports-access','reports-summary','reports-export','reports-members','reports-grant','reports-request','reports-summary-prepare','reports-save-outcome']);
 export function validateRequest(body){
+ if(body?.action==='staff-device-issue'){
+  const p=body.payload;
+  if(!p||Object.keys(p).length!==1||typeof p.checkerId!=='string'||! /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(p.checkerId))throw Error('Choose an existing staff account.');
+  return body;
+ }
  if(!body||!actions.has(body.action)&&body.action!=='session-refresh'&&!isCommunicationAction(body.action)&&!isLocatorAction(body.action))throw Error('Unknown action.');
  if(!body.payload||typeof body.payload!=='object'||Array.isArray(body.payload))throw Error('Invalid payload.');
  const p=body.payload;
+ if(body.action==='checker-login'&&(p.deviceSecret!==undefined||p.setupCode!==undefined||/^[0-9]{4}$/.test(p.code||''))){
+  if(!/^[0-9]{4}$/.test(p.code)||typeof p.deviceSecret!=='string'||! /^[a-f0-9]{64}$/.test(p.deviceSecret)||
+   (p.setupCode!==undefined&&(typeof p.setupCode!=='string'||! /^[a-f0-9]{64}$/.test(p.setupCode))))throw Error('Enter a four-digit PIN on a verified device.');
+ }
  validateSessionRequest(body.action,p);
  if(isLocatorAction(body.action))return {action:body.action,payload:validateLocator(body.action,p)};
  if(isCommunicationAction(body.action))return {action:body.action,payload:validateCommunication(body.action,p)};

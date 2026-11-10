@@ -2,7 +2,9 @@
 
 ## Unreleased 0.9.2 · Android code 21
 
-- Redesigned the opening page with staff-code sign-in and an on-screen keypad.
+- Redesigned the opening page with a four-digit staff PIN and on-screen keypad.
+- Verify each staff device once with an administrator-issued setup code. Existing staff keep their station and Reports access.
+- Use a tactile burgundy-and-brass theme across the app and portal.
 
 - Blend the protected Android screen areas into the header and navigation.
 - Enlarge touch targets and stabilize changing operational numbers.

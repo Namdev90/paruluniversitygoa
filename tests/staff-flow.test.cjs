@@ -3,7 +3,7 @@ const root=path.resolve(__dirname,'..'),asset=n=>fs.readFileSync(root+'/app/asse
 function setup(initial,{native=false,crew=[]}={}){
  let profile=initial,listener,destination='home';const calls=[],dom=new JSDOM(asset('index.html'),{url:'https://gate.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
  w.matchMedia=()=>({matches:true});w.eval(asset('live-core.js'));w.NavrangDesk={refresh:()=>{},clear:()=>{},hasDraft:()=>false};
- w.GateClient={native,profile:()=>profile,on:f=>listener=f,finishGoogle:async()=>{},feedback:()=>{},destination:value=>value?(destination=value):destination,local:async()=>({entries:[],stats:{},pending:0,localCount:0}),update:()=>({}),scan:()=>calls.push({action:'camera'}),submit:()=>calls.push({action:'checkin'}),googleLogin:async()=>calls.push({action:'google-browser'}),googleBrowserLogin:async()=>calls.push({action:'google-browser-fallback'}),signOut:async()=>{calls.push({action:'logout'});profile=null;listener?.({type:'auth',data:null})},copy:async text=>calls.push({action:'copy',text}),sync:async()=>{calls.push({action:'sync'});return{dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:crew}},api:async(action,payload={})=>{calls.push({action,payload});if(action==='config')return{googleEnabled:true};if(action==='checker-profile'){profile={...profile,name:payload.name,nameConfirmed:true};return{saved:true}}if(action==='staff-request'){profile={...profile,station:payload.station,requestedRole:profile.active?'':payload.station};return{requested:payload.station}}if(action==='me')return profile;if(action==='staff-create')return{code:'NG-SYNTHETIC-CODE'};return{saved:true}}};
+ w.GateClient={native,profile:()=>profile,on:f=>listener=f,finishGoogle:async()=>{},feedback:()=>{},destination:value=>value?(destination=value):destination,local:async()=>({entries:[],stats:{},pending:0,localCount:0}),update:()=>({}),scan:()=>calls.push({action:'camera'}),submit:()=>calls.push({action:'checkin'}),googleLogin:async()=>calls.push({action:'google-browser'}),googleBrowserLogin:async()=>calls.push({action:'google-browser-fallback'}),signOut:async()=>{calls.push({action:'logout'});profile=null;listener?.({type:'auth',data:null})},copy:async text=>calls.push({action:'copy',text}),sync:async()=>{calls.push({action:'sync'});return{dataRevision:1,cursor:0,records:[],entries:[],stats:{},checkers:crew}},api:async(action,payload={})=>{calls.push({action,payload});if(action==='config')return{googleEnabled:true};if(action==='checker-profile'){profile={...profile,name:payload.name,nameConfirmed:true};return{saved:true}}if(action==='staff-request'){profile={...profile,station:payload.station,requestedRole:profile.active?'':payload.station};return{requested:payload.station}}if(action==='me')return profile;if(action==='staff-create')return{checker:{id:'10000000-0000-4000-8000-000000000001'}};if(action==='staff-device-issue')return{setupCode:'a'.repeat(64)};return{saved:true}}};
  w.eval(asset('pagination.js'));w.eval(asset('gate.js'));return{w,dom,calls,setProfile:p=>profile=p,event:e=>listener(e),click:id=>w.document.getElementById(id).click(),$:(id)=>w.document.getElementById(id)};
 }
 function realNativeSignIn(){
@@ -12,9 +12,9 @@ function realNativeSignIn(){
  w.matchMedia=()=>({matches:true});w.NavrangDesk={refresh:()=>{},clear:()=>{},hasDraft:()=>false};
  const response=(id,body,identityGeneration)=>w.onApiResponse(JSON.stringify({id,status:200,body,...(identityGeneration===undefined?{}:{identityGeneration})}));
  w.Native={
-  local:action=>JSON.stringify({ok:true,data:action==='session'?{generation,profile}:{entries:[],stats:{},pending:0,localCount:0}}),
+  local:action=>JSON.stringify({ok:true,data:action==='session'?{generation,profile}:action==='staff-device-secret'?{secret:'a'.repeat(64)}:{entries:[],stats:{},pending:0,localCount:0}}),
   api(action,payload,id){
-   if(action==='checker-login'){loginRequest=id;generation++;return;}
+   if(action==='checker-login'){assert.deepEqual(JSON.parse(payload),{code:'0042',deviceSecret:'a'.repeat(64)});loginRequest=id;generation++;return;}
    queueMicrotask(()=>response(id,action==='config'?{ok:true,googleEnabled:false}:action==='me'?{ok:true,...profile}:{ok:true}));
   }
  };
@@ -28,8 +28,8 @@ function realNativeSignIn(){
 }
 for(const eventFirst of [true,false])for(const locked of [true,false])test(`real native client clears the submitted staff code (${eventFirst?'event first':'response first'}, ${locked?'locked':'unlocked'})`,async()=>{
  const t=realNativeSignIn();try{
-  await tick();t.$('skip-intro').click();t.$('checker-code').value='NG-SYNTHETIC-ONLY';
-  t.$('checker-form').dispatchEvent(new t.w.Event('submit',{cancelable:true}));t.complete({eventFirst,locked});
+  await tick();t.$('skip-intro').click();t.$('checker-code').value='0042';
+  t.$('checker-form').dispatchEvent(new t.w.Event('submit',{cancelable:true}));await tick();t.complete({eventFirst,locked});
   await tick();await tick();
   assert.equal(t.$('checker-code').value,'');
   assert.equal(t.w.GateClient.profile()===null,locked);
@@ -129,7 +129,7 @@ test('admin assigns a requested station, saves the real name and creates a role-
  const crew=[{id:'12345678-1234-4234-9234-123456789abc',name:'Raju',method:'google',active:false,scanner:false,helpdesk:false,requestedRole:'helpdesk',entries:0}];const t=setup({role:'admin',name:'namdev',active:true},{crew}),{w,dom,calls,$}=t;
  try{await tick();w.document.querySelector('#checker-list button').click();assert.equal($('staff-role').value,'helpdesk');$('staff-name').value='Raju Naik';$('staff-active').checked=true;$('staff-access-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();
  const saved=calls.find(c=>c.action==='staff-update');assert.equal(saved.payload.name,'Raju Naik');assert.equal(saved.payload.active,true);assert.equal(saved.payload.scanner,false);assert.equal(saved.payload.helpdesk,true);
- t.click('open-code');$('new-checker-name').value='Raju';$('new-checker-role').value='helpdesk';$('create-checker-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();const created=calls.find(c=>c.action==='staff-create');assert.equal(created.payload.scanner,false);assert.equal(created.payload.helpdesk,true);assert.equal($('new-checker-code').textContent,'NG-SYNTHETIC-CODE');t.click('copy-code');await tick();assert.ok(calls.some(c=>c.action==='copy'&&c.text==='NG-SYNTHETIC-CODE'));
+ t.click('open-code');$('new-checker-name').value='Raju';$('new-checker-role').value='helpdesk';$('create-checker-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();const created=calls.find(c=>c.action==='staff-create');assert.equal(created.payload.scanner,false);assert.equal(created.payload.helpdesk,true);assert.equal($('new-checker-code').textContent,'a'.repeat(64));t.click('copy-code');await tick();assert.ok(calls.some(c=>c.action==='copy'&&c.text==='a'.repeat(64)));
  }finally{dom.window.close()}
 });
 
