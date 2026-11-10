@@ -10,7 +10,7 @@ input,select{background:#17121b;border-color:#6f465c;border-radius:12px;color:va
 .button{border-radius:12px;font-weight:650}
 .primary{color:#201219;background:linear-gradient(160deg,#ffe0a9,#dcb071);border-color:#ffdf9f;box-shadow:0 4px 0 #7f573a,0 8px 18px #0004}
 .secondary,.admin-tab .table-action{background:linear-gradient(155deg,#3b2638,#291e2d);color:#f5d4a3;border-color:#8f5d7170;box-shadow:0 3px 0 #100c14}
-.quiet{background:#ffffff05;color:var(--muted)}
+.quiet{background:#ffffff05;color:var(--muted);border-color:#a2726b4a}
 .mobile-nav button.selected,.admin-tabs button.selected{background:#5e253a40;color:var(--gold)}
 .administrator-entry{background:#411b2e55;border-color:#b88056}
 .administrator-button{color:var(--gold)}
@@ -363,6 +363,8 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 .account-tool-row{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:60px;padding:8px;border:1px solid #a2726b58;border-radius:12px;background:linear-gradient(145deg,#4b2d40,#251b29);color:var(--ink);font:inherit;font-weight:700;text-align:left;overflow-wrap:anywhere}
 .account-tool-row>span:last-child{color:var(--gold);font-size:24px;line-height:1}
 .account-sign-out{width:100%;margin:0}
+.account-preferences{display:grid;gap:var(--section-gap)}
+.account-preferences>.account-sign-out{text-align:left}
 .account-tool-back{display:inline-flex;align-items:center;gap:6px;margin:0;color:var(--gold)}
 #view-reports>.report-context{display:flex;align-items:center;gap:4px;margin:0}
 
@@ -379,15 +381,17 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
  #view-login .crafted-login:has(#code-login[open]){padding-block:10px}
  .crafted-login #code-login[open]{margin-top:8px}
 }
-#pull-to-scan .scan-launch{flex:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:2px 10px;min-height:64px;height:auto;padding:9px;text-align:left;align-content:center;justify-content:stretch;background:linear-gradient(155deg,#ffe0a9,#dcb071);border-color:#ffe0a9;color:#281620}
+.scan-workspace{grid-column:1/-1;display:grid;gap:var(--section-gap);min-width:0}
+#view-home .scan-workspace>#pull-to-scan{grid-row:auto;flex:none;min-height:0;padding:0;background:none;box-shadow:none;border:0}
+.scan-workspace>.manual-panel{min-width:0;padding:10px 0 0;border-top:1px solid var(--line)}
+#pull-to-scan .scan-launch{flex:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:4px 12px;min-height:72px;height:auto;padding:10px;text-align:left;align-content:center;background:linear-gradient(155deg,#44283c,#281d2a);border:1px solid var(--selection-edge);border-radius:12px;color:var(--ink)}
 #pull-to-scan .scan-launch .scan-emblem{grid-row:1/span 2;display:grid;place-items:center;width:44px;height:44px;border-radius:11px;margin:0;align-self:center}
 #pull-to-scan .scan-emblem,.namu-avatar{background:#4b2940;color:var(--selection-ink);border-color:var(--selection-edge)}
-#pull-to-scan{flex:none;min-height:0}
 #pull-to-scan .scan-emblem svg{width:32px;height:32px}
 #pull-to-scan .scan-line{--sweep:20px}
 #scan-action-title,#scan-action-copy{grid-column:2;overflow-wrap:anywhere}
-#scan-action-title{font-size:1.125rem;line-height:1.2}
-#scan-action-copy{color:#4e2c2c;font-size:12px;line-height:1.35}
+#scan-action-title{justify-self:start;padding:7px 10px;border-radius:8px;background:linear-gradient(155deg,#ffe0a9,#dcb071);color:#281620;font-size:1.125rem;line-height:1.2}
+#scan-action-copy{color:var(--muted);font-size:12px;line-height:1.35}
 .scan-safety{margin-top:6px}
 #view-entries .table-link,#admin-console .table-link{line-height:1.35;white-space:normal;overflow-wrap:anywhere}
 #view-reports .report-tabs{flex-wrap:wrap}
@@ -442,6 +446,8 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 #admin-console>#admin-checkers:not([hidden]):not(:has(#checker-list .checker-row:nth-child(2))){grid-template-rows:auto auto auto auto}
 #admin-checkers:has(>#staff-empty:not([hidden]))>#staff-count{display:none}
 .admin-registration-footer .button{min-height:44px}
+.admin-registration-footer:has(>.list-status:empty){justify-content:flex-end}
+.admin-registration-footer>.list-status:empty{display:none}
 @media(min-width:520px){
  #desk-fields{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--section-gap)}
  #view-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));align-items:start}
@@ -453,7 +459,10 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 }
 @media(min-width:760px){
  #view-home{align-content:start;align-items:start;grid-template-rows:auto}
- #view-home :is(#pull-to-scan,.manual-panel){grid-row:auto;align-self:start}
+}
+@container(min-width:740px){
+ .scan-workspace{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:center}
+ .scan-workspace>.manual-panel{padding:0 0 0 12px;border-top:0;border-inline-start:1px solid var(--line)}
 }
 .portal-menu-toggle{display:none}
 @media(min-width:960px){
@@ -492,7 +501,7 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 @media(max-width:759px){
  .view{gap:calc(var(--section-gap) + var(--tall-space) / 8)}
  #view-home .stats article{padding-block:calc(6px + var(--tall-space) / 5)}
- #pull-to-scan .scan-launch{min-height:calc(64px + 2 * var(--tall-space))}
+ #pull-to-scan .scan-launch{min-height:calc(72px + var(--tall-space))}
  #pull-to-scan .scan-launch .scan-emblem{width:calc(44px + var(--tall-space) / 2);height:calc(44px + var(--tall-space) / 2)}
  #pull-to-scan .scan-emblem svg{width:calc(32px + var(--tall-space) / 3);height:calc(32px + var(--tall-space) / 3)}
  .account-tool-row{min-height:calc(60px + var(--tall-space));padding-block:calc(8px + var(--tall-space) / 6)}
@@ -502,14 +511,6 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
  #view-settings>.panel{padding-block:calc(var(--panel-padding) + var(--tall-space) / 6)}
  #view-settings .button{min-height:calc(44px + var(--tall-space) / 4)}
  #report-downloads .report-actions button{min-height:calc(44px + var(--tall-space) / 2)}
-}
-@media(max-width:519px) and (min-height:900px){
- main:has(>:is(#view-home,#view-account,#view-reports):not([hidden])){display:flex;flex-direction:column}
- main:has(>:is(#view-home,#view-account,#view-reports):not([hidden]))>#account-tool-back{align-self:start}
- main>:is(#view-home,#view-account,#view-reports):not([hidden]){flex:1 0 auto;min-height:0}
- #view-home>#pull-to-scan,#view-account>#admin-account-tools:not([hidden]),
- #view-reports>.panel:not([hidden]){margin-block:auto}
- #view-account:not(:has(#admin-account-tools:not([hidden])))>#signedin-panel{margin-bottom:auto}
 }
 @container(max-width:300px){
  #view-settings .panel-heading{flex-wrap:wrap}

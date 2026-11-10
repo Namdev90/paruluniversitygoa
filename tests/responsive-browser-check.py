@@ -404,6 +404,9 @@ def run():
     navigate(page,'reports');page.locator('#report-tab-downloads').focus();page.keyboard.press('Home')
     check('Reports info is grouped with its visible heading',
           page.locator('.report-context h2').is_visible() and page.locator('.report-context .section-info-button').is_visible())
+    tabs=page.locator('.report-tabs').bounding_box()
+    active_report=page.locator('#report-overview').bounding_box()
+    check('active report stays next to its tabs',0<=active_report['y']-tabs['y']-tabs['height']<=24)
     check('report tabs support Home',page.evaluate("document.activeElement.id==='report-tab-overview'&&!document.getElementById('report-overview').hidden"))
     page.keyboard.press('End')
     check('report tabs support End',page.evaluate("document.activeElement.id==='report-tab-teachers'&&!document.getElementById('report-manage').hidden"))
@@ -543,7 +546,9 @@ def run():
       manual=page.locator('.manual-panel').bounding_box()
       action=page.locator('#scan').bounding_box()
       assert 44<=action['height']<=162, action
-      if width<760:assert abs(scanner['width']-manual['width'])<1, (scanner,manual)
+      if width<760:
+       assert abs(scanner['width']-manual['width'])<1, (scanner,manual)
+       assert 0<=manual['y']-scanner['y']-scanner['height']<=24, (scanner,manual)
      if role=='login':
       if height>570:assert page.locator('.login-foot').is_visible()
       assert page.locator('.app-footer').is_hidden()
@@ -566,6 +571,10 @@ def run():
         navigate(page,'account');page.locator('#switch-station').click()
        else:navigate(page,target)
        page.wait_for_timeout(70);measure(page,role,target,width,height)
+       if target=='account':
+        tools=page.locator('#admin-account-tools').bounding_box()
+        preferences=page.locator('.account-preferences').bounding_box()
+        assert 0<=preferences['y']-tools['y']-tools['height']<=24, (tools,preferences)
        if width in (320,390,640,1366):page.screenshot(path=str(out/f'admin-{target}-{width}.png'))
        if target=='settings':
         assert page.locator('#settings-location-audio,#notifications-button').count()==0
