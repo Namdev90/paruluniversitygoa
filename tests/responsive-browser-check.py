@@ -264,9 +264,7 @@ def run():
      if lower:shot(page,'admin',state+'-lower',lower)
      page.locator(close_id).click();page.locator(dialog_id).wait_for(state='hidden')
     ctx,page=fresh('login')
-    shot(page,'login','google','#google-signin')
-    page.locator('#code-login summary').click();shot(page,'login','staff-code','#checker-code')
-    page.locator('#code-login summary').click()
+    shot(page,'login','staff-code','#checker-code')
     page.locator('#show-admin-login').click();shot(page,'login','administrator')
     page.locator('#show-checker-login').click();finish(ctx,page)
     ctx,page=fresh('admin')
@@ -355,10 +353,9 @@ def run():
     finish(ctx,page)
     ctx,page=fresh('login',mocked_native=True)
     assert page.locator('#google-browser-signin').count()==0
-    page.evaluate("window.fixtureGoogleOutcome='failed'")
-    page.locator('#google-signin').click()
-    page.wait_for_function("window.fixtureGoogleBrowserOpened===1 && !document.getElementById('google-signin').disabled")
-    shot(page,'mock-native-login','browser-sign-in','#google-signin')
+    page.locator('#staff-keypad').get_by_role('button',name='0',exact=True).click()
+    assert page.locator('#checker-code').input_value()=='0'
+    shot(page,'mock-native-login','staff-keypad','#checker-code')
     finish(ctx,page)
     for role in ('helpdesk','pending','newstaff'):
      ctx,page=fresh(role);shot(page,role,'initial')
@@ -503,14 +500,14 @@ def run():
        reports.append(dict(classicLogin=state,width=width,height=height,textScale=scale,details=data))
        review_shots.append(dict(file=filename,state=state,synthetic=True,renderer='Chromium production DOM/CSS/JS with fixture transport'))
       assert page.locator('[data-login-role]').count()==0
-      login_shot('google','#google-signin')
-      page.locator('#code-login summary').click();page.locator('#checker-code').fill('SYNTHETIC');page.locator('#checker-code').focus()
+      login_shot('staff-code','#checker-code')
+      page.locator('#checker-code').fill('0123');page.locator('#checker-code').focus()
       login_shot('staff-focused','#checker-code')
-      page.locator('#code-login summary').click();page.locator('#show-admin-login').click()
+      page.locator('#show-admin-login').click()
       page.locator('#admin-password').fill('SYNTHETIC');page.locator('#admin-password').focus()
       login_shot('admin-focused','#admin-password')
       page.locator('#show-checker-login').click()
-      assert page.locator('#google-signin').is_visible()
+      assert page.locator('#checker-code').is_visible()
       unexpected.extend(page.evaluate('window.fixtureUnexpected'));ctx.close()
     sizes=[]
    if args.interactions_only:
@@ -568,9 +565,6 @@ def run():
        page.wait_for_timeout(100);measure_report_downloads(page)
        page.evaluate("for(const [e,old]of fixtureTextStyles)e.style.fontSize=old;document.getElementById('notice').hidden=true;NavrangReportLayout.fit()")
      if role=='admin':measure_control(page,'#registration-count','Student list footer',minimum=0,scroll=True)
-     if role=='login':
-      page.evaluate("document.getElementById('google-status').textContent='Complete sign-in in your browser.'")
-      measure(page,role,'login-native-browser-fallback',width,height)
      if width in (320,390,640,1366):
       page.screenshot(path=str(out/f'{role}-{width}.png'))
      if role=='admin':

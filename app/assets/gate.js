@@ -163,7 +163,7 @@
  function staffRow(ck){const expired=ck.accessExpiresAt&&Date.parse(ck.accessExpiresAt)<=Date.now(),row=node('div',undefined,'checker-row'),avatar=node('span',initials(ck.name),'checker-avatar'),info=node('div');info.append(node('strong',ck.name),node('small',(ck.method==='google'?'Google · ':'Code · ')+(expired?'Expired':ck.active?[ck.scanner!==false?'Checker':'',ck.helpdesk?'Help Desk':''].filter(Boolean).join(' + ')||'No station':'Access disabled')+' · '+ck.entries+' entries'));if(ck.requestedRole)info.append(node('small','Requested: '+(ck.requestedRole==='helpdesk'?'Help Desk':'Checker'),'staff-request'));if(ck.accessExpiresAt)info.append(node('small','Temporary · until '+when(ck.accessExpiresAt)+' IST'));const manage=node('button','Manage access','button secondary');manage.onclick=()=>openStaff(ck);row.append(avatar,info,manage);return row}
  function renderStaff(){if(!isAdmin())return;const all=[...(model.checkers||[])].sort((a,b)=>Number(!!b.requestedRole)-Number(!!a.requestedRole)||Number(a.active)-Number(b.active)||a.name.localeCompare(b.name)),q=$('staff-search').value.trim().toLowerCase(),crew=all.filter(c=>[c.name,c.method,c.station,c.requestedRole,c.active?'active':'disabled',c.helpdesk?'help desk':'',c.scanner!==false?'checker':''].join(' ').toLowerCase().includes(q));
   updateList('checker-list',crew,{query:q,key:c=>c.id,signature:c=>JSON.stringify([c,!!c.accessExpiresAt&&Date.parse(c.accessExpiresAt)<=Date.now()]),draw:staffRow,status:'staff-count',summary:crew.length+' staff'+(q?' matching · '+all.length+' loaded':'')});
-  $('staff-empty').hidden=!!crew.length;$('staff-empty').textContent=q?'No staff match your search.':'Google checkers appear here after completing sign-in.';
+  $('staff-empty').hidden=!!crew.length;$('staff-empty').textContent=q?'No staff match your search.':'Add a staff account to assign station access.';
  }
  function renderAdmin(){if(!isAdmin())return;const m=data(),s=m.stats,key=JSON.stringify([m.dataRevision,m.cursor,s,m.checkers,$('student-search').value,$('payment-filter').value,$('entry-search').value,$('staff-search').value]);if(key===adminPaint)return;adminPaint=key;for(const[key,id]of[['total','total'],['eligible','eligible'],['admitted','admitted'],['remaining','remaining'],['lastMinute','minute'],['blocked','blocked'],['duplicateAttempts','duplicates'],['blockedAttempts','refused']])$('stat-'+id).textContent=s[key]??'—';renderRegistrations();renderEntries('all-entry-rows','entry-search','all-entry-count','all-entry-empty');renderStaff();$('namu-message').textContent='Live control · '+(s.admitted??0)+' entered · '+(m.checkers||[]).filter(c=>c.active&&(!c.accessExpiresAt||Date.parse(c.accessExpiresAt)>Date.now())).length+' active staff.';
  }
@@ -201,7 +201,26 @@
   for(const id of ['stat-total','stat-eligible','stat-admitted','stat-remaining','stat-minute','stat-blocked','stat-duplicates','stat-refused'])$(id).textContent='—';
  }
 
- async function signIn(button,action,payload){await busy(button,async()=>{await C.api(action,payload);$('notice').hidden=true;$('checker-code').value='';feedback('success');afterSignIn();})}
+ async function staffDeviceSecret(){
+  if(C.native){const reply=await C.local('staff-device-secret');if(!/^[a-f0-9]{64}$/.test(reply.secret||''))throw Error('Device verification is unavailable.');return reply.secret;}
+  const key='navrang-staff-device-v1',saved=localStorage.getItem(key);
+  if(saved){if(!/^[a-f0-9]{64}$/.test(saved))throw Error('Device verification is unavailable.');return saved}
+  const secret=Array.from(crypto.getRandomValues(new Uint8Array(32)),byte=>byte.toString(16).padStart(2,'0')).join('');
+  localStorage.setItem(key,secret);return secret;
+ }
+ async function signIn(button,action,payload){
+  await busy(button,async()=>{
+   if(action==='checker-login'){
+    if(!/^[0-9]{4}$/.test(payload.code))throw Error('Enter a four-digit staff PIN.');
+    const setupCode=$('staff-setup-code').value.trim().toLowerCase();
+    if(setupCode&&!/^[a-f0-9]{64}$/.test(setupCode))throw Error('Paste the full device setup code.');
+    payload={...payload,deviceSecret:await staffDeviceSecret(),...(setupCode?{setupCode}:{})};
+   }
+   await C.api(action,payload);
+   $('notice').hidden=true;$('checker-code').value='';$('staff-setup-code').value='';$('staff-device-setup').open=false;
+   feedback('success');afterSignIn();
+  });
+ }
  for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>{if(b.dataset.view==='desk'||b.dataset.view==='home')C.destination?.(b.dataset.view);setView(b.dataset.view)};for(const b of document.querySelectorAll('[data-admin-tab]'))b.onclick=()=>setAdminTab(b.dataset.adminTab);
  const mainNav=$('main-nav'),portalMenu=$('portal-menu-toggle');
  if(!C.native&&portalMenu){
@@ -245,7 +264,7 @@
   if(current!==-1)tabs[current+(dx<0?1:-1)]?.click();
  },{passive:true});
  const sectionInfo={
-  'sign-in':['Sign in','Sign in with Google or an assigned staff code. Administrators use separate credentials.'],
+  'sign-in':['Sign in','Sign in with an assigned staff code. Administrators use separate credentials.'],
   station:['Stations','Checker handles ticket entry. Help Desk saves registration cases. Your administrator assigns station access.'],
   scan:['Ticket checks','Use the exact eight-character Transaction ID from the ticket email. In the Android app, tap the scanner or swipe down to open the camera. Green confirms entry.'],
   entries:['Entry log','This temporary view shows server-confirmed entries. Times are in IST.'],
@@ -277,7 +296,7 @@
  scanAction.setAttribute('aria-label',C.native?'Open continuous QR scanner':'Enter ticket ID manually');
  scanAction.onclick=()=>{if(!canStartTicketCheck())return;if(C.native)C.scan();else $('ticket-id').focus()};
  $('show-admin-login').onclick=()=>{$('signin-panel').hidden=true;$('admin-signin').hidden=false};$('show-checker-login').onclick=()=>{$('admin-signin').hidden=true;$('signin-panel').hidden=false};
- $('google-signin').onclick=()=>busy($('google-signin'),()=>C.googleLogin());$('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
+ $('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
  function clearSessionView(){
   uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;model=emptyModel();adminPaint='';selected=staffSelected=null;clearLists();queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);
   for(const d of document.querySelectorAll('dialog[open]'))close(d.id);
@@ -328,9 +347,36 @@
   $('import-registration').onclick=()=>{if(!isAdmin())return;if(typeof globalThis.Native?.importRegistrations==='function')globalThis.Native.importRegistrations();else notice('Use the updated Android app to import organizer files.');};
  }
  $('ticket-editor').onsubmit=e=>{e.preventDefault();if(!isAdmin())return;busy(e.submitter||$('ticket-editor').querySelector('button'),async()=>{const generation=uiGeneration,r={id:exactId($('edit-id').value),name:$('edit-name').value.trim(),amount:$('edit-amount').value===''?null:Number($('edit-amount').value),quantity:$('edit-quantity').value===''?null:Number($('edit-quantity').value),refund:$('edit-refund').value===''?null:Number($('edit-refund').value),description:$('edit-status').value};if(!r.id)throw Error('Use an exact eight-character ticket ID.');if(!r.name)throw Error('Enter the student name.');if(r.amount!==null&&(!Number.isFinite(r.amount)||r.amount<0)||r.quantity!==null&&(!Number.isInteger(r.quantity)||r.quantity<=0)||r.refund!==null&&(!Number.isFinite(r.refund)||r.refund<0))throw Error('Enter numeric non-negative amount/refund and a positive whole quantity, or leave unknown values blank.');await C.api('upsert',{eventId:'O9KL3',source:'Admin manual update',records:[r]});if(generation!==uiGeneration||!isAdmin())return;await poll(true);if(generation!==uiGeneration||!isAdmin())return;close('edit-dialog');notice('Registration saved to the shared database.');feedback('success')})};
- $('open-code').onclick=()=>{if(isAdmin()){$('new-code-panel').hidden=true;$('new-checker-code').textContent='';show('code-dialog')}};$('close-code').onclick=()=>close('code-dialog');$('create-checker-form').onsubmit=e=>{e.preventDefault();if(!isAdmin())return;busy(e.submitter||$('create-checker-form').querySelector('button'),async()=>{const generation=uiGeneration,name=$('new-checker-name').value.trim();const r=await C.api('staff-create',{name,scanner:$('new-checker-role').value!=='helpdesk',helpdesk:$('new-checker-role').value!=='checker'}),code=r.code;if(generation!==uiGeneration||!isAdmin())return;await poll(true);if(generation!==uiGeneration||!isAdmin())return;$('new-checker-code').textContent=code;$('new-code-panel').hidden=false;$('new-checker-name').value=''})};$('copy-code').onclick=()=>busy($('copy-code'),async()=>{if(C.copy)await C.copy($('new-checker-code').textContent);else if(navigator.clipboard)await navigator.clipboard.writeText($('new-checker-code').textContent);else notice('Use the Android app or HTTPS portal to copy this code.')});
- function openStaff(ck){if(!isAdmin())return;staffSelected=ck;$('staff-name').value=ck.name;$('staff-active').checked=ck.active;$('staff-role').value=ck.scanner!==false&&ck.helpdesk?'both':ck.scanner!==false?'checker':ck.helpdesk?'helpdesk':ck.requestedRole||'none';$('staff-detail').textContent=(ck.method==='google'?'Google verified account':'Assigned code account')+(ck.requestedRole?' · requested '+(ck.requestedRole==='checker'?'Checker':'Help Desk'):'')+(ck.accessExpiresAt?' · expires '+when(ck.accessExpiresAt)+' IST':'');show('staff-dialog')}
- $('close-staff').onclick=()=>close('staff-dialog');$('staff-access-form').onsubmit=e=>{e.preventDefault();if(!isAdmin()||!staffSelected)return;busy(e.submitter||$('staff-access-form').querySelector('button'),async()=>{const generation=uiGeneration,role=$('staff-role').value,active=$('staff-active').checked,name=$('staff-name').value.trim().replace(/\s+/g,' ');if(active&&role==='none')throw Error('Assign a station or disable access.');await C.api('staff-update',{id:staffSelected.id,name,active,scanner:['checker','both'].includes(role),helpdesk:['helpdesk','both'].includes(role)});if(generation!==uiGeneration||!isAdmin())return;close('staff-dialog');await poll(true);if(generation!==uiGeneration||!isAdmin())return;notice(name+' · access saved on server.');feedback('success')})};
+ $('open-code').onclick=()=>{if(isAdmin()){$('new-code-panel').hidden=true;$('new-checker-code').textContent='';show('code-dialog')}};$('close-code').onclick=()=>close('code-dialog');
+ $('create-checker-form').onsubmit=e=>{
+  e.preventDefault();if(!isAdmin())return;
+  busy(e.submitter||$('create-checker-form').querySelector('button'),async()=>{
+   const generation=uiGeneration,name=$('new-checker-name').value.trim(),role=$('new-checker-role').value;
+   const {checker}=await C.api('staff-create',{name,scanner:role!=='helpdesk',helpdesk:role!=='checker'});
+   if(generation!==uiGeneration||!isAdmin())return;
+   $('new-checker-name').value='';
+   try{
+    const {setupCode}=await C.api('staff-device-issue',{checkerId:checker.id});
+    if(generation!==uiGeneration||!isAdmin()||!$('code-dialog').open)return;
+    $('new-checker-code').textContent=setupCode;$('new-code-panel').hidden=false;
+   }catch{
+    if(generation===uiGeneration&&isAdmin())notice('Staff account created. Open Staff to issue its setup code.');
+   }finally{if(generation===uiGeneration&&isAdmin())await poll(true);}
+  });
+ };
+ $('copy-code').onclick=()=>busy($('copy-code'),async()=>{if(C.copy)await C.copy($('new-checker-code').textContent);else if(navigator.clipboard)await navigator.clipboard.writeText($('new-checker-code').textContent);else notice('Use the Android app or HTTPS portal to copy this code.')});
+ $('code-dialog').addEventListener('close',()=>{$('new-checker-code').textContent='';$('new-code-panel').hidden=true});
+ $('staff-dialog').addEventListener('close',()=>{$('staff-device-code').textContent=''});
+ function openStaff(ck){if(!isAdmin())return;staffSelected=ck;$('staff-device-code').textContent='';$('staff-name').value=ck.name;$('staff-active').checked=ck.active;$('staff-role').value=ck.scanner!==false&&ck.helpdesk?'both':ck.scanner!==false?'checker':ck.helpdesk?'helpdesk':ck.requestedRole||'none';$('staff-detail').textContent=(ck.method==='google'?'Google verified account':'Assigned code account')+(ck.requestedRole?' · requested '+(ck.requestedRole==='checker'?'Checker':'Help Desk'):'')+(ck.accessExpiresAt?' · expires '+when(ck.accessExpiresAt)+' IST':'');show('staff-dialog')}
+ $('close-staff').onclick=()=>{$('staff-device-code').textContent='';close('staff-dialog')};$('staff-access-form').onsubmit=e=>{e.preventDefault();if(!isAdmin()||!staffSelected)return;busy(e.submitter||$('staff-access-form').querySelector('button'),async()=>{const generation=uiGeneration,role=$('staff-role').value,active=$('staff-active').checked,name=$('staff-name').value.trim().replace(/\s+/g,' ');if(active&&role==='none')throw Error('Assign a station or disable access.');await C.api('staff-update',{id:staffSelected.id,name,active,scanner:['checker','both'].includes(role),helpdesk:['helpdesk','both'].includes(role)});if(generation!==uiGeneration||!isAdmin())return;close('staff-dialog');await poll(true);if(generation!==uiGeneration||!isAdmin())return;notice(name+' · access saved on server.');feedback('success')})};
+ $('issue-staff-device').onclick=()=>busy($('issue-staff-device'),async()=>{
+  if(!isAdmin()||!staffSelected)return;
+  const generation=uiGeneration,checkerId=staffSelected.id;
+  const result=await C.api('staff-device-issue',{checkerId});
+  if(generation!==uiGeneration||!isAdmin()||staffSelected?.id!==checkerId||!$('staff-dialog').open)return;
+  $('staff-device-code').textContent=result.setupCode;
+  if(C.copy)await C.copy(result.setupCode);
+ });
  $('password-open').onclick=()=>{if(isAdmin())show('password-dialog')};$('close-password').onclick=()=>close('password-dialog');$('change-password-form').onsubmit=e=>{e.preventDefault();if(!isAdmin())return;busy(e.submitter||$('change-password-form').querySelector('button'),async()=>{const generation=uiGeneration;await C.api('admin-password',{password:$('new-admin-password').value});if(generation!==uiGeneration||!isAdmin())return;$('new-admin-password').value='';close('password-dialog');notice('Admin password changed. Other admin sessions were signed out.')})};
 
  function renderReadiness(action='status'){
@@ -392,7 +438,7 @@
  const quietIntro=C.profile()||(introMotion?.reduced()??globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
  if(!quietIntro)feedback('intro');
  const introTimer=setTimeout(endIntro,quietIntro?0:950);
- (async()=>{try{await C.finishGoogle()}catch(e){notice(e.message)}renderAuth();setView(C.profile()?assignedView():'login');await renderLocal();try{const cfg=await C.api('config');if(cfg.googleEnabled===false)$('google-status').textContent='Google sign-in is unavailable. Ask Namdev for a staff code.';$('provider-note').textContent='Manage names, approve requests and assign Checker, Help Desk or both. Only admin can change access.'}catch{connection(false)}if(C.profile()){try{if(C.native)await C.local('refresh');else await C.api('me');renderAuth()}catch(e){notice(e.message)}await poll(true)}else connection(false,'Sign in')})().catch(e=>notice(e.message));
+ (async()=>{try{if(C.cookieSession)await C.restoreSession()}catch(e){notice(e.message)}renderAuth();setView(C.profile()?assignedView():'login');await renderLocal();try{await C.api('config');$('provider-note').textContent='Manage names, approve requests and assign Checker, Help Desk or both. Only admin can change access.'}catch{connection(false)}if(C.profile()){try{if(C.native)await C.local('refresh');else if(!C.cookieSession)await C.api('me');renderAuth()}catch(e){notice(e.message)}await poll(true)}else connection(false,'Sign in')})().catch(e=>notice(e.message));
  let expiryBlocked=false;setInterval(()=>{
   if(document.hidden)return;const p=C.profile(),blocked=expired(p);
   if(blocked&&!expiryBlocked){expiryBlocked=true;clearSessionView();if(p){setView('account',{sensitive:true});notice('Your saved sign-in needs server verification. Connect to continue; it has not been removed.');connection(false,'Verifying sign-in');}}

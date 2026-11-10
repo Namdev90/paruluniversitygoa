@@ -25,8 +25,8 @@ test('login opens directly with one secondary admin route',()=>{
  const {dom,w,calls}=fixture(),$=id=>w.document.getElementById(id);
  try{
   assert.equal($('signin-panel').hidden,false);
-  assert.equal($('google-signin').disabled,false);
-  assert.equal($('code-login').open,false);
+  assert.equal($('google-signin'),null);
+  assert.ok($('staff-keypad').children.length);
   assert.equal(w.document.querySelector('[data-login-role]'),null);
   $('show-admin-login').click();assert.equal($('admin-signin').hidden,false);
   $('show-checker-login').click();assert.equal($('signin-panel').hidden,false);

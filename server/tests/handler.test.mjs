@@ -15,3 +15,23 @@ test('named staff codes retain admin-selected permissions and reject invalid sta
  for(const payload of [{name:'Raju',scanner:'true',helpdesk:true},{name:'Raju',scanner:false,helpdesk:false},{name:'bad@example.invalid',scanner:true}])assert.equal((await post('staff-create',payload)).status,400);
  assert.equal((await post('staff-request',{station:'admin'})).status,400);
 });
+test('a four-digit PIN requires a verified device and retains the existing staff identity',async()=>{
+ const checkerId='10000000-0000-4000-8000-000000000001',calls=[];
+ const handler=H.createHandler({googleEnabled:async()=>false,rpc:async(action,payload)=>{
+  calls.push({action,payload});
+  if(action==='budget')return {allowed:true};
+  if(action==='staff-device-login')return {checkerId};
+  if(action==='session-create')return {role:payload.role,checkerId:payload.checkerId};
+  if(action==='reports-access')return {allowed:true};
+  throw Error('Unexpected action '+action);
+ }});
+ const post=payload=>handler(new Request('https://example.test/',{method:'POST',body:JSON.stringify({action:'checker-login',payload})}));
+ assert.equal((await post({code:'0042'})).status,400);
+ assert.equal(calls.length,0);
+ const result=await post({code:'0042',deviceSecret:'a'.repeat(64),setupCode:'b'.repeat(64),authProtocol:1,installationId:'synthetic-android'});
+ assert.equal(result.status,200);
+ assert.deepEqual((await result.json()).profile,{role:'checker',checkerId,reports:true,reportsRequested:false});
+ const proof=calls.find(call=>call.action==='staff-device-login').payload;
+ assert.deepEqual(Object.keys(proof),['deviceHash','pinProof','inviteHash']);
+ assert.ok(Object.values(proof).every(value=>/^[a-f0-9]{64}$/.test(value)&&value!=='a'.repeat(64)&&value!=='b'.repeat(64)));
+});

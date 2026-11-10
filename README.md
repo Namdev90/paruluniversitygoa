@@ -5,13 +5,13 @@
 
 **Scan confidently. Resolve exceptions. Report with evidence.**
 
-[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/raw/refs/heads/main/downloads/Navrang-Gate-0.9.0.apk) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
+[Download the current APK](https://github.com/Namdev90/paruluniversitygoa/releases/latest) · [Complete feature catalogue](docs/FEATURES.md) · [Version history](CHANGELOG.md) · [GitHub Releases](https://github.com/Namdev90/paruluniversitygoa/releases) · [Release procedure](docs/RELEASE-PROCEDURE.md)
 
 [Current status](docs/CURRENT-STATUS.md) · [Development setup](docs/GETTING-STARTED.md) · [Architecture](docs/ARCHITECTURE.md) · [Documentation index](docs/README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Accessibility](ACCESSIBILITY.md)
 
 </div>
 
-> **Release status** · **0.9.0 · Android code 19** brings the refined Account, Admin, Reports, and scanner designs with swipe navigation and app lock. The final original-key-signed APK passed an in-place emulator upgrade; the owner’s physical phone was excluded. Location sharing, voice and event alerts are not included. See [the release record](docs/RESTORATION-RELEASE-0.9.0.md) and [current status](docs/CURRENT-STATUS.md).
+> **Release status**: Navrang 0.9.1 (Android code 20) is published. See [current status](docs/CURRENT-STATUS.md) for the signed candidate, portal, and verification scope.
 
 
 ## Original Navrang interface

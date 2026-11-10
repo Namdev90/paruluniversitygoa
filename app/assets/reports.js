@@ -47,7 +47,7 @@
     catch(err){if(seq===generation)status(err.message,{error:true});}finally{button.disabled=false;}};
    line.append(info,button);wrap.append(line);
   }
-  if(!result.members.length)wrap.append(text('p','Teachers appear after signing in with Google and saving their name.'));
+  if(!result.members.length)wrap.append(text('p','No existing verified faculty accounts.'));
  }
  async function refresh(){
   if(!permitted()){clear();return;}

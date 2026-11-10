@@ -60,6 +60,21 @@ public final class GateSession {
  }
  private static boolean hexSecret(String value){return value!=null&&value.matches("[a-f0-9]{64}");}
  private static String newSecret(){byte[] bytes=new byte[32];new java.security.SecureRandom().nextBytes(bytes);StringBuilder text=new StringBuilder(64);for(byte b:bytes){text.append(Character.forDigit((b&255)>>>4,16));text.append(Character.forDigit(b&15,16));}return text.toString();}
+ public synchronized String staffDeviceSecret()throws Exception{
+  String saved=prefs.getString("staff-device-v1","");
+  Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding");
+  if(!saved.isEmpty()){
+   String[] parts=saved.split(":",2);
+   cipher.init(Cipher.DECRYPT_MODE,key(),new GCMParameterSpec(128,Base64.decode(parts[0],Base64.NO_WRAP)));
+   String value=new String(cipher.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),StandardCharsets.UTF_8);
+   if(!hexSecret(value))throw new java.io.IOException("Invalid device credential.");
+   return value;
+  }
+  String value=newSecret();cipher.init(Cipher.ENCRYPT_MODE,key());
+  String encoded=Base64.encodeToString(cipher.getIV(),Base64.NO_WRAP)+":"+Base64.encodeToString(cipher.doFinal(value.getBytes(StandardCharsets.UTF_8)),Base64.NO_WRAP);
+  if(!prefs.edit().putString("staff-device-v1",encoded).commit())throw new java.io.IOException("Could not save device verification.");
+  return value;
+ }
  public synchronized JSONObject prepareRenewal(long expected,String access)throws Exception{
   JSONObject value=read();if(expected!=generation||value==null||!access.equals(value.optString("token"))||!hexSecret(value.optString("refreshToken")))return null;
   JSONObject pending=value.optJSONObject("pendingRefresh");

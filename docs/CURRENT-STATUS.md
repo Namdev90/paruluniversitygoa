@@ -1,5 +1,19 @@
 # Current project status
 
+## Operational update · 10 November 2026
+
+**Navrang Gate 0.9.2, Android code 21** includes the touch-target and numeric display improvements from PR #28, blends the Android screen edges and removes four unused legacy interface assets. The [updater manifest](../updates/latest.json) identifies the APK, SHA-256 and signature. [Merged interface polish](https://github.com/Namdev90/paruluniversitygoa/pull/28) · [0.9.2 release changes](https://github.com/Namdev90/paruluniversitygoa/pull/29)
+
+The final original-key APK passed the in-place upgrade from published 0.9.1 on the dedicated Android API 37 emulator. The app ID, data directory and original installation time carried over, and both versions launched. This release replaces Google sign-in in the clients with a staff PIN and on-screen keypad. [Portal](https://navrang-gate-admin.namubhai.chatgpt.site/)
+
+The legacy raw-Java build opens the external Google flow directly. The client now accepts its matching browser acknowledgement and the historical packager includes the scripts referenced by the login shell. The raw-Java APK was outside this verification. The AndroidX APK remains the supported release path.
+
+The 0.9.2 source adds a four-digit staff PIN keypad and a tactile burgundy-and-brass theme. For first use, an administrator issues a single-use setup code under Account → Admin console → Staff access. Staff paste it under Verify a new device and choose their PIN. The code expires after 15 minutes. Subsequent sign-ins use the PIN and a credential saved by that app installation or browser. Clearing site data, reinstalling Android or changing devices requires a new setup code. Ten incorrect PIN attempts require a new setup code. Administrator sign-in is separate.
+
+Device setup keeps the existing staff account ID, station permissions and Reports grants. For an existing faculty account, issue its setup code from its Staff access row. Browser storage keeps the credential for the current HTTPS origin. Only use a trusted browser profile. Android stores its credential through Android Keystore. Apply `server/staff-device-v092.sql` and deploy the matching Edge Function before rolling out the 0.9.2 clients. The backend retains compatibility with previously published clients during rollout.
+
+## Historical 0.9.0 snapshot
+
 This is a source-and-publication snapshot checked on **9 November 2026 (UTC)** against `main` commit [`b21798702fe2a99e1d419e15b8d31011f2fc7fa6`](https://github.com/Namdev90/paruluniversitygoa/commit/b21798702fe2a99e1d419e15b8d31011f2fc7fa6). Recheck the manifest and Releases before using this as a future release decision.
 
 ## Published Android version

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.9.2 · Android code 21
+
+- Redesigned the opening page with a four-digit staff PIN and on-screen keypad.
+- Verify each staff device once with an administrator-issued setup code. Existing staff keep their station and Reports access.
+- Use a tactile burgundy-and-brass theme across the app and portal.
+
+- Blend the protected Android screen areas into the header and navigation.
+- Enlarge touch targets and stabilize changing operational numbers.
+- Remove unused legacy web assets from the AndroidX APK.
+- Handle direct browser acknowledgements from the historical Java host.
+
+## 0.9.1 · Android code 20
+
+- Added one-button Google sign-in with external browser recovery.
+- Adapted layouts to narrow windows, curved screens and separating folds.
+- Grouped related controls, refined transitions and reduced the visual size of information icons.
+- Preserved Help Desk drafts and in-flight report exports while navigating. [Release](https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.9.1)
+
 ## 0.9.0 — Android code 19 · 9 November 2026
 
 - Refined Account, Admin, Reports, and scanning, with swipe navigation and app lock.

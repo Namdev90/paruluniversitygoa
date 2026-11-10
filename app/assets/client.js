@@ -210,10 +210,15 @@
   }
   return googleLogin();
  }
+ async function restoreSession(){
+  if(!cookieMode)return;
+  if(!browserSession)throw browserSessionError||fail('Protected browser sign-in is unavailable.',503);
+  await browserSession.restore();
+ }
  async function finishGoogle(){
   if(native)return;const url=new URL(location.href),fragment=new URLSearchParams(url.hash.slice(1)),error=url.searchParams.get('error')||fragment.get('error')||url.searchParams.get('error_code')||fragment.get('error_code');
   if(error){const description=url.searchParams.get('error_description')||fragment.get('error_description')||'',cancel=/access_denied|cancel/i.test(error+' '+description);sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);throw fail(cancel?'Google sign-in was cancelled. Tap Continue with Google to try again.':'Google sign-in setup needs the organizer’s attention. Namdev must check the Google client ID and client secret in Supabase. Use an assigned checker code meanwhile.')}
-  const code=url.searchParams.get('code');if(!code){if(cookieMode){if(!browserSession)throw browserSessionError||fail('Protected browser sign-in is unavailable.',503);await browserSession.restore();}return;}const generation=authGeneration,verifier=sessionStorage.getItem('navrang-pkce');sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);if(!verifier)throw fail('This Google sign-in request has expired. Tap Continue with Google to start again.');
+  const code=url.searchParams.get('code');if(!code)return restoreSession();const generation=authGeneration,verifier=sessionStorage.getItem('navrang-pkce');sessionStorage.removeItem('navrang-pkce');history.replaceState(null,'',location.pathname);if(!verifier)throw fail('This Google sign-in request has expired. Tap Continue with Google to start again.');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);let r,data;
   try{r=await fetch(config.project+'/auth/v1/token?grant_type=pkce',{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({auth_code:code,code_verifier:verifier}),signal:controller.signal,cache:'no-store'});data=await r.json();}catch{throw fail('Google sign-in was interrupted. Tap Continue with Google to try again.');}finally{clearTimeout(timer)}
   if(generation!==authGeneration)throw fail('Sign-in changed while Google was connecting. Keep using your current account.',409);if(!r.ok||!data.access_token)throw fail('Google sign-in could not be exchanged. Tap Continue with Google to try again.');await api('google-login',{accessToken:data.access_token});emit('auth',profile());
@@ -266,5 +271,5 @@
    onProfile:(p,meta)=>{if(meta.changed)resetMemory();rememberValidation(p);emit('profile',p);},
    onClear:({reason,external})=>{if(external||reason==='revoked')authGeneration++;trustedValidation=null;resetMemory();emit('auth',null);}});
  }catch(error){browserSessionError=error?.status?error:fail('Protected browser sign-in is unavailable.',503);}
- root.GateClient={copy,feedback,update,destination,readiness,voice,locatorSample,native,cookieSession:cookieMode,api,local,sync,submit:queue,profile,sessionExpired,signOut,googleLogin,googleBrowserLogin,finishGoogle,save,saveReport,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
+ root.GateClient={copy,feedback,update,destination,readiness,voice,locatorSample,native,cookieSession:cookieMode,api,local,sync,submit:queue,profile,sessionExpired,signOut,restoreSession,googleLogin,googleBrowserLogin,finishGoogle,save,saveReport,on:f=>{listeners.add(f);return()=>listeners.delete(f)},scan:()=>{if(native)Native.scan();else emit('notice',{message:'Camera scanning runs in the Android app. Use manual entry here.'})}};
 })(globalThis);
