@@ -1,6 +1,6 @@
 {
-  "versionCode": 20,
-  "versionName": "0.9.1",
+  "versionCode": 21,
+  "versionName": "0.9.2",
   "notes": "Direct sign-in, faster transitions, role-specific Settings, and smoother camera scanning. Help Desk drafts and report exports stay intact while navigating.",
   "interface": "original"
 }

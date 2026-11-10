@@ -49,7 +49,8 @@ val prepareNativeAssets = tasks.register<Exec>("prepareNativeAssets") {
 val copyNativeAssets = tasks.register<Sync>("copyNativeAssets") {
     from(rootProject.file("app/assets")) {
         exclude("legacy.html", "notifications.js", "notifications.css", "voice.js", "locator.js", "locator.css")
-        exclude("app.js", "vendor/**", "art/event-poster.jpg", "art/ASSET-NOTES.md")
+        exclude("app.js", "vendor/**", "art/event-poster.jpg", "art/ASSET-NOTES.md",
+            "legacy-style.css", "package.js", "store.js", "workbook.js")
     }
     into(layout.buildDirectory.dir("generated/assets"))
 }

@@ -307,6 +307,10 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 .crafted-login>.combined-brand-login{width:min(200px,55%,24vh);margin:0 auto 8px}
 .crafted-login[data-auth-stage=admin]>.combined-brand-login{width:min(150px,45%,18vh)}
 .topbar{background:radial-gradient(ellipse at 40% 0,#68072480,transparent 80%)}
+/* Blend the Android host's protected status and navigation areas into the app. */
+body:not(.portal-layout) .app-shell{background:linear-gradient(#2a1122,#100d15 22%,#100d15 75%,#1d1521)}
+body:not(.portal-layout) .topbar{background:transparent}
+body:not(.portal-layout) .mobile-nav{background:#1d1521}
 .compact-brand-copy{color:#d9bdc8;font-size:10px;line-height:1.4;letter-spacing:.04em}
 .login-foot.official-brand-line{margin-top:16px;padding-top:12px}
 @media(max-height:560px) and (min-width:520px){.intro-content>.combined-brand-hero{width:min(320px,42vw);max-width:100%}.intro-content{gap:6px}}

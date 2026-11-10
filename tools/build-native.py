@@ -63,7 +63,7 @@ def main():
         raise SystemExit('The native APK must preserve minimum API 24.')
     with zipfile.ZipFile(candidate) as archive:
         if original:
-            required = {'assets/index.html', 'assets/client.js', 'assets/reports.js', 'assets/report-export.js', 'assets/workbook.js', 'assets/art/classic-restore.css'}
+            required = {'assets/index.html', 'assets/client.js', 'assets/reports.js', 'assets/report-export.js', 'assets/art/classic-restore.css'}
             if not required.issubset(archive.namelist()):
                 raise SystemExit('The restored interface is missing a required feature asset.')
             verify_restored_artwork(archive, metadata)

@@ -71,9 +71,10 @@ class ClassicHostTest {
         val page = activity.assets.open("index.html").bufferedReader().use { it.readText() }
         assertTrue(page.contains("art/classic-restore.css"))
         assertTrue(page.contains("classic-signout-pending"))
-        for (name in listOf("reports.js", "report-export.js", "workbook.js", "desk.js")) {
+        for (name in listOf("reports.js", "report-export.js", "desk.js")) {
             assertTrue(activity.assets.open(name).use { it.read() >= 0 })
         }
+        assertFalse(activity.assets.list("")!!.any { it in setOf("legacy-style.css", "package.js", "store.js", "workbook.js") })
         assertTrue(activity.resources.getDrawable(R.drawable.app_icon, activity.theme) != null)
         controller.destroy()
     }
