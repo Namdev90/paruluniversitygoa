@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.4 · Android code 23
+
+- Hide the message bell on signed-out startup.
+- Apply a shared page, section, label and supporting-text hierarchy across the app and portal, including native scanner typography.
+- Retain 0.9.3 messaging, automatic downloads and APK size improvements.
+
 ## 0.9.3 · Android code 22
 
 - Restore the message centre with unread counts, named staff selection and quick replies.

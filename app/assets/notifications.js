@@ -271,7 +271,7 @@
    else if(['notification','notifications','push'].includes(event.type)&&autoStart&&runnable())refresh(true);
    else if(event.type==='push-open')openPush(event.data);
   });
-  synchronizeIdentity();if(autoStart&&runnable())refresh();
+  synchronizeIdentity(true);if(autoStart&&runnable())refresh();
   return{refresh,open,close,clear,destroy(){if(destroyed)return;destroyed=true;epoch++;cancelTimer();if(typeof unsubscribe==='function')unsubscribe();doc.removeEventListener('visibilitychange',onVisibility);root.removeEventListener('online',onVisibility);root.removeEventListener('offline',onOffline);voiceObserver?.disconnect();close();voicePanel?.destroy();center.remove();opener.remove();topbar?.classList.remove('has-notification-center');}};
  }
  root.NavrangNotificationCenter={mount};if(root.GateClient)root.NavrangNotifications=mount();

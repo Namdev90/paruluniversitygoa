@@ -29,7 +29,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 internal val ScannerGold = Color(0xffe5be7d)
 internal val ScannerWine = Color(0xff402333)
@@ -37,7 +39,16 @@ internal val ScannerWine = Color(0xff402333)
 /** The original fixed palette also covers dialogs; device dynamic colors are not applied. */
 @Composable
 internal fun ClassicScannerTheme(content: @Composable () -> Unit) {
+    val typography = Typography()
     MaterialTheme(
+        typography = typography.copy(
+            headlineSmall = typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            titleLarge = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            titleMedium = typography.titleMedium.copy(
+                fontSize = 18.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold,
+            ),
+            labelLarge = typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+        ),
         colorScheme = darkColorScheme(
             primary = ScannerGold, onPrimary = Color(0xff201219),
             background = Color(0xff100d15), surface = Color(0xff211923),
@@ -117,6 +128,7 @@ internal fun ScannerExactIdPanel(
         Text(
             "Verify entry records admission for an eligible ticket. Wait for a confirmed receipt.",
             style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text("Eight-character ticket ID", style = MaterialTheme.typography.labelLarge)
         BasicTextField(

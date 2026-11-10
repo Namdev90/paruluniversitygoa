@@ -1,6 +1,6 @@
 {
-  "versionCode": 22,
-  "versionName": "0.9.3",
-  "notes": "Staff messages with quick replies, urgent popups, automatic update downloads and a smaller app.",
+  "versionCode": 23,
+  "versionName": "0.9.4",
+  "notes": "Clearer visual hierarchy across the app and portal, and a message bell shown after sign-in. Includes quick replies, urgent in-app messages, automatic update downloads and the smaller APK.",
   "interface": "original"
 }
