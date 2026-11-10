@@ -187,7 +187,12 @@ test('an import completed during an active poll coalesces one immediate incremen
  }finally{dom.window.close()}
 });
 
-test('native login keeps an explicit browser fallback independent of Credential Manager',async()=>{
- const t=setup(null,{native:true});try{await tick();assert.equal(t.$('google-browser-signin').hidden,false);t.click('google-browser-signin');await tick();assert.equal(t.calls.filter(c=>c.action==='google-browser-fallback').length,1);assert.equal(t.calls.filter(c=>c.action==='google-browser').length,0);}finally{t.dom.window.close()}
- const web=setup(null);try{await tick();assert.equal(web.$('google-browser-signin').hidden,true)}finally{await tick();web.dom.window.close()}
+test('the gate uses the same single Google action on Android and the website',async()=>{
+ for(const native of [true,false]){
+  const t=setup(null,{native});try{
+   await tick();assert.equal(t.$('google-browser-signin'),null);
+   t.click('google-signin');await tick();
+   assert.equal(t.calls.filter(c=>c.action==='google-browser').length,1);
+  }finally{t.dom.window.close()}
+ }
 });

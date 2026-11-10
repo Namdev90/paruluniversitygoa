@@ -106,7 +106,7 @@ internal fun ScannerExactIdPanel(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Find by ticket ID", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = ScannerGold)
             IconButton(onClick = { showInfo = true }, enabled = enabled, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.Outlined.Info, contentDescription = "About ticket verification", tint = ScannerGold)
+                Icon(Icons.Outlined.Info, contentDescription = "About ticket verification", modifier = Modifier.size(17.dp), tint = ScannerGold)
             }
         }
         Text(

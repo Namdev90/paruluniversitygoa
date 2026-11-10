@@ -307,7 +307,6 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 .crafted-login>.combined-brand-login{width:min(200px,55%,24vh);margin:0 auto 8px}
 .crafted-login[data-auth-stage=admin]>.combined-brand-login{width:min(150px,45%,18vh)}
 .topbar{background:radial-gradient(ellipse at 40% 0,#68072480,transparent 80%)}
-.brand.official-header h1{margin-top:0}
 .compact-brand-copy{color:#d9bdc8;font-size:10px;line-height:1.4;letter-spacing:.04em}
 .login-foot.official-brand-line{margin-top:16px;padding-top:12px}
 @media(max-height:560px) and (min-width:520px){.intro-content>.combined-brand-hero{width:min(320px,42vw);max-width:100%}.intro-content{gap:6px}}
@@ -344,8 +343,8 @@ body[data-reduced-motion=true] *,body[data-reduced-motion=true] *::before,body[d
 /* Account keeps administration a step below the primary station navigation. */
 #view-account>.section-title{display:block}
 .section-heading{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
-.section-info-button{display:inline-grid;place-items:center;flex:0 0 44px;width:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--gold)}
-.section-info-button span{display:grid;place-items:center;width:21px;height:21px;border:1px solid currentColor;border-radius:50%;font:700 13px/1 system-ui,sans-serif}
+.section-info-button{display:inline-grid;place-items:center;flex:0 0 44px;width:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;color:var(--gold)}
+.section-info-button span{display:grid;place-items:center;width:17px;height:17px;border:1px solid currentColor;border-radius:50%;font:700 11px/1 system-ui,sans-serif}
 .section-info-button:focus-visible,.account-tool-row:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .section-info-dialog{width:min(420px,calc(100% - 32px))}
 .section-info-dialog p{margin-block:8px 16px;color:var(--muted)}
@@ -496,7 +495,6 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
  padding:var(--safe-top) calc(var(--shell-gutter) + var(--safe-right)) var(--safe-bottom) calc(var(--shell-gutter) + var(--safe-left));
 }
 .brand.official-header{flex-wrap:wrap;row-gap:3px}
-.brand.official-header h1{overflow-wrap:anywhere}
 .input-action input{min-inline-size:0}
 @media(max-width:759px){
  .view{gap:calc(var(--section-gap) + var(--tall-space) / 8)}

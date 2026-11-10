@@ -35,10 +35,11 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
  protected long nativeLocatorRequest(String action){return 0;}
  protected void nativeLocatorResponse(String action,JSONObject payload,JSONObject response,long generation,String token,long requestFence,long elapsedMs){}
  protected String nativeVoiceCommand(String action,String payload){return "{\"available\":false,\"ready\":false,\"state\":\"unavailable\",\"microphone\":false,\"canTalk\":false,\"message\":\"Voice is not available yet.\"}";}
- protected void googleLoginForOperation(String operationId){googleLogin();}
+ protected void googleLoginForOperation(String operationId){startBrowserGoogleLogin(operationId);}
  protected final void nativeAuthState(String operationId,String phase,long generation){try{event(new JSONObject().put("type","credential").put("data",new JSONObject().put("operationId",operationId).put("phase",phase).put("generation",generation)));}catch(Exception ignored){}}
  protected boolean updatesEnabled(){return GateUpdater.automatic(this);}
- protected void browserGoogleLogin(){googleLogin();}
+ protected void browserGoogleLogin(){browserGoogleLoginForOperation("");}
+ protected void browserGoogleLoginForOperation(String operationId){startBrowserGoogleLogin(operationId);}
  protected void importRegistrations(){error("Use the updated Android app to import registration files.");}
  protected final void nativeNotice(String text){try{event(new JSONObject().put("type","notice").put("data",new JSONObject().put("message",text)));}catch(Exception ignored){}}
  protected final void nativeError(String text){error(text);}
@@ -147,17 +148,32 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   queueDocumentWrite(pending,data.getData());
  }
  @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handleOAuth(intent);}
- protected void googleLogin(){
+ protected void googleLogin(){startBrowserGoogleLogin("");}
+ protected final void startBrowserGoogleLogin(String operationId){
   final long generation=runtime.sessions.beginChange();
   runtime.requests.execute(()->{try{
    GateApi.Reply config=runtime.api.call("config",new JSONObject(),"");
-   if(!config.body.optBoolean("googleEnabled")){error("Google sign-in awaits Google Cloud / Supabase provider setup. Ask the admin for an assigned checker code.");return;}
+   if(generation!=runtime.sessions.generation())return;
+   if(!config.body.optBoolean("googleEnabled")){browserGoogleFailed(operationId,generation,"Google sign-in is unavailable. Use an assigned staff code.");return;}
    String verifier=Pkce.verifier(),nonce=Pkce.verifier();
-   getSharedPreferences("navrang-pkce",MODE_PRIVATE).edit().putString("verifier",verifier).putString("nonce",nonce).putLong("created",System.currentTimeMillis()).putLong("sessionGeneration",generation).commit();
    String redirect=runtime.api.config.getString("oauthRedirect")+"?state="+Uri.encode(nonce);
    Uri url=Uri.parse(runtime.api.config.getString("project")+"/auth/v1/authorize").buildUpon().appendQueryParameter("provider","google").appendQueryParameter("redirect_to",redirect).appendQueryParameter("code_challenge",Pkce.challenge(verifier)).appendQueryParameter("code_challenge_method","s256").build();
-   runOnUiThread(()->{try{startActivity(new Intent(Intent.ACTION_VIEW,url));}catch(Exception e){error("Install a browser to sign in with Google.");}});
-  }catch(Exception e){error("Could not start Google sign-in. Check your connection.");}});
+   runOnUiThread(()->{
+    if(generation!=runtime.sessions.generation()||isFinishing()||isDestroyed())return;
+    android.content.SharedPreferences callback=getSharedPreferences("navrang-pkce",MODE_PRIVATE);
+    if(!callback.edit().putString("verifier",verifier).putString("nonce",nonce).putLong("created",System.currentTimeMillis()).putLong("sessionGeneration",generation).commit()){
+     browserGoogleFailed(operationId,generation,"Could not save the Google sign-in request. Try again.");return;
+    }
+    try{startActivity(new Intent(Intent.ACTION_VIEW,url));}
+    catch(Exception e){callback.edit().clear().commit();browserGoogleFailed(operationId,generation,"Could not open a browser for Google sign-in. Try again or use a staff code.");return;}
+    if(!operationId.isEmpty())nativeAuthState(operationId,"browser-opened",generation);
+   });
+  }catch(Exception e){browserGoogleFailed(operationId,generation,"Could not start Google sign-in. Check your connection.");}});
+ }
+ private void browserGoogleFailed(String operationId,long generation,String message){
+  if(generation!=runtime.sessions.generation())return;
+  if(!operationId.isEmpty())nativeAuthState(operationId,"browser-failed",generation);
+  error(message);
  }
  private void handleOAuth(Intent intent){
   Uri u=intent==null?null:intent.getData();if(u==null)return;
@@ -308,6 +324,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   @JavascriptInterface public void googleLogin(){googleLoginFromBridge();}
   @JavascriptInterface public void googleLoginRequest(String operationId){if(operationId!=null&&operationId.matches("[A-Za-z0-9-]{1,100}"))runOnUiThread(()->MainActivity.this.googleLoginForOperation(operationId));}
   @JavascriptInterface public void googleBrowserLogin(){runOnUiThread(()->MainActivity.this.browserGoogleLogin());}
+  @JavascriptInterface public void googleBrowserLoginRequest(String operationId){if(operationId!=null&&operationId.matches("[A-Za-z0-9-]{1,100}"))runOnUiThread(()->MainActivity.this.browserGoogleLoginForOperation(operationId));}
   private void googleLoginFromBridge(){MainActivity.this.googleLogin();}
   @JavascriptInterface public void feedback(String kind,boolean enabled){
    if(!java.util.Arrays.asList("intro","stop-intro","tap","transition","success","pending","issue","scan","duplicate","invalid","close").contains(kind))return;

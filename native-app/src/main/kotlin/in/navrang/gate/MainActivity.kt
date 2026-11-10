@@ -153,16 +153,8 @@ class MainActivity : ClassicActivity() {
     }
 
     private var credentialJob: Job? = null
-    private var credentialOperation = ""
 
-    override fun googleLoginForOperation(operationId: String) {
-        if (credentialJob?.isActive == true) {
-            nativeAuthState(operationId, "failed", -1)
-            return
-        }
-        credentialOperation = operationId
-        googleLogin()
-    }
+    override fun googleLoginForOperation(operationId: String) = startNativeGoogleLogin(operationId)
 
     private data class ImportIdentity(val generation: Long, val token: String)
 
@@ -295,24 +287,27 @@ class MainActivity : ClassicActivity() {
 
     override fun scannerActivity() = ClassicScannerActivity::class.java
 
-    override fun browserGoogleLogin() {
+    override fun browserGoogleLoginForOperation(operationId: String) {
         runOnUiThread {
-            val operation = credentialOperation
             if (BuildConfig.DEBUG) {
-                nativeAuthState(operation, "failed", -1)
+                nativeAuthState(operationId, "browser-failed", -1)
                 nativeError("Google sign-in is disabled in the isolated internal build.")
                 return@runOnUiThread
             }
             credentialJob?.cancel()
             nativeIdentityChanging()
-            super.googleLogin()
+            startBrowserGoogleLogin(operationId)
         }
     }
 
-    override fun googleLogin() {
+    override fun googleLogin() = startNativeGoogleLogin("")
+
+    private fun startNativeGoogleLogin(operation: String) {
         runOnUiThread {
-            if (credentialJob?.isActive == true) return@runOnUiThread
-            val operation = credentialOperation
+            if (credentialJob?.isActive == true) {
+                nativeAuthState(operation, "cancelled", -1)
+                return@runOnUiThread
+            }
             if (BuildConfig.DEBUG) {
                 nativeAuthState(operation, "failed", -1)
                 nativeError("Google sign-in is disabled in the isolated internal build.")
@@ -356,17 +351,15 @@ class MainActivity : ClassicActivity() {
                     nativeAuthState(operation, "completed", generation)
                 } catch (_: GetCredentialCancellationException) {
                     nativeAuthState(operation, "cancelled", authGeneration)
-                    nativeError("Google sign-in cancelled. You can try again or use browser sign-in.")
+                    if (operation.isEmpty()) nativeError("Google sign-in cancelled. Tap Continue with Google to try again.")
                 } catch (_: NoCredentialException) {
                     nativeAuthState(operation, "failed", authGeneration)
-                    nativeError("No Google credential is available. Try browser sign-in.")
+                    if (operation.isEmpty()) nativeError("No Google credential is available. Try browser sign-in.")
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
                     nativeAuthState(operation, "failed", authGeneration)
-                    nativeError(
-                        "Google sign-in could not complete. Try browser sign-in or your assigned staff code."
-                    )
+                    if (operation.isEmpty()) nativeError("Google sign-in could not complete. Try browser sign-in or your assigned staff code.")
                 }
             }
         }

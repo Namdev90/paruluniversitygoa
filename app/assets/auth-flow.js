@@ -4,18 +4,19 @@
  const $=id=>document.getElementById(id);
  function mount({client:C,onStageChange=()=>{}}){
   if(!$('view-login')||!C)return null;
-  let stage='signin',pending=false,operation='',fallback=false,epoch=0;
+  let stage='signin',operation='',channel='',preferBrowser=false,sequence=0;
   const card=document.querySelector('.login-card'),brand=card.querySelector('.combined-brand-login');
   const signin=$('signin-panel'),admin=$('admin-signin'),adminLink=$('show-admin-login'),code=$('code-login');
-  const google=$('google-signin'),browser=$('google-browser-signin'),status=$('google-status');
+  const google=$('google-signin'),status=$('google-status');
   function paint(){
+   const pending=!!operation;
    signin.hidden=stage!=='signin';admin.hidden=stage!=='admin';
-   browser.hidden=!fallback||stage!=='signin';google.disabled=pending;adminLink.disabled=pending;code.inert=pending;
+   google.disabled=pending;adminLink.disabled=pending;code.inert=pending;
    google.setAttribute('aria-busy',String(pending));
    card.dataset.authStage=stage;onStageChange(stage);
   }
   function go(next){
-   if(pending||stage===next)return;
+   if(operation||stage===next)return;
    const motion=root.NavrangMotion;
    const from=motion&&!motion.reduced()?brand?.getBoundingClientRect():null;
    motion?.cancel();
@@ -25,23 +26,56 @@
    if(from)motion.morph(brand,from);
    motion?.enter(panel,{y:stage==='signin'?-6:6});
   }
-  function reset({preservePending=false}={}){if(preservePending&&pending)return;epoch++;pending=false;operation='';fallback=false;stage='signin';paint()}
+  function reset({preservePending=false}={}){
+   if(preservePending&&operation)return;
+   operation=channel='';preferBrowser=false;stage='signin';status.textContent='';paint();
+  }
+  function finish(op,message=''){
+   if(operation!==op)return;
+   operation=channel='';status.textContent=message;paint();
+  }
+  async function openBrowser(op){
+   if(operation!==op||channel==='browser'||C.profile())return;
+   preferBrowser=true;channel='browser';status.textContent='Opening Google in your browser…';
+   try{
+    if(await C.googleBrowserLogin(op)===false)finish(op,'Complete sign-in in your browser.');
+   }catch(error){finish(op,error?.message||'Browser sign-in could not start.')}
+  }
   const api={stage:()=>stage,reset,back:()=>{
-   if(pending)return false;
+   if(operation)return true;
    if(stage==='admin'){go('signin');return true}
    if(!code.open)return false;
    code.open=false;code.querySelector('summary').focus();return true;
   }};
   adminLink.onclick=()=>go('admin');$('show-checker-login').onclick=()=>api.back();
   google.onclick=async()=>{
-   if(pending||stage!=='signin'||C.profile())return;pending=true;fallback=false;operation=root.crypto?.randomUUID?.()||'login-'+Date.now()+'-'+(++epoch);const op=operation,version=epoch;paint();
-   try{await C.googleLogin(op);if(!C.native&&version===epoch&&operation===op){pending=false;paint()}}
-   catch(error){if(version===epoch&&operation===op){pending=false;fallback=!!C.native;status.textContent=error?.message||'Google sign-in could not start. Try again or use a staff code.';paint()}}
+   if(operation||stage!=='signin'||C.profile())return;
+   const op=operation=root.crypto?.randomUUID?.()||'login-'+Date.now()+'-'+(++sequence);
+   channel=C.native?'native':'web';status.textContent='';paint();
+   if(C.native&&preferBrowser){await openBrowser(op);return}
+   try{
+    const tracked=await C.googleLogin(op);
+    if(channel==='web'||(channel==='native'&&tracked===false))finish(op);
+   }catch(error){
+    if(operation!==op)return;
+    if(channel==='native')await openBrowser(op);
+    else if(channel==='web')finish(op,error?.message||'Google sign-in could not start. Try again or use a staff code.');
+   }
   };
-  browser.onclick=async()=>{if(pending||stage!=='signin'||C.profile())return;try{await C.googleBrowserLogin()}catch(error){status.textContent=error?.message||'Browser sign-in could not start.'}};
   C.on(e=>{
-   if(e.type==='credential'&&e.data?.operationId===operation&&operation){if(['cancelled','failed','completed'].includes(e.data.phase)){operation='';pending=false;fallback=e.data.phase!=='completed';paint()}}
-   if(e.type==='auth'&&C.profile())reset();
+   if(e.type==='auth'&&C.profile()){reset();return}
+   if(e.type!=='credential'||!operation||e.data?.operationId!==operation)return;
+   const {operationId:op,phase}=e.data;
+   if(channel==='native'){
+    if(phase==='failed'||phase==='unavailable')void openBrowser(op);
+    else if(phase==='cancelled'){
+     // A cancelled sheet stays closed. Another tap can use the browser instead.
+     preferBrowser=true;finish(op);
+    }else if(phase==='completed')finish(op);
+   }else if(channel==='browser'){
+    if(phase==='browser-opened')finish(op,'Complete sign-in in your browser.');
+    else if(phase==='browser-failed')finish(op,e.data.message||'Browser sign-in could not start. Try again or use a staff code.');
+   }
   });
   paint();return api;
  }

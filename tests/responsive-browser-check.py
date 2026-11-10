@@ -99,7 +99,8 @@ def run():
         update(action){if(!['status','background'].includes(action))return blocked('update:'+action);return JSON.stringify({currentVersion:f.candidateVersion,available:false,ready:false,automatic:true,notifications:false,message:'Synthetic preview: no update is available.'});},
         destination(value){if(value)return blocked('destination');return f.role==='admin'?'admin':'login';},
         feedback(){},
-        googleLoginRequest(operationId){queueMicrotask(()=>window.onGateEvent(JSON.stringify({type:'credential',data:{operationId,phase:'cancelled',generation:1}})));},
+        googleLoginRequest(operationId){queueMicrotask(()=>window.onGateEvent(JSON.stringify({type:'credential',data:{operationId,phase:window.fixtureGoogleOutcome||'cancelled',generation:1}})));},
+        googleBrowserLoginRequest(operationId){window.fixtureGoogleBrowserOpened=(window.fixtureGoogleBrowserOpened||0)+1;queueMicrotask(()=>window.onGateEvent(JSON.stringify({type:'credential',data:{operationId,phase:'browser-opened',generation:2}})));},
         googleLogin(){return blocked('googleLogin');},googleBrowserLogin(){return blocked('googleBrowserLogin');},
         scan(){return blocked('scan');},submit(){return blocked('submit');},importRegistrations(){return blocked('importRegistrations');}
        };
@@ -353,10 +354,11 @@ def run():
     shot(page,'mock-native-admin','import-controls','#import-registration')
     finish(ctx,page)
     ctx,page=fresh('login',mocked_native=True)
-    assert not page.locator('#google-browser-signin').is_visible()
+    assert page.locator('#google-browser-signin').count()==0
+    page.evaluate("window.fixtureGoogleOutcome='failed'")
     page.locator('#google-signin').click()
-    page.locator('#google-browser-signin').wait_for(state='visible')
-    shot(page,'mock-native-login','browser-sign-in','#google-browser-signin')
+    page.wait_for_function("window.fixtureGoogleBrowserOpened===1 && !document.getElementById('google-signin').disabled")
+    shot(page,'mock-native-login','browser-sign-in','#google-signin')
     finish(ctx,page)
     for role in ('helpdesk','pending','newstaff'):
      ctx,page=fresh(role);shot(page,role,'initial')
@@ -416,6 +418,13 @@ def run():
     page.locator('#account-tool-back').focus();page.keyboard.press('Enter')
     check('keyboard returns from admin Reports to Account tools',page.evaluate("document.body.dataset.route==='account'&&!document.getElementById('admin-account-tools').hidden&&document.querySelector('#main-nav [aria-current=page]')?.dataset.view==='account'"))
     check('admin bottom navigation omits Admin and Reports',page.locator('#main-nav [data-view="admin"]:visible,#main-nav [data-view="reports"]:visible').count()==0)
+    check('header leaves the logo on its own while retaining a screen reader title',
+          not page.locator('.topbar .brand').inner_text().strip() and page.locator('#page-title').get_attribute('class')=='sr-only')
+    info_button=page.locator('[data-section-info="account"]')
+    info_box=info_button.bounding_box()
+    info_glyph=info_button.locator('span').bounding_box()
+    check('compact information glyph keeps its full touch area',
+          info_box['width']>=44 and info_box['height']>=44 and info_glyph['width']<=17 and info_glyph['height']<=17)
     page.locator('[data-section-info="account"]').focus();page.keyboard.press('Enter')
     page.locator('#section-info').wait_for(state='visible');page.keyboard.press('Escape')
     check('Account information restores keyboard focus',page.evaluate("document.activeElement.dataset.sectionInfo==='account'&&!document.getElementById('section-info').open"))
@@ -560,7 +569,7 @@ def run():
        page.evaluate("for(const [e,old]of fixtureTextStyles)e.style.fontSize=old;document.getElementById('notice').hidden=true;NavrangReportLayout.fit()")
      if role=='admin':measure_control(page,'#registration-count','Student list footer',minimum=0,scroll=True)
      if role=='login':
-      page.evaluate("document.getElementById('google-browser-signin').hidden=false")
+      page.evaluate("document.getElementById('google-status').textContent='Complete sign-in in your browser.'")
       measure(page,role,'login-native-browser-fallback',width,height)
      if width in (320,390,640,1366):
       page.screenshot(path=str(out/f'{role}-{width}.png'))
