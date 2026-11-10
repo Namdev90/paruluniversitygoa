@@ -212,8 +212,13 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 /* Shared sign-in, with administrator credentials on their own panel. */
 .login-card{justify-content:center;max-width:560px;width:100%;margin-inline:auto}
 .login-card .login-foot,.creator-credit{font-size:11px;color:#cdbec9;text-align:center}
-.login-card #code-login{margin-top:14px}
-.login-card #google-status:empty{margin:0}
+.staff-keypad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:12px 0}
+.staff-keypad>.button{min-width:0;padding:5px 2px;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:300px){.staff-keypad{grid-template-columns:repeat(4,minmax(0,1fr))}}
+#signin-panel>.eyebrow{display:block;margin-bottom:8px;color:var(--gold)}
+#signin-panel>h2{font-size:clamp(24px,5.5vw,34px);line-height:1.12;margin:0}
+#signin-panel>.micro-note{margin:8px 0;color:var(--muted)}
+#signin-panel #checker-form>.wide{margin-top:0}
 .app-footer.creator-credit{min-height:24px;padding:4px}
 
 /* Consolidated reports: naturally sized panels and accessible tabs. */
@@ -327,9 +332,8 @@ body:not(.portal-layout) .mobile-nav{background:#1d1521}
 #view-login input::placeholder{color:#c9c2cb}
 #view-login label{font-size:13px;margin-block:12px 6px}
 #view-login :is(button,summary){min-height:48px}
-#view-login .google-button{height:auto;min-height:48px;padding:12px;line-height:1.4}
 #view-login h2{overflow-wrap:anywhere}
-#view-login :is(.button,.google-button){box-shadow:none}
+#view-login .button{box-shadow:none}
 #view-login .primary{background:#702449;color:#fff;border-color:#bc7898}
 #view-login .secondary{background:#302b32;color:#f6f2f5;border-color:#817584}
 #view-login :is(button,summary):focus-visible,#view-login input:focus{
@@ -379,11 +383,6 @@ body:not(.portal-layout) .mobile-nav{background:#1d1521}
 :where(#view-desk,#view-admin,#view-reports) :is(.desk-tabs,.admin-tabs,.report-tabs) button{min-height:44px;line-height:1.25;word-break:normal}
 .intro .intro-skip{min-height:48px}
 @media(orientation:portrait){.intro .dancer-stage>.dancer{object-position:center 56%}}
-@media(max-height:560px){
- .crafted-login:has(#code-login[open])>.combined-brand-login{display:none}
- #view-login .crafted-login:has(#code-login[open]){padding-block:10px}
- .crafted-login #code-login[open]{margin-top:8px}
-}
 .scan-workspace{grid-column:1/-1;display:grid;gap:var(--section-gap);min-width:0}
 #view-home .scan-workspace>#pull-to-scan{grid-row:auto;flex:none;min-height:0;padding:0;background:none;box-shadow:none;border:0}
 .scan-workspace>.manual-panel{min-width:0;padding:10px 0 0;border-top:1px solid var(--line)}

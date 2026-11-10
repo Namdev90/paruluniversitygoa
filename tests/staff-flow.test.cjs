@@ -38,7 +38,7 @@ for(const eventFirst of [true,false])for(const locked of [true,false])test(`real
  }finally{t.dom.window.close()}
 });
 test('Google stays available; the first station choice is saved and staff cannot choose again',async()=>{
- const t=setup(null,{native:true}),{w,dom,calls,$}=t;try{await tick();t.click('google-signin');await tick();assert.ok(calls.some(c=>c.action==='google-browser'));
+ const t=setup(null,{native:true}),{w,dom,calls,$}=t;try{await tick();assert.equal($('google-signin'),null);
  t.click('skip-intro');t.setProfile({role:'checker',checkerId:'test',name:'Google name',method:'google',nameConfirmed:false,active:true,scanner:true,helpdesk:true});t.event({type:'auth'});assert.equal($('name-dialog').open,true);
  $('real-name').value='Raju';$('name-form').dispatchEvent(new w.Event('submit',{cancelable:true}));await tick();assert.equal($('view-station').hidden,false);assert.ok(!calls.some(c=>c.action==='camera'));
  t.click('station-helpdesk');await tick();assert.equal($('view-desk').hidden,false);assert.ok(!calls.some(c=>c.action==='camera'));
@@ -187,12 +187,12 @@ test('an import completed during an active poll coalesces one immediate incremen
  }finally{dom.window.close()}
 });
 
-test('the gate uses the same single Google action on Android and the website',async()=>{
+test('the gate shows only staff code and administrator sign-in',async()=>{
  for(const native of [true,false]){
   const t=setup(null,{native});try{
    await tick();assert.equal(t.$('google-browser-signin'),null);
-   t.click('google-signin');await tick();
-   assert.equal(t.calls.filter(c=>c.action==='google-browser').length,1);
+   assert.equal(t.$('google-signin'),null);
+   assert.ok(t.$('checker-code'));
   }finally{t.dom.window.close()}
  }
 });

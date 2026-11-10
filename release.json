@@ -1,6 +1,6 @@
 {
   "versionCode": 21,
   "versionName": "0.9.2",
-  "notes": "Direct sign-in, faster transitions, role-specific Settings, and smoother camera scanning. Help Desk drafts and report exports stay intact while navigating.",
+  "notes": "A redesigned staff-code opening screen with an on-screen keypad, improved touch targets, and blended Android screen edges.",
   "interface": "original"
 }

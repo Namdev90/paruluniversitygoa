@@ -2,6 +2,8 @@
 
 ## Unreleased 0.9.2 · Android code 21
 
+- Redesigned the opening page with staff-code sign-in and an on-screen keypad.
+
 - Blend the protected Android screen areas into the header and navigation.
 - Enlarge touch targets and stabilize changing operational numbers.
 - Remove unused legacy web assets from the AndroidX APK.

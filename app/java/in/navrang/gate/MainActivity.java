@@ -61,7 +61,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
    @Override public boolean shouldOverrideUrlLoading(WebView w,String u){return !allowed(u);}
    @Override public WebResourceResponse shouldInterceptRequest(WebView w,WebResourceRequest r){String u=r.getUrl().toString();if(allowed(u))return null;return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));}
   });
-  web.loadUrl("file:///android_asset/index.html");handleOAuth(getIntent());
+  web.loadUrl("file:///android_asset/index.html");
  }
  private void showMessage(String text){TextView v=new TextView(this);v.setText(text);v.setTextSize(18);v.setPadding(35,70,35,35);setContentView(v);}
  private void call(String fn,String json){runOnUiThread(()->{if(web!=null&&!isFinishing())web.evaluateJavascript("window."+fn+" && window."+fn+"("+JSONObject.quote(json)+");",null);});}
@@ -147,7 +147,7 @@ public final class MainActivity extends Activity implements GateRuntime.Listener
   if(data==null||data.getData()==null){documentOutcome(pending,"failed");return;}
   queueDocumentWrite(pending,data.getData());
  }
- @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handleOAuth(intent);}
+ @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);}
  protected void googleLogin(){startBrowserGoogleLogin("");}
  protected final void startBrowserGoogleLogin(String operationId){
   final long generation=runtime.sessions.beginChange();

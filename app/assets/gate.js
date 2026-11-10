@@ -245,7 +245,7 @@
   if(current!==-1)tabs[current+(dx<0?1:-1)]?.click();
  },{passive:true});
  const sectionInfo={
-  'sign-in':['Sign in','Sign in with Google or an assigned staff code. Administrators use separate credentials.'],
+  'sign-in':['Sign in','Sign in with an assigned staff code. Administrators use separate credentials.'],
   station:['Stations','Checker handles ticket entry. Help Desk saves registration cases. Your administrator assigns station access.'],
   scan:['Ticket checks','Use the exact eight-character Transaction ID from the ticket email. In the Android app, tap the scanner or swipe down to open the camera. Green confirms entry.'],
   entries:['Entry log','This temporary view shows server-confirmed entries. Times are in IST.'],
@@ -277,7 +277,7 @@
  scanAction.setAttribute('aria-label',C.native?'Open continuous QR scanner':'Enter ticket ID manually');
  scanAction.onclick=()=>{if(!canStartTicketCheck())return;if(C.native)C.scan();else $('ticket-id').focus()};
  $('show-admin-login').onclick=()=>{$('signin-panel').hidden=true;$('admin-signin').hidden=false};$('show-checker-login').onclick=()=>{$('admin-signin').hidden=true;$('signin-panel').hidden=false};
- $('google-signin').onclick=()=>busy($('google-signin'),()=>C.googleLogin());$('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
+ $('checker-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('checker-form').querySelector('button'),'checker-login',{code:$('checker-code').value})};$('admin-form').onsubmit=e=>{e.preventDefault();signIn(e.submitter||$('admin-form').querySelector('button'),'login',{username:$('admin-username').value,password:$('admin-password').value}).finally(()=>$('admin-password').value='')};
  function clearSessionView(){
   uiGeneration++;pollRun++;syncBusy=false;syncAgain=false;model=emptyModel();adminPaint='';selected=staffSelected=null;clearLists();queuedResults=[];held=false;lastResult=null;for(const warning of pendingResults.values())clearTimeout(warning.timer);pendingResults.clear();pendingAcknowledged.clear();clearTimeout(resultTimer);clearTimeout(queueTimer);queueTimer=null;clearTimeout(noticeTimer);
   for(const d of document.querySelectorAll('dialog[open]'))close(d.id);
@@ -392,7 +392,7 @@
  const quietIntro=C.profile()||(introMotion?.reduced()??globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
  if(!quietIntro)feedback('intro');
  const introTimer=setTimeout(endIntro,quietIntro?0:950);
- (async()=>{try{await C.finishGoogle()}catch(e){notice(e.message)}renderAuth();setView(C.profile()?assignedView():'login');await renderLocal();try{const cfg=await C.api('config');if(cfg.googleEnabled===false)$('google-status').textContent='Google sign-in is unavailable. Ask Namdev for a staff code.';$('provider-note').textContent='Manage names, approve requests and assign Checker, Help Desk or both. Only admin can change access.'}catch{connection(false)}if(C.profile()){try{if(C.native)await C.local('refresh');else await C.api('me');renderAuth()}catch(e){notice(e.message)}await poll(true)}else connection(false,'Sign in')})().catch(e=>notice(e.message));
+ (async()=>{renderAuth();setView(C.profile()?assignedView():'login');await renderLocal();try{await C.api('config');$('provider-note').textContent='Manage names, approve requests and assign Checker, Help Desk or both. Only admin can change access.'}catch{connection(false)}if(C.profile()){try{if(C.native)await C.local('refresh');else await C.api('me');renderAuth()}catch(e){notice(e.message)}await poll(true)}else connection(false,'Sign in')})().catch(e=>notice(e.message));
  let expiryBlocked=false;setInterval(()=>{
   if(document.hidden)return;const p=C.profile(),blocked=expired(p);
   if(blocked&&!expiryBlocked){expiryBlocked=true;clearSessionView();if(p){setView('account',{sensitive:true});notice('Your saved sign-in needs server verification. Connect to continue; it has not been removed.');connection(false,'Verifying sign-in');}}

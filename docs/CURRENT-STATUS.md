@@ -4,7 +4,7 @@
 
 The public Android channel serves **0.9.1, Android code 20**. PR #28 merged the touch-target and numeric display improvements after that release. Its changes are included in the signed 0.9.2 test candidate, which also blends the Android screen edges and removes four unused legacy interface assets. [Published APK](https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.9.1) · [Merged interface polish](https://github.com/Namdev90/paruluniversitygoa/pull/28) · [0.9.2 draft](https://github.com/Namdev90/paruluniversitygoa/pull/29)
 
-The original-key 0.9.2 candidate passed the in-place upgrade from 0.9.1 on the dedicated emulator. The X100 Pro screen and real Google account round trip are pending. The updated portal is live separately from the Android update channel. [Portal](https://navrang-gate-admin.namubhai.chatgpt.site/)
+An earlier original-key 0.9.2 candidate passed the in-place upgrade from 0.9.1 on the dedicated emulator. The latest draft replaces Google sign-in with a staff-code opening screen and on-screen keypad. Existing faculty report grants require a Google-linked identity, so code issuance for those same accounts must be verified before deploying code-only sign-in. The public portal and Android channel still use the previously deployed sign-in. [Portal](https://navrang-gate-admin.namubhai.chatgpt.site/)
 
 The legacy raw-Java build opens the external Google flow directly. The client now accepts its matching browser acknowledgement and the historical packager includes the scripts referenced by the login shell. The raw-Java APK was outside this verification. The AndroidX APK remains the supported release path.
 
