@@ -1,11 +1,11 @@
 {
   "packageName": "in.navrang.gate",
-  "versionCode": 22,
-  "versionName": "0.9.3",
-  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.3.apk",
+  "versionCode": 23,
+  "versionName": "0.9.4",
+  "apkUrl": "https://raw.githubusercontent.com/Namdev90/paruluniversitygoa/main/downloads/Navrang-Gate-0.9.4.apk",
   "size": 8448849,
-  "sha256": "6f221c681479522d73dfd3fd0ce2ef43bd5e37e7dcbb0b515a3bb6343ebec1b3",
-  "notes": "Staff messages with quick replies, urgent popups, automatic update downloads and a smaller app.",
-  "publishedAt": "2026-11-10T15:26:10.425427+00:00",
-  "signature": "2k4tGuQnK8gl2+GlFE79Q1f/WRdIOGZcn0zWj3jGot0hyZgft5Y+yhD84R9KKtutNwwFDbMxlQCn4QqPE7Lg7+lM5VkgsyKc22Cq76AB5jdyzpFK0tRgm8o5KXwahT0grOmiEyL8T06jNiJ5gSntWV9sHkaNCXska5RzhlRyHgG0ejArUvu2oLjfTifzMuU2FIjhDECaCdwzejwCrOSy5u56tkbFCVfzszb2rw/YbyXJPAkMWR8awUwH0Q9ZmqpzNrKF1Kp6qShOPtM6bFVDBaBwJABr5RQBx/iIm6mUC1IxBc3i6iTJPdgRunJjzc9guRKSzKsomcE/Csinv3xPug=="
+  "sha256": "e3117d665033297e337c3f3ff67a4f6006de8049accb41317798c84ebd12379c",
+  "notes": "Clearer visual hierarchy across the app and portal, and a message bell shown after sign-in. Includes quick replies, urgent in-app messages, automatic update downloads and the smaller APK.",
+  "publishedAt": "2026-11-10T16:07:52.069252+00:00",
+  "signature": "vjggOXu3k/5l4xoWoZG2Q38FvJ3JppOh3nFeJs5MOG3lN6gzee/SSfvl1+uSRBhD70EzSTzEj0qYWR299gD9/3kK6QlfQN3PrP6qbOTXT30gpai0OETyf9PEVk0wc28gltYEpLNHq71GQDZFsEzjpxZbKLr7dbj8cGH1wZIMeGXdqRhxw7BlE1bCX4IR2/+0VRAlj0A5ghgelxB8VfINJAm1fGIBzYvVF2+SEKuo+7O/lKiNGo9ZyDWn2kPKEuVsVrX6L1aHWRVKo+XhukB0WRcdvWGPnuu9+gjfM/v8zHD/Eqjo+Cj80ODPToW7R08QWIo0soxkWrzbdCib79TWgQ=="
 }
