@@ -17,7 +17,11 @@
    panel.querySelector('h2').focus();
    root.NavrangMotion?.enter(panel,{y:stage==='signin'?-6:6});
   }
-  for(const key of ['1','2','3','4','5','6','7','8','9','0','A','B','C','D','E','F','NG-','-','⌫','Clear']){
+  input.addEventListener('input',()=>{
+   const digits=input.value.replace(/[^0-9]/g,'').slice(0,4);
+   if(input.value!==digits)input.value=digits;
+  });
+  for(const key of ['1','2','3','4','5','6','7','8','9','Clear','0','⌫']){
    const button=document.createElement('button');
    button.type='button';button.className='button secondary';button.textContent=key;
    if(key==='⌫')button.setAttribute('aria-label','Delete last character');

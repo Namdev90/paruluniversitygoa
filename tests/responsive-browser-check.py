@@ -353,8 +353,8 @@ def run():
     finish(ctx,page)
     ctx,page=fresh('login',mocked_native=True)
     assert page.locator('#google-browser-signin').count()==0
-    page.locator('#staff-keypad').get_by_role('button',name='NG-',exact=True).click()
-    assert page.locator('#checker-code').input_value()=='NG-'
+    page.locator('#staff-keypad').get_by_role('button',name='0',exact=True).click()
+    assert page.locator('#checker-code').input_value()=='0'
     shot(page,'mock-native-login','staff-keypad','#checker-code')
     finish(ctx,page)
     for role in ('helpdesk','pending','newstaff'):
@@ -501,7 +501,7 @@ def run():
        review_shots.append(dict(file=filename,state=state,synthetic=True,renderer='Chromium production DOM/CSS/JS with fixture transport'))
       assert page.locator('[data-login-role]').count()==0
       login_shot('staff-code','#checker-code')
-      page.locator('#checker-code').fill('SYNTHETIC');page.locator('#checker-code').focus()
+      page.locator('#checker-code').fill('0123');page.locator('#checker-code').focus()
       login_shot('staff-focused','#checker-code')
       page.locator('#show-admin-login').click()
       page.locator('#admin-password').fill('SYNTHETIC');page.locator('#admin-password').focus()

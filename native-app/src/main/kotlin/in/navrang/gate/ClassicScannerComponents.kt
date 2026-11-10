@@ -3,6 +3,8 @@ package `in`.navrang.gate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -63,11 +65,14 @@ internal fun ClassicScannerButton(
     content: @Composable RowScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(12.dp)
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     val colors = if (primary) listOf(Color(0xffffe6b8), Color(0xffc99557))
                  else listOf(Color(0xff573449), Color(0xff291d2f))
     Button(
         onClick = onClick, enabled = enabled,
-        modifier = modifier.heightIn(min = 48.dp).shadow(if (enabled) 6.dp else 0.dp, shape)
+        interactionSource = interaction,
+        modifier = modifier.heightIn(min = 48.dp).shadow(if (!enabled) 0.dp else if (pressed) 2.dp else 6.dp, shape)
             .background(Brush.verticalGradient(colors), shape),
         shape = shape, border = BorderStroke(1.dp, ScannerGold.copy(alpha = .5f)),
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent,

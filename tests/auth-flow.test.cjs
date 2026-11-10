@@ -11,25 +11,25 @@ test('staff code keypad enters and edits an issued code without submitting',()=>
   assert.equal(t.$('google-signin'),null);
   const input=t.$('checker-code'),buttons=[...t.$('staff-keypad').children];
   const press=key=>buttons.find(button=>button.textContent===key).click();
-  for(const key of ['NG-','A','0','9'])press(key);
-  assert.equal(input.value,'NG-A09');
-  input.setSelectionRange(4,5);press('F');
-  assert.equal(input.value,'NG-AF9');
-  press('⌫');assert.equal(input.value,'NG-A9');
+  for(const key of ['0','1','2','3','9'])press(key);
+  assert.equal(input.value,'0123');
+  input.setSelectionRange(2,3);press('8');
+  assert.equal(input.value,'0183');
+  press('⌫');assert.equal(input.value,'013');
   press('Clear');assert.equal(input.value,'');
   assert.equal(t.calls.length,0);
  }finally{t.dom.window.close()}
 });
 test('administrator form and back preserve the entered staff code',()=>{
  const t=setup();try{
-  t.$('checker-code').value='NG-ABCD';
+  t.$('checker-code').value='0123';
   t.$('show-admin-login').click();
   assert.equal(t.$('admin-signin').hidden,false);
   assert.equal(t.w.document.activeElement,t.$('admin-signin-title'));
   assert.equal(t.w.NavrangAuth.back(),true);
   assert.equal(t.$('signin-panel').hidden,false);
   assert.equal(t.w.document.activeElement,t.$('signin-title'));
-  assert.equal(t.$('checker-code').value,'NG-ABCD');
+  assert.equal(t.$('checker-code').value,'0123');
  }finally{t.dom.window.close()}
 });
 test('approved static combined artwork precedes the active sign-in panel',()=>{
@@ -49,7 +49,7 @@ test('quiet classic login styling remains scoped and preserves secret fields',()
  assert.ok(css.includes('#view-login :is(button,summary){min-height:48px}'));
  assert.ok(css.includes('#view-login h2{overflow-wrap:anywhere}'));
  assert.ok(css.includes('outline:2px solid #f6f2f5'));
- assert.ok(css.includes('#view-login .primary{background:#702449'));
+ assert.ok(css.includes('#view-login .primary{background:var(--brass-face)'));
  assert.ok(!css.includes('gradient('));
  for(const rule of css.split('}')){
   const selector=rule.slice(rule.lastIndexOf('*/')+2).split('{')[0].trim();
@@ -57,7 +57,8 @@ test('quiet classic login styling remains scoped and preserves secret fields',()
  }
  const t=setup();try{
   assert.equal(t.$('checker-code').type,'password');assert.equal(t.$('admin-password').type,'password');
-  assert.equal(t.$('checker-code').maxLength,64);
+  assert.equal(t.$('checker-code').maxLength,4);
+  assert.equal(t.$('checker-code').pattern,'[0-9]{4}');
  }finally{t.dom.window.close()}
 });
 

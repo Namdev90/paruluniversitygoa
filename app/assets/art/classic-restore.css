@@ -212,9 +212,8 @@ input::placeholder,textarea::placeholder{color:#c8b3bf;opacity:1}
 /* Shared sign-in, with administrator credentials on their own panel. */
 .login-card{justify-content:center;max-width:560px;width:100%;margin-inline:auto}
 .login-card .login-foot,.creator-credit{font-size:11px;color:#cdbec9;text-align:center}
-.staff-keypad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:12px 0}
+.staff-keypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:#18131c;box-shadow:inset 0 2px 7px #0009}
 .staff-keypad>.button{min-width:0;padding:5px 2px;white-space:normal;overflow-wrap:anywhere}
-@media(max-width:300px){.staff-keypad{grid-template-columns:repeat(4,minmax(0,1fr))}}
 #signin-panel>.eyebrow{display:block;margin-bottom:8px;color:var(--gold)}
 #signin-panel>h2{font-size:clamp(24px,5.5vw,34px);line-height:1.12;margin:0}
 #signin-panel>.micro-note{margin:8px 0;color:var(--muted)}
@@ -334,8 +333,8 @@ body:not(.portal-layout) .mobile-nav{background:#1d1521}
 #view-login :is(button,summary){min-height:48px}
 #view-login h2{overflow-wrap:anywhere}
 #view-login .button{box-shadow:none}
-#view-login .primary{background:#702449;color:#fff;border-color:#bc7898}
-#view-login .secondary{background:#302b32;color:#f6f2f5;border-color:#817584}
+#view-login .primary{background:var(--brass-face);color:#281620;border-color:#ffe0a9}
+#view-login .secondary{background:var(--plum-face);color:var(--ink);border-color:#a2726b80}
 #view-login :is(button,summary):focus-visible,#view-login input:focus{
  outline:2px solid #f6f2f5;outline-offset:2px;border-color:#f6f2f5;box-shadow:none;
 }
@@ -376,8 +375,14 @@ body:not(.portal-layout) .mobile-nav{background:#1d1521}
 #view-reports>.report-context{display:flex;align-items:center;gap:4px;margin:0}
 
 /* Shared grouped surfaces and touch controls across the station views. */
+:root{
+ --brass-face:linear-gradient(158deg,#fff0ca,#e8c18a 45%,#c69559);
+ --plum-face:linear-gradient(158deg,#593b50,#382539 55%,#261c2b);
+ --raised-lip:inset 0 1px #ffe3bc45,0 3px #100b15,0 7px 12px #0005;
+ --pressed-lip:inset 0 2px 4px #0007,0 1px #100b15;
+}
 .section-heading :is(h2,h3){margin:0}
-:where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account,#view-settings) .panel{background:linear-gradient(145deg,#2a1e2b,#1c1621);border-color:#a2726b4a;box-shadow:0 4px 15px #09060d42}
+:where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account,#view-settings) .panel{background:linear-gradient(154deg,#332538,#211824 58%,#19131e);border-color:#a2726b65;box-shadow:inset 0 1px #ffe6c51c,inset 0 -1px #0007,0 4px 15px #09060d60}
 :where(#view-home,#view-entries,#view-desk,#view-admin,#view-reports,#view-account) .panel-heading{flex-wrap:wrap}
 :where(#view-home,#view-desk,#view-reports,#view-admin,#view-account) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-height:44px;font-size:max(16px,1rem)}
 :where(#view-desk,#view-admin,#view-reports) :is(.desk-tabs,.admin-tabs,.report-tabs) button{min-height:44px;line-height:1.25;word-break:normal}
@@ -502,6 +507,11 @@ main,.login-mode main{padding-block-start:var(--section-gap)}
 }
 .brand.official-header{flex-wrap:wrap;row-gap:3px}
 .input-action input{min-inline-size:0}
+.view .primary{background:var(--brass-face);color:#281620;box-shadow:inset 0 1px #fff6dc,0 3px #805134,0 7px 14px #0005}
+.view .secondary,.view .account-tool-row{background:var(--plum-face);box-shadow:var(--raised-lip)}
+.view :is(input:not([type=checkbox]):not([type=radio]),select,textarea){box-shadow:inset 0 2px 5px #0009,0 1px #ffe4be19}
+#view-login #checker-code{letter-spacing:.18em;font-variant-numeric:tabular-nums;box-shadow:inset 0 2px 5px #0009}
+.view :is(.button,.account-tool-row):active:not(:disabled){transform:translateY(2px);box-shadow:var(--pressed-lip)}
 @media(max-width:759px){
  .view{gap:calc(var(--section-gap) + var(--tall-space) / 8)}
  #view-home .stats article{padding-block:calc(6px + var(--tall-space) / 5)}

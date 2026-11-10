@@ -8,6 +8,8 @@ An earlier original-key 0.9.2 candidate passed the in-place upgrade from 0.9.1 o
 
 The legacy raw-Java build opens the external Google flow directly. The client now accepts its matching browser acknowledgement and the historical packager includes the scripts referenced by the login shell. The raw-Java APK was outside this verification. The AndroidX APK remains the supported release path.
 
+The draft previews a four-digit staff keypad and a tactile burgundy-and-brass theme. The live server still issues long staff codes. A four-digit code used by itself would give only 10,000 possible credentials, and existing faculty permissions are linked to their original accounts. The preview must stay outside the public update channel until there is a verified enrollment or additional authentication path and a way to preserve those grants.
+
 ## Historical 0.9.0 snapshot
 
 This is a source-and-publication snapshot checked on **9 November 2026 (UTC)** against `main` commit [`b21798702fe2a99e1d419e15b8d31011f2fc7fa6`](https://github.com/Namdev90/paruluniversitygoa/commit/b21798702fe2a99e1d419e15b8d31011f2fc7fa6). Recheck the manifest and Releases before using this as a future release decision.
