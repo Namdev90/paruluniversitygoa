@@ -1,15 +1,15 @@
 {
   "approvedBy": "owner",
-  "approvedAt": "2026-11-10T05:53:41.1030001+05:30",
+  "approvedAt": "2026-11-10T13:43:55.9414914+05:30",
   "instruction": "The owner requested an audit across Navrang history and completion of the remaining work, including the follow-up Android release and website update.",
-  "versionName": "0.9.1",
-  "versionCode": 20,
-  "verifiedSourceCommit": "b4551a503d224e47e3bf67f8a4cdc95377919b60",
-  "approvedSourceCommit": "b4551a503d224e47e3bf67f8a4cdc95377919b60",
+  "versionName": "0.9.2",
+  "versionCode": 21,
+  "verifiedSourceCommit": "c4e625a353919677b784ea8ea6221d2b92b23b75",
+  "approvedSourceCommit": "c4e625a353919677b784ea8ea6221d2b92b23b75",
   "releaseApproved": true,
-  "signedApkSha256": "298b424e82dd639f0b13c949d09fa84966cbf72f34abe6df6160427d7eebfab1",
+  "signedApkSha256": "f911c2ac9937a9edf192758e7d2b6b963c384314bb9b07a2ca319f816ef41ba3",
   "deviceAcceptance": "VERIFIED",
-  "deviceEvidence": "The original-key-signed 0.9.1 APK upgraded published 0.9.0 in place on the dedicated Android API 37 emulator, retaining the app ID, app data directory and original install time. Both versions launched. The same final APK also installed on the physical Android 16 phone and retained its app data.",
-  "publicationInstruction": "Publish Navrang 0.9.1 using the existing release channel and original signing identity.",
-  "publicationRequestedAt": "2026-11-10T05:53:41.1030001+05:30"
+  "deviceEvidence": "The original-key-signed 0.9.2 APK upgraded published 0.9.1 in place on the dedicated Android API 37 emulator, retaining the app ID, app data directory and original install time. Both versions launched.",
+  "publicationInstruction": "Publish Navrang 0.9.2 using the existing release channel and original signing identity.",
+  "publicationRequestedAt": "2026-11-10T13:43:55.9414914+05:30"
 }
