@@ -58,6 +58,16 @@ test('native dismissal stays in the app until the user taps Google again',()=>{
   assert.equal(t.$('google-signin').disabled,false);
  }finally{t.dom.window.close()}
 });
+test('legacy direct browser acknowledgements release the same Google button',()=>{
+ for(const phase of ['browser-opened','browser-failed']){
+  const t=setup();try{
+   t.$('google-signin').click();const operationId=t.calls[0][1];
+   t.emit({type:'credential',data:{operationId,phase}});
+   assert.equal(t.$('google-signin').disabled,false);
+   assert.equal(t.calls.length,1);
+  }finally{t.dom.window.close()}
+ }
+});
 test('native failure opens one browser and ignores duplicate or stale events',()=>{
  const t=setup();try{
   t.$('google-signin').click();const op=t.calls[0][1];

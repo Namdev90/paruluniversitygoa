@@ -66,15 +66,15 @@
    if(e.type==='auth'&&C.profile()){reset();return}
    if(e.type!=='credential'||!operation||e.data?.operationId!==operation)return;
    const {operationId:op,phase}=e.data;
+   // The legacy host opens the browser directly for a tracked Google request.
+   if(phase==='browser-opened'){finish(op,'Complete sign-in in your browser.');return}
+   if(phase==='browser-failed'){finish(op,e.data.message||'Browser sign-in could not start. Try again or use a staff code.');return}
    if(channel==='native'){
     if(phase==='failed'||phase==='unavailable')void openBrowser(op);
     else if(phase==='cancelled'){
      // A cancelled sheet stays closed. Another tap can use the browser instead.
      preferBrowser=true;finish(op);
     }else if(phase==='completed')finish(op);
-   }else if(channel==='browser'){
-    if(phase==='browser-opened')finish(op,'Complete sign-in in your browser.');
-    else if(phase==='browser-failed')finish(op,e.data.message||'Browser sign-in could not start. Try again or use a staff code.');
    }
   });
   paint();return api;

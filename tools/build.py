@@ -40,7 +40,7 @@ run(TOOLS/'aapt2','compile','--dir',RESOURCES,'-o',BUILD/'resources.zip')
 assets=BUILD/'assets'
 if assets.exists():shutil.rmtree(assets)
 assets.mkdir()
-for name in ['index.html','style.css','core.js','live-core.js','config.js','gate-config.json','client.js','desk-core.js','desk.js','report-export.js','reports.js','gate.js','local-schema.sql']:
+for name in ['index.html','style.css','core.js','live-core.js','config.js','gate-config.json','client.js','desk-core.js','desk.js','report-export.js','reports.js','gate.js','local-schema.sql','browser-session.js','pagination.js','presentation-motion.js','report-layout.js','auth-flow.js']:
  shutil.copy2(ROOT/'app/assets'/name,assets/name)
 shutil.copytree(ROOT/'app/assets/art',assets/'art')
 for name in ['navrang-wordmark.png','app-icon.png']:
