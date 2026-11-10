@@ -11,7 +11,7 @@
 
 </div>
 
-> **Release status**: Navrang 0.9.1 (Android code 20) is published. See [current status](docs/CURRENT-STATUS.md) for the signed candidate, portal, and verification scope.
+> **Release status**: Navrang 0.9.3 (Android code 22) is the current release. See [current status](docs/CURRENT-STATUS.md) for the signed APK, portal, and verification scope.
 
 
 ## Original Navrang interface
