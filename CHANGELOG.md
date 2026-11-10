@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased 0.9.2 · Android code 21
+## 0.9.2 · Android code 21
 
 - Redesigned the opening page with a four-digit staff PIN and on-screen keypad.
 - Verify each staff device once with an administrator-issued setup code. Existing staff keep their station and Reports access.

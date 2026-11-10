@@ -2,9 +2,9 @@
 
 ## Operational update · 10 November 2026
 
-The public Android channel serves **0.9.1, Android code 20**. PR #28 merged the touch-target and numeric display improvements after that release. Its changes are included in the signed 0.9.2 test candidate, which also blends the Android screen edges and removes four unused legacy interface assets. [Published APK](https://github.com/Namdev90/paruluniversitygoa/releases/tag/v0.9.1) · [Merged interface polish](https://github.com/Namdev90/paruluniversitygoa/pull/28) · [0.9.2 draft](https://github.com/Namdev90/paruluniversitygoa/pull/29)
+**Navrang Gate 0.9.2, Android code 21** includes the touch-target and numeric display improvements from PR #28, blends the Android screen edges and removes four unused legacy interface assets. The [updater manifest](../updates/latest.json) identifies the APK, SHA-256 and signature. [Merged interface polish](https://github.com/Namdev90/paruluniversitygoa/pull/28) · [0.9.2 release changes](https://github.com/Namdev90/paruluniversitygoa/pull/29)
 
-An earlier original-key 0.9.2 candidate passed the in-place upgrade from 0.9.1 on the dedicated emulator. The 0.9.2 source replaces Google sign-in in the clients with a staff PIN and on-screen keypad. The public portal and Android channel still use the previously deployed sign-in. [Portal](https://navrang-gate-admin.namubhai.chatgpt.site/)
+The final original-key APK passed the in-place upgrade from published 0.9.1 on the dedicated Android API 37 emulator. The app ID, data directory and original installation time carried over, and both versions launched. This release replaces Google sign-in in the clients with a staff PIN and on-screen keypad. [Portal](https://navrang-gate-admin.namubhai.chatgpt.site/)
 
 The legacy raw-Java build opens the external Google flow directly. The client now accepts its matching browser acknowledgement and the historical packager includes the scripts referenced by the login shell. The raw-Java APK was outside this verification. The AndroidX APK remains the supported release path.
 
