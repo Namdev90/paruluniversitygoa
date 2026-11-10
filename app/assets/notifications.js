@@ -23,7 +23,7 @@
  function mount({client:C=root.GateClient,poll=true,autoStart=true,pollMs=60000,now=()=>Date.now()}={}){
   const doc=root.document,actions=doc?.querySelector('.top-actions');if(!C||!actions||doc.getElementById('notifications-button'))return null;
   let epoch=0,identity='',revision=0,feedRevision=0,items=[],dashboard=null,serverTime='',receivedAt=0,stale=true,destroyed=false,timer=null,inFlight=null,failures=0,dirtyQueued=false,lastManualRefresh=0;
-  let preview=null,composeEpoch=0,sending=false,previewing=false,liveBusy=false,endBusy=false,voicePanel=null,voiceVisible=false;const readBusy=new Set();
+  let preview=null,composeEpoch=0,sending=false,previewing=false,liveBusy=false,endBusy=false,voicePanel=null,voiceVisible=false;const readBusy=new Set(),presented=new Set();
   pollMs=Math.max(60000,Number.isFinite(pollMs)?pollMs:60000);
   const make=(tag,text,cls)=>{const n=doc.createElement(tag);if(text!==undefined&&text!==null)n.textContent=String(text);if(cls)n.className=cls;return n};
   const button=(id,label,cls='button quiet')=>{const n=make('button',label,cls);n.id=id;n.type='button';return n};
@@ -53,9 +53,9 @@
   const announcementTitle=make('h4');announcementTitle.id='notifications-live-announcement-title';const announcementBody=make('p',null,'notification-message'),announcementExtras=make('div',null,'notification-announcement-details'),announcementTime=make('time'),endLive=button('notifications-end-live','End pinned announcement','button secondary');endLive.hidden=true;endLive.onclick=endAnnouncement;liveAnnouncement.append(announcementTitle,announcementBody,announcementExtras,announcementTime,endLive);live.append(liveHeading,liveState,liveAnnouncement,liveTotals,deliverySummary);
   const restoreLive=button('notifications-restore-live','Restore live card');restoreLive.hidden=true;hideLive.onclick=()=>setDashboardHidden(true);restoreLive.onclick=()=>setDashboardHidden(false);
   const listTitle=make('h3','Five most recent'),list=make('ol',null,'notification-items');list.id='notifications-items';list.setAttribute('aria-label','Recent notifications');const empty=make('p','No recent notifications.','notification-empty');empty.id='notifications-empty';
-  const composeToggle=button('notifications-compose-toggle','Create announcement','button secondary');composeToggle.hidden=true;composeToggle.setAttribute('aria-controls','notification-composer');composeToggle.setAttribute('aria-expanded','false');
+  const composeToggle=button('notifications-compose-toggle','New message','button secondary');composeToggle.hidden=true;composeToggle.setAttribute('aria-controls','notification-composer');composeToggle.setAttribute('aria-expanded','false');
   const form=make('form',null,'notification-composer');form.id='notification-composer';form.hidden=true;
-  const formHeading=make('h3','Administrator announcement');
+  const formHeading=make('h3','New message');
   function field(label,id,type='text',maximum){const l=make('label',label),input=make(type==='textarea'?'textarea':type==='select'?'select':'input');input.id=id;l.htmlFor=id;if(type!=='select'&&type!=='textarea')input.type=type;if(maximum)input.maxLength=maximum;form.append(l,input);return input;}
   function options(select,values){for(const [value,label]of Object.entries(values)){const option=make('option',label);option.value=value;select.append(option)}}
   form.append(formHeading);const type=field('Type','notification-type','select');options(type,templateTypes);
@@ -65,13 +65,28 @@
   const meeting=make('fieldset',null,'notification-meeting');meeting.append(make('legend','Meeting details'));
   const meetingLocation=make('input');meetingLocation.id='notification-meeting-location';meetingLocation.maxLength=120;const meetingLocationLabel=make('label','Location');meetingLocationLabel.htmlFor=meetingLocation.id;
   const meetingTime=make('input');meetingTime.id='notification-meeting-time';meetingTime.type='datetime-local';const meetingTimeLabel=make('label','Meeting time');meetingTimeLabel.htmlFor=meetingTime.id;meeting.append(meetingLocationLabel,meetingLocation,meetingTimeLabel,meetingTime);form.append(meeting);
-  const audience=field('Audience','notification-audience','select');options(audience,{everyone:'Everyone',roles:'Selected roles',staff:'Selected staff IDs'});
+  const audience=field('To','notification-audience','select');options(audience,{everyone:'Everyone',roles:'Selected roles',staff:'Selected staff'});
   const roles=make('fieldset',null,'notification-audience-roles');roles.id='notification-audience-roles';roles.append(make('legend','Recipients'));const roleInputs=[];
   for(const [value,label]of Object.entries(audienceRoles)){const line=make('label',null,'notification-role-choice'),input=make('input');input.type='checkbox';input.value=value;line.append(input,make('span',label));roles.append(line);roleInputs.push(input)}form.append(roles);
-  const staff=field('Selected staff IDs (comma separated, at most 100)','notification-staff','textarea',4000);staff.rows=3;staff.setAttribute('aria-describedby','notification-compose-status');
+  const staff=field('Choose staff','notification-staff','select');staff.multiple=true;staff.size=5;staff.setAttribute('aria-describedby','notification-compose-status');
+  audience.addEventListener('change',async()=>{
+   if(audience.value!=='staff'||!isAdmin())return;
+   const version=epoch,who=identity;staff.disabled=true;
+   try{
+    const snapshot=await C.sync({dataRevision:-1,afterSeq:0});
+    if(!current(version,who)||!isAdmin())return;
+    const selected=new Set([...staff.selectedOptions].map(option=>option.value));staff.replaceChildren();
+    for(const person of snapshot.checkers||[]){
+     if(!person.active)continue;
+     const option=make('option',person.name);option.value=person.id;option.selected=selected.has(person.id);staff.append(option);
+    }
+    composeStatus.textContent=staff.options.length?'Choose the recipients.':'Add staff accounts in Account → Admin console first.';
+   }catch(error){if(current(version,who))composeStatus.textContent=errorMessage(error);}
+   finally{if(current(version,who))staff.disabled=false;}
+  });
   const composeStatus=make('p','','notification-compose-status');composeStatus.id='notification-compose-status';composeStatus.setAttribute('role','status');composeStatus.setAttribute('aria-live','polite');
   const previewResult=make('section',null,'notification-preview-result');previewResult.id='notification-preview-result';previewResult.setAttribute('aria-label','Announcement preview');previewResult.hidden=true;
-  const formActions=make('div',null,'notification-form-actions'),previewButton=button('notification-preview','Preview recipients','button secondary'),send=button('notification-send','Send announcement','button primary');send.disabled=true;formActions.append(previewButton,send);form.append(composeStatus,previewResult,formActions);
+  const formActions=make('div',null,'notification-form-actions'),previewButton=button('notification-preview','Preview recipients','button secondary'),send=button('notification-send','Send message','button primary');send.disabled=true;formActions.append(previewButton,send);form.append(composeStatus,previewResult,formActions);
   center.append(heading,status,retry,live,restoreLive,listTitle,list,empty,composeToggle,form);doc.body.append(center);
   const voiceHost=doc.getElementById('settings-voice-host'),audioSettings=voiceHost?.closest('details');
   voicePanel=audioSettings?root.NavrangVoice?.mount({client:C,container:voiceHost})||null:null;
@@ -101,7 +116,7 @@
   for(const event of ['input','change'])form.addEventListener(event,()=>{invalidatePreview();paintComposer()});
   form.onsubmit=event=>{event.preventDefault();if(isAdmin())previewAnnouncement()};previewButton.onclick=previewAnnouncement;send.onclick=sendAnnouncement;
   function clearState(){
-   epoch++;cancelTimer();inFlight=null;dirtyQueued=false;readBusy.clear();revision=0;feedRevision=0;items=[];dashboard=null;serverTime='';receivedAt=0;stale=true;failures=0;liveBusy=false;endBusy=false;previewing=false;sending=false;
+   epoch++;cancelTimer();inFlight=null;dirtyQueued=false;readBusy.clear();presented.clear();revision=0;feedRevision=0;items=[];dashboard=null;serverTime='';receivedAt=0;stale=true;failures=0;liveBusy=false;endBusy=false;previewing=false;sending=false;
    invalidatePreview('');form.reset();composeStatus.textContent='';form.hidden=true;composeToggle.setAttribute('aria-expanded','false');for(const input of form.querySelectorAll('input,select,textarea,button'))input.disabled=false;send.disabled=true;retry.disabled=false;close();
   }
   function clear(){clearState();identity=profileKey();render();syncVoice(true);}
@@ -127,6 +142,12 @@
    list.replaceChildren();for(const item of items){
     const line=make('li',null,'notification-item');line.tabIndex=-1;line.dataset.notificationId=item.id;line.dataset.read=String(item.read);const h=make('h4',item.title),message=make('p',item.body,'notification-message'),time=make('time',new Date(item.at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})+' IST');time.dateTime=item.at;
     const controls=make('div',null,'notification-item-actions');if(!item.read){const read=button('notification-read-'+item.id,'Mark read');read.dataset.markRead='';read.disabled=readBusy.has(item.id);read.onclick=()=>markRead(item.id);controls.append(read)}
+    if(!isAdmin()&&!item.read&&item.kind==='announcement'){
+     for(const label of ['Acknowledged','On my way','Need help']){
+      const reply=button('notification-reply-'+item.id+'-'+label.replaceAll(' ','-'),label,'button secondary');
+      reply.disabled=readBusy.has(item.id);reply.onclick=()=>sendReply(item.id,label);controls.append(reply);
+     }
+    }
     if(destinationControl(item.destination)){const openItem=button('notification-open-'+item.id,'Open');openItem.dataset.openNotification='';openItem.disabled=readBusy.has(item.id);openItem.onclick=async()=>{const version=epoch,who=identity;if(await markRead(item.id)&&current(version,who)){const target=destinationControl(item.destination);if(target){close();target.click()}}};controls.append(openItem)}
     line.append(h,message,...messageExtras(item),time,controls);list.append(line);
    }
@@ -160,7 +181,7 @@
    }
    return{revision:value.revision,serverTime:value.serverTime,items:activeIds.map(id=>updated.get(id)),dashboard:nextDashboard};
   }
-  function applyFeed(result){const candidate=result?.feed||result;if(Number.isSafeInteger(candidate?.revision)&&candidate.revision<revision)return false;const value=checkedFeed(result);revision=value.revision;feedRevision=value.revision;items=value.items;dashboard=value.dashboard;serverTime=value.serverTime;receivedAt=now();stale=false;render();return true;}
+  function applyFeed(result){const candidate=result?.feed||result;if(Number.isSafeInteger(candidate?.revision)&&candidate.revision<revision)return false;const value=checkedFeed(result);revision=value.revision;feedRevision=value.revision;items=value.items;dashboard=value.dashboard;serverTime=value.serverTime;receivedAt=now();stale=false;render();const urgent=items.find(item=>!item.read&&['urgent','emergency'].includes(item.urgency)&&!presented.has(item.id));if(urgent&&!doc.querySelector('dialog[open]')){presented.add(urgent.id);open();}return true;}
   function advanceAcknowledgedRevision(result){if(Number.isSafeInteger(result?.revision)&&result.revision>revision)revision=result.revision;}
   function accessFailure(error){if(![401,403].includes(error?.status))return false;clearState();identity='';render();status.textContent='Notification access changed. Refresh your account before retrying.';return true;}
   async function refresh(fromInvalidation=false){
@@ -169,6 +190,17 @@
    request.promise=(async()=>{try{const result=await C.api('notifications-feed',{afterRevision:feedRevision});if(!current(version,who))return false;if(applyFeed(result))status.textContent='Updated '+new Date(serverTime).toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'})+' IST';failures=0;return true;}
     catch(error){if(current(version,who)&&!accessFailure(error)){stale=true;status.textContent='Notifications unavailable. '+errorMessage(error);failures++;render()}return false;}
     finally{if(current(version,who)&&inFlight===request){inFlight=null;retry.disabled=false;const queued=dirtyQueued;dirtyQueued=false;if(queued&&autoStart&&runnable())refresh();else schedule(Math.min(300000,pollMs*2**Math.min(failures,4))*(1+Math.random()*0.1))}}})();inFlight=request;return request.promise;
+  }
+  async function sendReply(id,reply){
+   if(readBusy.has(id)||!identity||identity!==profileKey())return;
+   const version=epoch,who=identity;readBusy.add(id);render();
+   try{
+    await C.api('notifications-reply',{id,reply});
+    if(!current(version,who))return;
+    items=items.map(item=>item.id===id?{...item,read:true}:item);
+    status.textContent='Reply sent: '+reply;
+   }catch(error){if(current(version,who)&&!accessFailure(error))status.textContent=errorMessage(error);}
+   finally{if(current(version,who)){readBusy.delete(id);render();}}
   }
   async function markRead(id){
    if(!identity||identity!==profileKey()||!items.some(item=>item.id===id))return false;if(items.find(item=>item.id===id)?.read)return true;if(readBusy.has(id))return false;
@@ -196,7 +228,7 @@
     if(meetingLocation.value.trim())template.meetingLocation=meetingLocation.value.trim();if(meetingLocation.value.length>120)throw Error('Use a shorter meeting location.');
     if(meetingTime.value){const at=new Date(meetingTime.value);if(!Number.isFinite(at.getTime()))throw Error('Choose a valid meeting time.');template.meetingTime=at.toISOString();}
    }
-   let selectedAudience;if(audience.value==='everyone')selectedAudience={type:'everyone'};else if(audience.value==='staff'){const staffIds=[...new Set(staff.value.split(/[\s,]+/).filter(Boolean))].sort();if(!staffIds.length||staffIds.length>100||staffIds.some(id=>!/^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(id)))throw Error('Enter 1 to 100 valid staff IDs. The server verifies their current access.');selectedAudience={type:'staff',staffIds};}else{const selected=roleInputs.filter(input=>input.checked).map(input=>input.value).sort();if(!selected.length)throw Error('Select at least one audience role.');selectedAudience={type:'roles',roles:selected};}
+   let selectedAudience;if(audience.value==='everyone')selectedAudience={type:'everyone'};else if(audience.value==='staff'){const staffIds=[...new Set([...staff.selectedOptions].map(option=>option.value))].sort();if(!staffIds.length||staffIds.length>100||staffIds.some(id=>!/^([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(id)))throw Error('Choose between 1 and 100 staff members.');selectedAudience={type:'staff',staffIds};}else{const selected=roleInputs.filter(input=>input.checked).map(input=>input.value).sort();if(!selected.length)throw Error('Select at least one audience role.');selectedAudience={type:'roles',roles:selected};}
    return{template,audience:selectedAudience};
   }
   function checkedPreview(result){if(!result||!Number.isSafeInteger(result.recipientCount)||result.recipientCount<0||typeof result.previewHash!=='string'||!/^[a-f0-9]{64}$/.test(result.previewHash))throw Error('The server returned an incomplete audience preview.');return{recipientCount:result.recipientCount,previewHash:result.previewHash};}

@@ -20,7 +20,7 @@ def require(value, message):
         raise SystemExit(message)
 
 
-DEFERRED_ASSETS = {'notifications.js', 'notifications.css', 'voice.js', 'locator.js', 'locator.css'}
+DEFERRED_ASSETS = {'voice.js', 'locator.js', 'locator.css'}
 
 
 def validate_version(release, latest, source_check=False):

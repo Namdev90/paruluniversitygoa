@@ -10,7 +10,7 @@ let google=false,checked=0;
 async function rpc(action:string,payload:unknown,hash:string,{signal}:{signal?:AbortSignal}={}){
   const report=action.startsWith('reports-');
   const operation=action==='reports-summary-prepare'||action==='reports-save-outcome'||action==='reports-export'&&(payload as Record<string,unknown>)?.format!=null;
-  const rpcName=action.startsWith('staff-device-')?'navrang_staff_device':operation?'navrang_report_operations':report?'navrang_reports':isLocatorAction(action)?'navrang_locator':isCommunicationAction(action)?'navrang_communications':'navrang_gate';
+  const rpcName=action==='notifications-reply'?'navrang_message_reply':action.startsWith('staff-device-')?'navrang_staff_device':operation?'navrang_report_operations':report?'navrang_reports':isLocatorAction(action)?'navrang_locator':isCommunicationAction(action)?'navrang_communications':'navrang_gate';
   const dbAction=operation?(action==='reports-export'?'prepare-export':action==='reports-summary-prepare'?'prepare-summary':'outcome'):report?action.slice('reports-'.length):action;
   const deadline=AbortSignal.timeout(15000);
   const r=await fetch(base+'/rest/v1/rpc/'+rpcName,{method:'POST',headers:{apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'},body:JSON.stringify({p_action:dbAction,p:payload,p_token:hash}),signal:signal?AbortSignal.any([signal,deadline]):deadline});
