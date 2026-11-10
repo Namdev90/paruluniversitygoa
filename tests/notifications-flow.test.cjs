@@ -23,6 +23,15 @@ function fixture(profile=admin,options={}){
 }
 function compose(f){f.$('notifications-compose-toggle').click();f.$('notification-title').value='Synthetic meeting';f.$('notification-title').dispatchEvent(new f.w.Event('input',{bubbles:true}));f.$('notification-body').value='Fixture-only message';f.$('notification-body').dispatchEvent(new f.w.Event('input',{bubbles:true}));}
 
+test('signed-out startup hides the message bell and does not fetch messages',()=>{
+ const f=fixture(null,{autoStart:true});
+ try{
+  assert.equal(f.$('notifications-button').hidden,true);
+  assert.equal(f.$('notifications-center').hasAttribute('open'),false);
+  assert.equal(f.calls.length,0);
+ }finally{f.close();}
+});
+
 test('a stale feed cannot undo an acknowledged reply',async()=>{
  const f=fixture(faculty),old=deferred();
  try{
