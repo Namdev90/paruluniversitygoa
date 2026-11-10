@@ -8,7 +8,7 @@ export function validateSessionRequest(action,p){
  }else if(action==='logout'&&p.refreshToken!==undefined){
   if(!exact(p,['refreshToken','installationId'])||!hex(p.refreshToken)||!device(p.installationId))throw Error('Invalid session revocation.');
  }else if(['login','checker-login','google-login'].includes(action)&&(p.authProtocol!==undefined||p.installationId!==undefined)){
-  const fields=action==='login'?['username','password']:action==='checker-login'?['code']:['accessToken'];
+  const fields=action==='login'?['username','password']:action==='checker-login'?['code','deviceSecret','setupCode']:['accessToken'];
   if(p.authProtocol!==1||!device(p.installationId)||!exact(p,[...fields,'authProtocol','installationId']))throw Error('Invalid session protocol.');
  }
  return p;

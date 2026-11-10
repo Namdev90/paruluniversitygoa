@@ -28,7 +28,7 @@ test('a four-digit PIN requires a verified device and retains the existing staff
  const post=payload=>handler(new Request('https://example.test/',{method:'POST',body:JSON.stringify({action:'checker-login',payload})}));
  assert.equal((await post({code:'0042'})).status,400);
  assert.equal(calls.length,0);
- const result=await post({code:'0042',deviceSecret:'a'.repeat(64),setupCode:'b'.repeat(64)});
+ const result=await post({code:'0042',deviceSecret:'a'.repeat(64),setupCode:'b'.repeat(64),authProtocol:1,installationId:'synthetic-android'});
  assert.equal(result.status,200);
  assert.deepEqual((await result.json()).profile,{role:'checker',checkerId,reports:true,reportsRequested:false});
  const proof=calls.find(call=>call.action==='staff-device-login').payload;

@@ -82,7 +82,7 @@ test('a data reply authorized before actual grant loss cannot become visible aft
 });
 test('GateClient uses protected cookies for login, cold restore and explicit logout',async()=>{
  const t=await setup();try{let client=t.loadClient();await client.api('login',{username:'fixture',password:'synthetic-input'});assert.equal(client.profile().role,'admin');
-  client=t.loadClient();assert.equal(client.profile(),null);await client.finishGoogle();assert.equal(client.profile().role,'admin');assert.equal(t.calls.filter(x=>x.action==='login').length,1);
+  client=t.loadClient();assert.equal(client.profile(),null);await client.restoreSession();assert.equal(client.profile().role,'admin');assert.equal(t.calls.filter(x=>x.action==='login').length,1);
   await client.signOut();assert.equal(client.profile(),null);assert.equal(t.jar.size,0);noStoredCredentials(t);
  }finally{t.session.dispose();t.w.close();}
 });
